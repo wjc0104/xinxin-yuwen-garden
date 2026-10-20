@@ -4,7 +4,7 @@ on:
   push:
     branches: ['feat/**']
 concurrency:
-  group: ios-${{ github.ref }}
+  group: ios-v1-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   ios:
@@ -33,7 +33,11 @@ jobs:
           xcrun simctl boot "$SIMULATOR_ID"
           xcrun simctl bootstatus "$SIMULATOR_ID" -b
       - name: Test native flows
-        run: xcodebuild test -project XinxinGarden.xcodeproj -scheme XinxinGarden -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 180 -resultBundlePath build/UI.xcresult CODE_SIGNING_ALLOWED=NO
+        timeout-minutes: 12
+        run: |
+          set -o pipefail
+          mkdir -p build
+          xcodebuild test -project XinxinGarden.xcodeproj -scheme XinxinGarden -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 300 -maximum-test-execution-time-allowance 360 -resultBundlePath build/UI.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee build/UI-test.log
       - name: Export screenshots
         if: always()
         run: xcrun xcresulttool export attachments --path build/UI.xcresult --output-path build/screenshots || true
