@@ -1,4 +1,14 @@
-# 小花园试走记录 🧪
+# 欣语 · 测试记录
+
+首版验收提交：`d680cbbf835486da8167f30c9e07aec53f23af27`。以下三项均已完成且成功：
+
+| 检查 | 结果 | 运行记录 |
+| --- | --- | --- |
+| Foundation 核心逻辑 | 21 项测试，0 失败 | [39517220625](https://github.com/wm0104/xinxin-yuwen-garden/actions/runs/39517220625) |
+| iPhone 模拟器真实界面流程 | 2 项测试，0 失败；含笔记重启保留、PDF 选区高亮保存与重开 | [39517220597](https://github.com/wm0104/xinxin-yuwen-garden/actions/runs/39517220597) |
+| iOS 真机 IPA 构建 | 成功；同时再次通过 macOS 核心测试与目录检查 | [39517220640](https://github.com/wm0104/xinxin-yuwen-garden/actions/runs/39517220640) |
+
+已查看实际模拟器截图，确认“欣语”首页和 PDF 黄色高亮正常显示。最终主分支构建、安装包校验值与交付文件见 v0.0.1 Release。
 
 ## 自动检查
 
