@@ -10,6 +10,7 @@ with zipfile.ZipFile(path) as z:
     prefix='Payload/XinxinGarden.app/'
     info=plistlib.loads(z.read(prefix+'Info.plist'))
     assert info['CFBundleIdentifier']=='com.wm0104.xinxingarden'
+    assert info['CFBundleDisplayName']=='欣语' and info['CFBundleShortVersionString']=='0.0.1'
     assert info['MinimumOSVersion']=='15.0'
     assert info['UIDeviceFamily']==[1],info.get('UIDeviceFamily')
     assert 'iPhoneOS' in info['CFBundleSupportedPlatforms']

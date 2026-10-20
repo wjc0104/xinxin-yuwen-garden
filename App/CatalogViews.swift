@@ -7,8 +7,8 @@ struct CatalogView: View {
     var body: some View {
         GardenPage {
             GardenCard {
-                Text("给欣欣的一座小花园 🌷").font(.title2.bold())
-                Text("把每一篇课文，慢慢读成自己的课堂。").foregroundColor(.secondary)
+                Text("给欣欣的语文备课手记").font(.title2.bold())
+                Text("按课文找资料，随手记下自己的思考。").foregroundColor(.secondary)
                 HStack { Label("六册目录", systemImage: "book.closed"); Spacer(); Text("教资 · 教招").foregroundColor(GardenTheme.mint) }.font(.caption)
             }
             Text("沿着课文，一页页出发").font(.headline)
@@ -24,7 +24,7 @@ struct CatalogView: View {
                 }.buttonStyle(.plain).accessibilityIdentifier("book-" + book.id)
             }
             Caption(text: "安徽备课参考 · 目录核对于 2026-10-21。学校实际用书以萧县／黄口当地安排为准；九下新修订版待更新。")
-        }.navigationTitle("欣欣的小花园")
+        }.navigationTitle("欣语")
     }
 }
 struct BookView: View {

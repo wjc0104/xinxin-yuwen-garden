@@ -49,4 +49,4 @@
 - [ ] Create original vector-style flower/book icon and affectionate Chinese README with truthful first-version limits and sources.
 - [ ] Build for generic iOS device with code signing disabled, ad-hoc sign executable, package Payload/XinxinGarden.app as IPA; verify arm64 and MinimumOSVersion 15.0.
 - [ ] Run one fresh whole-repository reviewer, address material findings with reproducing tests, and rerun the suite/build.
-- [ ] Download the exact successful build to outputs/, inspect IPA archive and checksum, publish a v0.1.0 release in the private repository. Expected: repository and downloadable IPA, with physical device testing still explicitly pending.
+- [ ] Download the exact successful build to outputs/, inspect IPA archive and checksum, publish a v0.0.1 release in the private repository. Expected: repository and downloadable IPA, with physical device testing still explicitly pending. User selected the short app name 欣语.

@@ -3,9 +3,9 @@
 ## XR 安装
 
 1. 给 XR 充电，确认实际 iOS 版本及 TrollStore 已能使用。
-2. 在本私有仓库 Releases 下载 `XinxinGarden-v0.1.0.ipa` 到“文件”。
+2. 在本私有仓库 Releases 下载 `Xinyu-v0.0.1.ipa` 到“文件”。
 3. 使用“分享”→ TrollStore，或在 TrollStore 点加号选择 IPA，确认安装。
-4. 打开“欣欣的小花园”，先看目录与课表。学习功能不要求日历授权。
+4. 打开“欣语”，先看目录与课表。学习功能不要求日历授权。
 5. 更新前先在“我的”导出备份。请用 TrollStore 覆盖更新同一 bundle ID；卸载可能删除本地资料。
 
 最低系统目标为 iOS 15.0，arm64；不提供 App Store、TestFlight 或网页替代包。IPA 的普通 ad-hoc 签名由 TrollStore 安装时处理；包中不加入提权、越狱、JIT 或无沙盒权限。

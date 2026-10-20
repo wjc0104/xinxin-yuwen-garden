@@ -12,7 +12,7 @@ struct SettingsView: View {
     @State private var share: ShareFile?
     var body: some View {
         GardenPage {
-            GardenCard { Text("今天也辛苦啦，欣欣 🌷").font(.title2.bold()); Text("把备课变轻一点，把喜欢的日子过慢一点。").font(.subheadline).foregroundColor(.secondary); Caption(text: "语文小花园 · 0.1.0 · 为 iPhone XR / iOS 15 准备") }
+            GardenCard { Text("欣欣的备课手记").font(.title2.bold()); Text("资料、重点和下一节课，都放在这里。").font(.subheadline).foregroundColor(.secondary); Caption(text: "欣语 · 0.0.1 · iPhone XR / iOS 15") }
             GardenCard {
                 Text("这学期的小约定").font(.headline)
                 DatePicker("开学日期", selection: $termStart, displayedComponents: .date)

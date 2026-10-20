@@ -23,8 +23,8 @@ targets:
     info:
       path: App/Info.plist
       properties:
-        CFBundleDisplayName: 欣欣的小花园
-        CFBundleShortVersionString: '0.1.0'
+        CFBundleDisplayName: 欣语
+        CFBundleShortVersionString: '0.0.1'
         CFBundleVersion: '1'
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]

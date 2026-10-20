@@ -15,9 +15,9 @@ otool -l "$APP/XinxinGarden" > build/device-load-commands.txt
 codesign -d --entitlements :- "$APP" > build/entitlements.plist 2>/dev/null || true
 (
   cd build/package
-  /usr/bin/zip -qry ../XinxinGarden-v0.1.0.ipa Payload
+  /usr/bin/zip -qry ../Xinyu-v0.0.1.ipa Payload
 )
-shasum -a 256 build/XinxinGarden-v0.1.0.ipa > build/SHA256SUMS.txt
+shasum -a 256 build/Xinyu-v0.0.1.ipa > build/SHA256SUMS.txt
 python3 - <<'PY'
 import json,plistlib,os
 with open('build/package/Payload/XinxinGarden.app/Info.plist','rb') as f:p=plistlib.load(f)
