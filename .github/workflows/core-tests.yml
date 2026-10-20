@@ -1,0 +1,17 @@
+name: Garden core tests
+on:
+  push:
+    branches: [main, 'feat/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: core-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  core:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test actual Swift behavior
+        run: swift test

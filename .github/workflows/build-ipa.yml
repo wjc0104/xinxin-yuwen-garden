@@ -1,0 +1,39 @@
+name: Build TrollStore IPA
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, 'feat/**']
+    tags: ['v*']
+permissions:
+  contents: read
+concurrency:
+  group: ipa-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  ipa:
+    runs-on: macos-15-intel
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Domain and catalog checks
+        run: |
+          swift test
+          python3 scripts/check-catalog.py
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Build native arm64 app
+        run: xcodebuild build -project XinxinGarden.xcodeproj -scheme XinxinGarden -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/device ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO
+      - name: Ad-hoc sign and package for TrollStore
+        run: bash scripts/package-ipa.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: XinxinGarden-TrollStore
+          path: |
+            build/*.ipa
+            build/SHA256SUMS.txt
+            build/package-verification.json
+            build/device-load-commands.txt
+            build/entitlements.plist
+          retention-days: 14

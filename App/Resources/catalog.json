@@ -1,0 +1,1929 @@
+{
+  "title": "欣欣的语文目录",
+  "checkedAt": "2026-10-21",
+  "books": [
+    {
+      "id": "7u",
+      "title": "七年级上册",
+      "edition": "统编六三学制 · 当前修订目录",
+      "verification": "目录已对照人教社当前电子教材；学校实际用书请核对",
+      "source": "https://book.pep.com.cn/1311001101241/mobile/index.html",
+      "units": [
+        {
+          "id": "7u-u1",
+          "title": "第1单元",
+          "lessons": [
+            {
+              "id": "7u-01",
+              "number": 1,
+              "title": "春",
+              "author": "朱自清",
+              "focus": []
+            },
+            {
+              "id": "7u-02",
+              "number": 2,
+              "title": "济南的冬天",
+              "author": "老舍",
+              "focus": []
+            },
+            {
+              "id": "7u-03",
+              "number": 3,
+              "title": "雨的四季",
+              "author": "刘湛秋",
+              "focus": []
+            },
+            {
+              "id": "7u-04",
+              "number": 4,
+              "title": "古代诗歌四首",
+              "author": "曹操等",
+              "focus": [
+                "观沧海",
+                "次北固山下",
+                "闻王昌龄左迁龙标遥有此寄",
+                "天净沙·秋思"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "7u-u2",
+          "title": "第2单元",
+          "lessons": [
+            {
+              "id": "7u-05",
+              "number": 5,
+              "title": "秋天的怀念",
+              "author": "史铁生",
+              "focus": []
+            },
+            {
+              "id": "7u-06",
+              "number": 6,
+              "title": "散步",
+              "author": "莫怀戚",
+              "focus": []
+            },
+            {
+              "id": "7u-07",
+              "number": 7,
+              "title": "散文诗二首",
+              "author": "泰戈尔、冰心",
+              "focus": [
+                "金色花",
+                "荷叶·母亲"
+              ]
+            },
+            {
+              "id": "7u-08",
+              "number": 8,
+              "title": "《世说新语》二则",
+              "author": "刘义庆",
+              "focus": [
+                "咏雪",
+                "陈太丘与友期行"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "7u-u3",
+          "title": "第3单元",
+          "lessons": [
+            {
+              "id": "7u-09",
+              "number": 9,
+              "title": "从百草园到三味书屋",
+              "author": "鲁迅",
+              "focus": []
+            },
+            {
+              "id": "7u-10",
+              "number": 10,
+              "title": "往事依依",
+              "author": "于漪",
+              "focus": []
+            },
+            {
+              "id": "7u-11",
+              "number": 11,
+              "title": "再塑生命的人",
+              "author": "海伦·凯勒",
+              "focus": []
+            },
+            {
+              "id": "7u-12",
+              "number": 12,
+              "title": "《论语》十二章",
+              "author": "孔子及其弟子",
+              "focus": []
+            }
+          ]
+        },
+        {
+          "id": "7u-extra3",
+          "title": "课外古诗词诵读",
+          "lessons": [
+            {
+              "id": "7u-extra3-1",
+              "number": 0,
+              "title": "峨眉山月歌",
+              "author": "李白",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "7u-extra3-2",
+              "number": 0,
+              "title": "江南逢李龟年",
+              "author": "杜甫",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "7u-extra3-3",
+              "number": 0,
+              "title": "行军九日思长安故园",
+              "author": "岑参",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "7u-extra3-4",
+              "number": 0,
+              "title": "夜上受降城闻笛",
+              "author": "李益",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "7u-u4",
+          "title": "第4单元",
+          "lessons": [
+            {
+              "id": "7u-13",
+              "number": 13,
+              "title": "纪念白求恩",
+              "author": "毛泽东",
+              "focus": []
+            },
+            {
+              "id": "7u-14",
+              "number": 14,
+              "title": "回忆我的母亲",
+              "author": "朱德",
+              "focus": []
+            },
+            {
+              "id": "7u-15",
+              "number": 15,
+              "title": "梅岭三章",
+              "author": "陈毅",
+              "focus": []
+            },
+            {
+              "id": "7u-16",
+              "number": 16,
+              "title": "诫子书",
+              "author": "诸葛亮",
+              "focus": []
+            }
+          ]
+        },
+        {
+          "id": "7u-u5",
+          "title": "第5单元",
+          "lessons": [
+            {
+              "id": "7u-17",
+              "number": 17,
+              "title": "猫",
+              "author": "郑振铎",
+              "focus": []
+            },
+            {
+              "id": "7u-18",
+              "number": 18,
+              "title": "我的白鸽",
+              "author": "陈忠实",
+              "focus": []
+            },
+            {
+              "id": "7u-19",
+              "number": 19,
+              "title": "大雁归来",
+              "author": "利奥波德",
+              "focus": []
+            },
+            {
+              "id": "7u-20",
+              "number": 20,
+              "title": "狼",
+              "author": "蒲松龄",
+              "focus": []
+            }
+          ]
+        },
+        {
+          "id": "7u-u6",
+          "title": "第6单元",
+          "lessons": [
+            {
+              "id": "7u-21",
+              "number": 21,
+              "title": "小圣施威降大圣",
+              "author": "吴承恩",
+              "focus": []
+            },
+            {
+              "id": "7u-22",
+              "number": 22,
+              "title": "皇帝的新装",
+              "author": "安徒生",
+              "focus": []
+            },
+            {
+              "id": "7u-23",
+              "number": 23,
+              "title": "女娲造人",
+              "author": "袁珂",
+              "focus": []
+            },
+            {
+              "id": "7u-24",
+              "number": 24,
+              "title": "寓言四则",
+              "author": "伊索等",
+              "focus": [
+                "赫耳墨斯和雕像者",
+                "蚊子和狮子",
+                "穿井得一人",
+                "杞人忧天"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "7u-extra6",
+          "title": "课外古诗词诵读",
+          "lessons": [
+            {
+              "id": "7u-extra6-1",
+              "number": 0,
+              "title": "秋词（其一）",
+              "author": "刘禹锡",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "7u-extra6-2",
+              "number": 0,
+              "title": "夜雨寄北",
+              "author": "李商隐",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "7u-extra6-3",
+              "number": 0,
+              "title": "十一月四日风雨大作（其二）",
+              "author": "陆游",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "7u-extra6-4",
+              "number": 0,
+              "title": "潼关",
+              "author": "谭嗣同",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "7d",
+      "title": "七年级下册",
+      "edition": "统编六三学制 · 当前修订目录",
+      "verification": "目录已对照人教社当前电子教材；学校实际用书请核对",
+      "source": "https://book.pep.com.cn/1311001102241/mobile/index.html",
+      "units": [
+        {
+          "id": "7d-u1",
+          "title": "第1单元",
+          "lessons": [
+            {
+              "id": "7d-01",
+              "number": 1,
+              "title": "邓稼先",
+              "author": "杨振宁",
+              "focus": []
+            },
+            {
+              "id": "7d-02",
+              "number": 2,
+              "title": "说和做——记闻一多先生言行片段",
+              "author": "臧克家",
+              "focus": []
+            },
+            {
+              "id": "7d-03",
+              "number": 3,
+              "title": "列夫·托尔斯泰",
+              "author": "茨威格",
+              "focus": []
+            },
+            {
+              "id": "7d-04",
+              "number": 4,
+              "title": "孙权劝学",
+              "author": "《资治通鉴》",
+              "focus": []
+            }
+          ]
+        },
+        {
+          "id": "7d-u2",
+          "title": "第2单元",
+          "lessons": [
+            {
+              "id": "7d-05",
+              "number": 5,
+              "title": "黄河颂",
+              "author": "光未然",
+              "focus": []
+            },
+            {
+              "id": "7d-06",
+              "number": 6,
+              "title": "老山界",
+              "author": "陆定一",
+              "focus": []
+            },
+            {
+              "id": "7d-07",
+              "number": 7,
+              "title": "谁是最可爱的人",
+              "author": "魏巍",
+              "focus": []
+            },
+            {
+              "id": "7d-08",
+              "number": 8,
+              "title": "土地的誓言",
+              "author": "端木蕻良",
+              "focus": []
+            },
+            {
+              "id": "7d-09",
+              "number": 9,
+              "title": "木兰诗",
+              "author": "《乐府诗集》",
+              "focus": []
+            }
+          ]
+        },
+        {
+          "id": "7d-u3",
+          "title": "第3单元",
+          "lessons": [
+            {
+              "id": "7d-10",
+              "number": 10,
+              "title": "阿长与《山海经》",
+              "author": "鲁迅",
+              "focus": []
+            },
+            {
+              "id": "7d-11",
+              "number": 11,
+              "title": "山地回忆",
+              "author": "孙犁",
+              "focus": []
+            },
+            {
+              "id": "7d-12",
+              "number": 12,
+              "title": "台阶",
+              "author": "李森祥",
+              "focus": []
+            },
+            {
+              "id": "7d-13",
+              "number": 13,
+              "title": "卖油翁",
+              "author": "欧阳修",
+              "focus": []
+            }
+          ]
+        },
+        {
+          "id": "7d-extra3",
+          "title": "课外古诗词诵读",
+          "lessons": [
+            {
+              "id": "7d-extra3-1",
+              "number": 0,
+              "title": "竹里馆",
+              "author": "王维",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "7d-extra3-2",
+              "number": 0,
+              "title": "春夜洛城闻笛",
+              "author": "李白",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "7d-extra3-3",
+              "number": 0,
+              "title": "逢入京使",
+              "author": "岑参",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "7d-extra3-4",
+              "number": 0,
+              "title": "晚春",
+              "author": "韩愈",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "7d-u4",
+          "title": "第4单元",
+          "lessons": [
+            {
+              "id": "7d-14",
+              "number": 14,
+              "title": "驿路梨花",
+              "author": "彭荆风",
+              "focus": []
+            },
+            {
+              "id": "7d-15",
+              "number": 15,
+              "title": "青春之光",
+              "author": "祝红蕾",
+              "focus": []
+            },
+            {
+              "id": "7d-16",
+              "number": 16,
+              "title": "有所为有所不为",
+              "author": "季羡林",
+              "focus": []
+            },
+            {
+              "id": "7d-17",
+              "number": 17,
+              "title": "短文两篇",
+              "author": "刘禹锡、周敦颐",
+              "focus": [
+                "陋室铭",
+                "爱莲说"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "7d-u5",
+          "title": "第5单元",
+          "lessons": [
+            {
+              "id": "7d-18",
+              "number": 18,
+              "title": "井冈翠竹",
+              "author": "袁鹰",
+              "focus": []
+            },
+            {
+              "id": "7d-19",
+              "number": 19,
+              "title": "紫藤萝瀑布",
+              "author": "宗璞",
+              "focus": []
+            },
+            {
+              "id": "7d-20",
+              "number": 20,
+              "title": "外国诗二首",
+              "author": "普希金、弗罗斯特",
+              "focus": [
+                "假如生活欺骗了你",
+                "未选择的路"
+              ]
+            },
+            {
+              "id": "7d-21",
+              "number": 21,
+              "title": "古代诗歌五首",
+              "author": "陈子昂等",
+              "focus": [
+                "登幽州台歌",
+                "望岳",
+                "登飞来峰",
+                "游山西村",
+                "己亥杂诗（其五）"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "7d-u6",
+          "title": "第6单元",
+          "lessons": [
+            {
+              "id": "7d-22",
+              "number": 22,
+              "title": "太空一日",
+              "author": "杨利伟",
+              "focus": []
+            },
+            {
+              "id": "7d-23",
+              "number": 23,
+              "title": "“蛟龙”探海",
+              "author": "许晨",
+              "focus": []
+            },
+            {
+              "id": "7d-24",
+              "number": 24,
+              "title": "带上她的眼睛",
+              "author": "刘慈欣",
+              "focus": []
+            },
+            {
+              "id": "7d-25",
+              "number": 25,
+              "title": "活板",
+              "author": "沈括",
+              "focus": []
+            }
+          ]
+        },
+        {
+          "id": "7d-extra6",
+          "title": "课外古诗词诵读",
+          "lessons": [
+            {
+              "id": "7d-extra6-1",
+              "number": 0,
+              "title": "泊秦淮",
+              "author": "杜牧",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "7d-extra6-2",
+              "number": 0,
+              "title": "贾生",
+              "author": "李商隐",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "7d-extra6-3",
+              "number": 0,
+              "title": "过松源晨炊漆公店（其五）",
+              "author": "杨万里",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "7d-extra6-4",
+              "number": 0,
+              "title": "约客",
+              "author": "赵师秀",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "8u",
+      "title": "八年级上册",
+      "edition": "统编六三学制 · 当前修订目录",
+      "verification": "目录已对照人教社当前电子教材；学校实际用书请核对",
+      "source": "https://book.pep.com.cn/1311001201241/mobile/index.html",
+      "units": [
+        {
+          "id": "8u-u1",
+          "title": "第1单元",
+          "lessons": [
+            {
+              "id": "8u-01",
+              "number": 1,
+              "title": "消息二则",
+              "author": "毛泽东",
+              "focus": [
+                "我三十万大军胜利南渡长江",
+                "人民解放军百万大军横渡长江"
+              ]
+            },
+            {
+              "id": "8u-02",
+              "number": 2,
+              "title": "中国人首次进入自己的空间站",
+              "author": "余建斌等",
+              "focus": []
+            },
+            {
+              "id": "8u-03",
+              "number": 3,
+              "title": "首届诺贝尔奖颁发",
+              "author": "",
+              "focus": []
+            },
+            {
+              "id": "8u-04",
+              "number": 4,
+              "title": "“飞天”凌空——跳水姑娘吕伟夺魁记",
+              "author": "夏浩然、樊云芳",
+              "focus": []
+            },
+            {
+              "id": "8u-05",
+              "number": 5,
+              "title": "一着惊海天——目击我国航母舰载战斗机首架次成功着舰",
+              "author": "蔡年迟、蒲海洋",
+              "focus": []
+            },
+            {
+              "id": "8u-06",
+              "number": 6,
+              "title": "国行公祭，为佑世界和平",
+              "author": "钟声",
+              "focus": []
+            }
+          ]
+        },
+        {
+          "id": "8u-u2",
+          "title": "第2单元",
+          "lessons": [
+            {
+              "id": "8u-07",
+              "number": 7,
+              "title": "藤野先生",
+              "author": "鲁迅",
+              "focus": []
+            },
+            {
+              "id": "8u-08",
+              "number": 8,
+              "title": "回忆鲁迅先生（节选）",
+              "author": "萧红",
+              "focus": []
+            },
+            {
+              "id": "8u-09",
+              "number": 9,
+              "title": "天上有颗“南仁东星”",
+              "author": "王宏甲",
+              "focus": []
+            },
+            {
+              "id": "8u-10",
+              "number": 10,
+              "title": "美丽的颜色",
+              "author": "艾芙·居里",
+              "focus": []
+            }
+          ]
+        },
+        {
+          "id": "8u-u3",
+          "title": "第3单元",
+          "lessons": [
+            {
+              "id": "8u-11",
+              "number": 11,
+              "title": "三峡",
+              "author": "郦道元",
+              "focus": []
+            },
+            {
+              "id": "8u-12",
+              "number": 12,
+              "title": "短文二篇",
+              "author": "陶弘景、苏轼",
+              "focus": [
+                "答谢中书书",
+                "记承天寺夜游"
+              ]
+            },
+            {
+              "id": "8u-13",
+              "number": 13,
+              "title": "与朱元思书",
+              "author": "吴均",
+              "focus": []
+            },
+            {
+              "id": "8u-14",
+              "number": 14,
+              "title": "唐诗五首",
+              "author": "王绩等",
+              "focus": [
+                "野望",
+                "黄鹤楼",
+                "使至塞上",
+                "渡荆门送别",
+                "钱塘湖春行"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "8u-extra3",
+          "title": "课外古诗词诵读",
+          "lessons": [
+            {
+              "id": "8u-extra3-1",
+              "number": 0,
+              "title": "庭中有奇树",
+              "author": "《古诗十九首》",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "8u-extra3-2",
+              "number": 0,
+              "title": "龟虽寿",
+              "author": "曹操",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "8u-extra3-3",
+              "number": 0,
+              "title": "赠从弟（其二）",
+              "author": "刘桢",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "8u-extra3-4",
+              "number": 0,
+              "title": "梁甫行",
+              "author": "曹植",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "8u-u4",
+          "title": "第4单元",
+          "lessons": [
+            {
+              "id": "8u-15",
+              "number": 15,
+              "title": "背影",
+              "author": "朱自清",
+              "focus": []
+            },
+            {
+              "id": "8u-16",
+              "number": 16,
+              "title": "白杨礼赞",
+              "author": "茅盾",
+              "focus": []
+            },
+            {
+              "id": "8u-17",
+              "number": 17,
+              "title": "散文二篇",
+              "author": "严文井、罗素",
+              "focus": [
+                "永久的生命",
+                "我为什么而活着"
+              ]
+            },
+            {
+              "id": "8u-18",
+              "number": 18,
+              "title": "昆明的雨",
+              "author": "汪曾祺",
+              "focus": []
+            }
+          ]
+        },
+        {
+          "id": "8u-u5",
+          "title": "第5单元",
+          "lessons": [
+            {
+              "id": "8u-19",
+              "number": 19,
+              "title": "中国石拱桥",
+              "author": "茅以昇",
+              "focus": []
+            },
+            {
+              "id": "8u-20",
+              "number": 20,
+              "title": "苏州园林",
+              "author": "叶圣陶",
+              "focus": []
+            },
+            {
+              "id": "8u-21",
+              "number": 21,
+              "title": "人民英雄永垂不朽——瞻仰首都人民英雄纪念碑",
+              "author": "周定舫",
+              "focus": []
+            },
+            {
+              "id": "8u-22",
+              "number": 22,
+              "title": "梦回繁华",
+              "author": "毛宁",
+              "focus": []
+            }
+          ]
+        },
+        {
+          "id": "8u-u6",
+          "title": "第6单元",
+          "lessons": [
+            {
+              "id": "8u-23",
+              "number": 23,
+              "title": "《孟子》三章",
+              "author": "孟子",
+              "focus": [
+                "得道多助，失道寡助",
+                "富贵不能淫",
+                "生于忧患，死于安乐"
+              ]
+            },
+            {
+              "id": "8u-24",
+              "number": 24,
+              "title": "愚公移山",
+              "author": "《列子》",
+              "focus": []
+            },
+            {
+              "id": "8u-25",
+              "number": 25,
+              "title": "周亚夫军细柳",
+              "author": "司马迁",
+              "focus": []
+            },
+            {
+              "id": "8u-26",
+              "number": 26,
+              "title": "诗词五首",
+              "author": "陶渊明等",
+              "focus": [
+                "饮酒（其五）",
+                "春望",
+                "雁门太守行",
+                "赤壁",
+                "渔家傲（天接云涛连晓雾）"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "8u-extra6",
+          "title": "课外古诗词诵读",
+          "lessons": [
+            {
+              "id": "8u-extra6-1",
+              "number": 0,
+              "title": "浣溪沙（一曲新词酒一杯）",
+              "author": "晏殊",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "8u-extra6-2",
+              "number": 0,
+              "title": "采桑子（轻舟短棹西湖好）",
+              "author": "欧阳修",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "8u-extra6-3",
+              "number": 0,
+              "title": "相见欢（金陵城上西楼）",
+              "author": "朱敦儒",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "8u-extra6-4",
+              "number": 0,
+              "title": "如梦令（常记溪亭日暮）",
+              "author": "李清照",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "8d",
+      "title": "八年级下册",
+      "edition": "统编六三学制 · 当前修订目录",
+      "verification": "目录已对照人教社当前电子教材；学校实际用书请核对",
+      "source": "https://book.pep.com.cn/1311001202251/mobile/index.html",
+      "units": [
+        {
+          "id": "8d-u1",
+          "title": "第1单元",
+          "lessons": [
+            {
+              "id": "8d-01",
+              "number": 1,
+              "title": "社戏",
+              "author": "鲁迅",
+              "focus": []
+            },
+            {
+              "id": "8d-02",
+              "number": 2,
+              "title": "回延安",
+              "author": "贺敬之",
+              "focus": []
+            },
+            {
+              "id": "8d-03",
+              "number": 3,
+              "title": "安塞腰鼓",
+              "author": "刘成章",
+              "focus": []
+            },
+            {
+              "id": "8d-04",
+              "number": 4,
+              "title": "灯笼",
+              "author": "吴伯箫",
+              "focus": []
+            }
+          ]
+        },
+        {
+          "id": "8d-u2",
+          "title": "第2单元",
+          "lessons": [
+            {
+              "id": "8d-05",
+              "number": 5,
+              "title": "大自然的语言",
+              "author": "竺可桢、宛敏渭",
+              "focus": []
+            },
+            {
+              "id": "8d-06",
+              "number": 6,
+              "title": "阿西莫夫短文两篇",
+              "author": "阿西莫夫",
+              "focus": [
+                "恐龙无处不有",
+                "被压扁的沙子"
+              ]
+            },
+            {
+              "id": "8d-07",
+              "number": 7,
+              "title": "月亮是从哪里来的",
+              "author": "卞毓麟",
+              "focus": []
+            },
+            {
+              "id": "8d-08",
+              "number": 8,
+              "title": "时间的脚印",
+              "author": "陶世龙",
+              "focus": []
+            }
+          ]
+        },
+        {
+          "id": "8d-u3",
+          "title": "第3单元",
+          "lessons": [
+            {
+              "id": "8d-09",
+              "number": 9,
+              "title": "桃花源记",
+              "author": "陶渊明",
+              "focus": []
+            },
+            {
+              "id": "8d-10",
+              "number": 10,
+              "title": "小石潭记",
+              "author": "柳宗元",
+              "focus": []
+            },
+            {
+              "id": "8d-11",
+              "number": 11,
+              "title": "核舟记",
+              "author": "魏学洢",
+              "focus": []
+            },
+            {
+              "id": "8d-12",
+              "number": 12,
+              "title": "《诗经》二首",
+              "author": "《诗经》",
+              "focus": [
+                "关雎",
+                "蒹葭"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "8d-extra3",
+          "title": "课外古诗词诵读",
+          "lessons": [
+            {
+              "id": "8d-extra3-1",
+              "number": 0,
+              "title": "式微",
+              "author": "《诗经·邶风》",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "8d-extra3-2",
+              "number": 0,
+              "title": "子衿",
+              "author": "《诗经·郑风》",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "8d-extra3-3",
+              "number": 0,
+              "title": "送杜少府之任蜀州",
+              "author": "王勃",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "8d-extra3-4",
+              "number": 0,
+              "title": "望洞庭湖赠张丞相",
+              "author": "孟浩然",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "8d-u4",
+          "title": "第4单元",
+          "lessons": [
+            {
+              "id": "8d-13",
+              "number": 13,
+              "title": "最后一次讲演",
+              "author": "闻一多",
+              "focus": []
+            },
+            {
+              "id": "8d-14",
+              "number": 14,
+              "title": "敬业与乐业",
+              "author": "梁启超",
+              "focus": []
+            },
+            {
+              "id": "8d-15",
+              "number": 15,
+              "title": "应有格物致知精神",
+              "author": "丁肇中",
+              "focus": []
+            },
+            {
+              "id": "8d-16",
+              "number": 16,
+              "title": "我一生中的重要抉择",
+              "author": "王选",
+              "focus": []
+            }
+          ]
+        },
+        {
+          "id": "8d-u5",
+          "title": "第5单元",
+          "lessons": [
+            {
+              "id": "8d-17",
+              "number": 17,
+              "title": "壶口瀑布",
+              "author": "梁衡",
+              "focus": []
+            },
+            {
+              "id": "8d-18",
+              "number": 18,
+              "title": "在长江源头各拉丹冬",
+              "author": "马丽华",
+              "focus": []
+            },
+            {
+              "id": "8d-19",
+              "number": 19,
+              "title": "登勃朗峰",
+              "author": "马克·吐温",
+              "focus": []
+            },
+            {
+              "id": "8d-20",
+              "number": 20,
+              "title": "一滴水经过丽江",
+              "author": "阿来",
+              "focus": []
+            }
+          ]
+        },
+        {
+          "id": "8d-u6",
+          "title": "第6单元",
+          "lessons": [
+            {
+              "id": "8d-21",
+              "number": 21,
+              "title": "《庄子》二则",
+              "author": "庄子",
+              "focus": [
+                "北冥有鱼",
+                "庄子与惠子游于濠梁之上"
+              ]
+            },
+            {
+              "id": "8d-22",
+              "number": 22,
+              "title": "《礼记》二则",
+              "author": "《礼记》",
+              "focus": [
+                "虽有嘉肴",
+                "大道之行也"
+              ]
+            },
+            {
+              "id": "8d-23",
+              "number": 23,
+              "title": "马说",
+              "author": "韩愈",
+              "focus": []
+            },
+            {
+              "id": "8d-24",
+              "number": 24,
+              "title": "唐诗三首",
+              "author": "杜甫、白居易",
+              "focus": [
+                "石壕吏",
+                "茅屋为秋风所破歌",
+                "卖炭翁"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "8d-extra6",
+          "title": "课外古诗词诵读",
+          "lessons": [
+            {
+              "id": "8d-extra6-1",
+              "number": 0,
+              "title": "题破山寺后禅院",
+              "author": "常建",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "8d-extra6-2",
+              "number": 0,
+              "title": "送友人",
+              "author": "李白",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "8d-extra6-3",
+              "number": 0,
+              "title": "卜算子·黄州定慧院寓居作",
+              "author": "苏轼",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "8d-extra6-4",
+              "number": 0,
+              "title": "卜算子·咏梅",
+              "author": "陆游",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "9u",
+      "title": "九年级上册",
+      "edition": "统编六三学制 · 2026 新修订",
+      "verification": "目录已对照人教社当前电子教材；学校实际用书请核对",
+      "source": "https://book.pep.com.cn/1311001301261/mobile/index.html",
+      "units": [
+        {
+          "id": "9u-u1",
+          "title": "第1单元",
+          "lessons": [
+            {
+              "id": "9u-01",
+              "number": 1,
+              "title": "沁园春·雪",
+              "author": "毛泽东",
+              "focus": []
+            },
+            {
+              "id": "9u-02",
+              "number": 2,
+              "title": "周总理，你在哪里",
+              "author": "柯岩",
+              "focus": []
+            },
+            {
+              "id": "9u-03",
+              "number": 3,
+              "title": "我爱这土地",
+              "author": "艾青",
+              "focus": []
+            },
+            {
+              "id": "9u-04",
+              "number": 4,
+              "title": "乡愁",
+              "author": "余光中",
+              "focus": []
+            },
+            {
+              "id": "9u-05",
+              "number": 5,
+              "title": "你是人间的四月天——一句爱的赞颂",
+              "author": "林徽因",
+              "focus": []
+            },
+            {
+              "id": "9u-06",
+              "number": 6,
+              "title": "我看",
+              "author": "穆旦",
+              "focus": []
+            }
+          ]
+        },
+        {
+          "id": "9u-u2",
+          "title": "第2单元",
+          "lessons": [
+            {
+              "id": "9u-07",
+              "number": 7,
+              "title": "培养德智体美劳全面发展的社会主义建设者和接班人",
+              "author": "习近平",
+              "focus": []
+            },
+            {
+              "id": "9u-08",
+              "number": 8,
+              "title": "中国人失掉自信力了吗",
+              "author": "鲁迅",
+              "focus": []
+            },
+            {
+              "id": "9u-09",
+              "number": 9,
+              "title": "谈骨气",
+              "author": "吴晗",
+              "focus": []
+            },
+            {
+              "id": "9u-10",
+              "number": 10,
+              "title": "创造宣言",
+              "author": "陶行知",
+              "focus": []
+            }
+          ]
+        },
+        {
+          "id": "9u-u3",
+          "title": "第3单元",
+          "lessons": [
+            {
+              "id": "9u-11",
+              "number": 11,
+              "title": "岳阳楼记",
+              "author": "范仲淹",
+              "focus": []
+            },
+            {
+              "id": "9u-12",
+              "number": 12,
+              "title": "醉翁亭记",
+              "author": "欧阳修",
+              "focus": []
+            },
+            {
+              "id": "9u-13",
+              "number": 13,
+              "title": "湖心亭看雪",
+              "author": "张岱",
+              "focus": []
+            },
+            {
+              "id": "9u-14",
+              "number": 14,
+              "title": "诗词三首",
+              "author": "李白等",
+              "focus": [
+                "行路难（其一）",
+                "酬乐天扬州初逢席上见赠",
+                "水调歌头（明月几时有）"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "9u-extra3",
+          "title": "课外古诗词诵读",
+          "lessons": [
+            {
+              "id": "9u-extra3-1",
+              "number": 0,
+              "title": "月夜忆舍弟",
+              "author": "杜甫",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "9u-extra3-2",
+              "number": 0,
+              "title": "长沙过贾谊宅",
+              "author": "刘长卿",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "9u-extra3-3",
+              "number": 0,
+              "title": "左迁至蓝关示侄孙湘",
+              "author": "韩愈",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "9u-extra3-4",
+              "number": 0,
+              "title": "商山早行",
+              "author": "温庭筠",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "9u-u4",
+          "title": "第4单元",
+          "lessons": [
+            {
+              "id": "9u-15",
+              "number": 15,
+              "title": "故乡",
+              "author": "鲁迅",
+              "focus": []
+            },
+            {
+              "id": "9u-16",
+              "number": 16,
+              "title": "我的叔叔于勒",
+              "author": "莫泊桑",
+              "focus": []
+            },
+            {
+              "id": "9u-17",
+              "number": 17,
+              "title": "孤独之旅",
+              "author": "曹文轩",
+              "focus": []
+            },
+            {
+              "id": "9u-18",
+              "number": 18,
+              "title": "蒲柳人家（节选）",
+              "author": "刘绍棠",
+              "focus": []
+            }
+          ]
+        },
+        {
+          "id": "9u-u5",
+          "title": "第5单元",
+          "lessons": [
+            {
+              "id": "9u-19",
+              "number": 19,
+              "title": "想和做",
+              "author": "胡绳",
+              "focus": []
+            },
+            {
+              "id": "9u-20",
+              "number": 20,
+              "title": "怀疑与学问",
+              "author": "顾颉刚",
+              "focus": []
+            },
+            {
+              "id": "9u-21",
+              "number": 21,
+              "title": "就英法联军远征中国致巴特勒上尉的信",
+              "author": "雨果",
+              "focus": []
+            },
+            {
+              "id": "9u-22",
+              "number": 22,
+              "title": "精神的三间小屋",
+              "author": "毕淑敏",
+              "focus": []
+            }
+          ]
+        },
+        {
+          "id": "9u-u6",
+          "title": "第6单元",
+          "lessons": [
+            {
+              "id": "9u-23",
+              "number": 23,
+              "title": "曹刿论战",
+              "author": "《左传》",
+              "focus": []
+            },
+            {
+              "id": "9u-24",
+              "number": 24,
+              "title": "邹忌讽齐王纳谏",
+              "author": "《战国策》",
+              "focus": []
+            },
+            {
+              "id": "9u-25",
+              "number": 25,
+              "title": "陈涉世家",
+              "author": "司马迁",
+              "focus": []
+            },
+            {
+              "id": "9u-26",
+              "number": 26,
+              "title": "出师表",
+              "author": "诸葛亮",
+              "focus": []
+            },
+            {
+              "id": "9u-27",
+              "number": 27,
+              "title": "诗词曲五首",
+              "author": "岑参等",
+              "focus": [
+                "十五从军征",
+                "白雪歌送武判官归京",
+                "南乡子·登京口北固亭有怀",
+                "过零丁洋",
+                "山坡羊·潼关怀古"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "9u-extra6",
+          "title": "课外古诗词诵读",
+          "lessons": [
+            {
+              "id": "9u-extra6-1",
+              "number": 0,
+              "title": "咸阳城东楼",
+              "author": "许浑",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "9u-extra6-2",
+              "number": 0,
+              "title": "无题",
+              "author": "李商隐",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "9u-extra6-3",
+              "number": 0,
+              "title": "浣溪沙（漠漠轻寒上小楼）",
+              "author": "秦观",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "9u-extra6-4",
+              "number": 0,
+              "title": "丑奴儿·书博山道中壁",
+              "author": "辛弃疾",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "9d",
+      "title": "九年级下册",
+      "edition": "统编六三学制 · 官方当前在架旧版",
+      "verification": "官方当前在架旧版；新修订下册待更新",
+      "source": "https://book.pep.com.cn/1311001302181/mobile/index.html",
+      "units": [
+        {
+          "id": "9d-u1",
+          "title": "第1单元",
+          "lessons": [
+            {
+              "id": "9d-01",
+              "number": 1,
+              "title": "祖国啊，我亲爱的祖国",
+              "author": "舒婷",
+              "focus": []
+            },
+            {
+              "id": "9d-02",
+              "number": 2,
+              "title": "梅岭三章",
+              "author": "陈毅",
+              "focus": []
+            },
+            {
+              "id": "9d-03",
+              "number": 3,
+              "title": "短诗五首",
+              "author": "沈尹默等",
+              "focus": [
+                "月夜",
+                "萧红墓畔口占",
+                "断章",
+                "风雨吟",
+                "统一"
+              ]
+            },
+            {
+              "id": "9d-04",
+              "number": 4,
+              "title": "海燕",
+              "author": "高尔基",
+              "focus": []
+            }
+          ]
+        },
+        {
+          "id": "9d-u2",
+          "title": "第2单元",
+          "lessons": [
+            {
+              "id": "9d-05",
+              "number": 5,
+              "title": "孔乙己",
+              "author": "鲁迅",
+              "focus": []
+            },
+            {
+              "id": "9d-06",
+              "number": 6,
+              "title": "变色龙",
+              "author": "契诃夫",
+              "focus": []
+            },
+            {
+              "id": "9d-07",
+              "number": 7,
+              "title": "溜索",
+              "author": "阿城",
+              "focus": []
+            },
+            {
+              "id": "9d-08",
+              "number": 8,
+              "title": "蒲柳人家（节选）",
+              "author": "刘绍棠",
+              "focus": []
+            }
+          ]
+        },
+        {
+          "id": "9d-u3",
+          "title": "第3单元",
+          "lessons": [
+            {
+              "id": "9d-09",
+              "number": 9,
+              "title": "鱼我所欲也",
+              "author": "《孟子》",
+              "focus": []
+            },
+            {
+              "id": "9d-10",
+              "number": 10,
+              "title": "唐雎不辱使命",
+              "author": "《战国策》",
+              "focus": []
+            },
+            {
+              "id": "9d-11",
+              "number": 11,
+              "title": "送东阳马生序",
+              "author": "宋濂",
+              "focus": []
+            },
+            {
+              "id": "9d-12",
+              "number": 12,
+              "title": "词四首",
+              "author": "范仲淹等",
+              "focus": [
+                "渔家傲·秋思",
+                "江城子·密州出猎",
+                "破阵子·为陈同甫赋壮词以寄之",
+                "满江红（小住京华）"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "9d-extra3",
+          "title": "课外古诗词诵读",
+          "lessons": [
+            {
+              "id": "9d-extra3-1",
+              "number": 0,
+              "title": "定风波（莫听穿林打叶声）",
+              "author": "苏轼",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "9d-extra3-2",
+              "number": 0,
+              "title": "临江仙·夜登小阁，忆洛中旧游",
+              "author": "陈与义",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "9d-extra3-3",
+              "number": 0,
+              "title": "太常引·建康中秋夜为吕叔潜赋",
+              "author": "辛弃疾",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "9d-extra3-4",
+              "number": 0,
+              "title": "浣溪沙（身向云山那畔行）",
+              "author": "纳兰性德",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "9d-u4",
+          "title": "第4单元",
+          "lessons": [
+            {
+              "id": "9d-13",
+              "number": 13,
+              "title": "短文两篇",
+              "author": "培根、马南邨",
+              "focus": [
+                "谈读书",
+                "不求甚解"
+              ]
+            },
+            {
+              "id": "9d-14",
+              "number": 14,
+              "title": "山水画的意境",
+              "author": "李可染",
+              "focus": []
+            },
+            {
+              "id": "9d-15",
+              "number": 15,
+              "title": "无言之美",
+              "author": "朱光潜",
+              "focus": []
+            },
+            {
+              "id": "9d-16",
+              "number": 16,
+              "title": "驱遣我们的想象",
+              "author": "叶圣陶",
+              "focus": []
+            }
+          ]
+        },
+        {
+          "id": "9d-u5",
+          "title": "第5单元",
+          "lessons": [
+            {
+              "id": "9d-17",
+              "number": 17,
+              "title": "屈原（节选）",
+              "author": "郭沫若",
+              "focus": []
+            },
+            {
+              "id": "9d-18",
+              "number": 18,
+              "title": "天下第一楼（节选）",
+              "author": "何冀平",
+              "focus": []
+            },
+            {
+              "id": "9d-19",
+              "number": 19,
+              "title": "枣儿",
+              "author": "孙鸿",
+              "focus": []
+            }
+          ]
+        },
+        {
+          "id": "9d-u6",
+          "title": "第6单元",
+          "lessons": [
+            {
+              "id": "9d-20",
+              "number": 20,
+              "title": "曹刿论战",
+              "author": "《左传》",
+              "focus": []
+            },
+            {
+              "id": "9d-21",
+              "number": 21,
+              "title": "邹忌讽齐王纳谏",
+              "author": "《战国策》",
+              "focus": []
+            },
+            {
+              "id": "9d-22",
+              "number": 22,
+              "title": "陈涉世家",
+              "author": "司马迁",
+              "focus": []
+            },
+            {
+              "id": "9d-23",
+              "number": 23,
+              "title": "出师表",
+              "author": "诸葛亮",
+              "focus": []
+            },
+            {
+              "id": "9d-24",
+              "number": 24,
+              "title": "诗词曲五首",
+              "author": "岑参等",
+              "focus": [
+                "十五从军征",
+                "白雪歌送武判官归京",
+                "南乡子·登京口北固亭有怀",
+                "过零丁洋",
+                "山坡羊·潼关怀古"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "9d-extra6",
+          "title": "课外古诗词诵读",
+          "lessons": [
+            {
+              "id": "9d-extra6-1",
+              "number": 0,
+              "title": "南安军",
+              "author": "文天祥",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "9d-extra6-2",
+              "number": 0,
+              "title": "别云间",
+              "author": "夏完淳",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "9d-extra6-3",
+              "number": 0,
+              "title": "山坡羊·骊山怀古",
+              "author": "张养浩",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            },
+            {
+              "id": "9d-extra6-4",
+              "number": 0,
+              "title": "朝天子·咏喇叭",
+              "author": "王磐",
+              "focus": [
+                "课外古诗词诵读"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

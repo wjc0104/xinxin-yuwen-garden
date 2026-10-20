@@ -1,0 +1,49 @@
+name: iOS Smoke Tests
+on:
+  workflow_dispatch:
+  push:
+    branches: ['feat/**']
+concurrency:
+  group: ios-v2-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate native project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Choose simulator
+        run: |
+          xcrun simctl list devices available --json > /tmp/devices.json
+          python3 - <<'PY'
+          import json,os
+          d=json.load(open('/tmp/devices.json'))
+          devices=[x for a in d['devices'].values() for x in a if 'iPhone' in x['name']]
+          chosen=next((x for x in devices if x['name']=='iPhone 16'),devices[0])
+          with open(os.environ['GITHUB_ENV'],'a') as f:f.write('SIMULATOR_ID='+chosen['udid']+'\n')
+          print(chosen)
+          PY
+      - name: Boot selected simulator
+        timeout-minutes: 5
+        run: |
+          xcrun simctl boot "$SIMULATOR_ID"
+          xcrun simctl bootstatus "$SIMULATOR_ID" -b
+      - name: Test native flows
+        timeout-minutes: 20
+        run: |
+          set -o pipefail
+          mkdir -p build
+          xcodebuild test -project XinxinGarden.xcodeproj -scheme XinxinGarden -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 300 -maximum-test-execution-time-allowance 360 -resultBundlePath build/UI.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee build/UI-test.log
+      - name: Export screenshots
+        if: always()
+        run: xcrun xcresulttool export attachments --path build/UI.xcresult --output-path build/screenshots || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: simulator-results
+          path: build/
+          retention-days: 7

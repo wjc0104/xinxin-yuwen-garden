@@ -1,0 +1,60 @@
+name: XinxinGarden
+options:
+  deploymentTarget:
+    iOS: '15.0'
+  createIntermediateGroups: true
+packages:
+  GardenCore:
+    path: .
+settings:
+  base:
+    SWIFT_VERSION: '5.0'
+    IPHONEOS_DEPLOYMENT_TARGET: '15.0'
+    TARGETED_DEVICE_FAMILY: '1'
+    CODE_SIGNING_ALLOWED: NO
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+targets:
+  XinxinGarden:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+        excludes: [Info.plist]
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: 欣语
+        CFBundleShortVersionString: '0.0.1'
+        CFBundleVersion: '1'
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        NSCalendarsUsageDescription: 只有你点按同步时，才把上课提醒写入小花园专用日历。使用 iCloud 日历可在同账号 iPhone 16 提醒。
+        NSCalendarsFullAccessUsageDescription: 用于创建和更新小花园专用课表日历，并核对你在日历中改过的课程。不会编辑其他日历。
+        LSSupportsOpeningDocumentsInPlace: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.wm0104.xinxingarden
+        TARGETED_DEVICE_FAMILY: '1'
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    dependencies:
+      - package: GardenCore
+        product: GardenCore
+  GardenUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [UITests]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.wm0104.xinxingarden.uitests
+        TARGETED_DEVICE_FAMILY: '1'
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: XinxinGarden
+    dependencies:
+      - target: XinxinGarden
+schemes:
+  XinxinGarden:
+    build:
+      targets:
+        XinxinGarden: all
+    test:
+      targets: [GardenUITests]
