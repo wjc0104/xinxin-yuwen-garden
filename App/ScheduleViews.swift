@@ -99,6 +99,8 @@ struct CalendarSyncView: View {
     @State private var busy = false
     @State private var review: [String] = []
     @State private var confirmOverride = false
+    @State private var proposals: [ScheduleChange] = []
+    @State private var confirmImport = false
     @State private var bound = false
     @State private var result = ""
     var body: some View {
@@ -125,9 +127,11 @@ struct CalendarSyncView: View {
             if !review.isEmpty {
                 GardenCard {
                     Text("日历里有新的变化").font(.headline)
-                    Caption(text: "这些课程在系统日历中被改过或删除。已停止同步；先核对，避免覆盖临时调课。可返回课表按这些时间调整后再同步，或明确选择以本机课表覆盖。")
+                    Caption(text: "这些课程在系统日历中被改过或删除。已停止同步。可以采用日历的时间／停课修改，或以本机课表覆盖；课程名称和提醒分钟仍以本机设置为准。")
                     ForEach(Array(review.prefix(30).enumerated()), id: \.offset) { Text($0.element).font(.caption) }
                     if review.count > 30 { Caption(text: "另有 \(review.count - 30) 项。") }
+                    if proposals.count == review.count { Button("采用日历时间与停课，并重新同步") { confirmImport = true } }
+                    else { Caption(text: "部分变化为全天或跨天课程，不能自动导入；请先在课表手动核对。") }
                     Button("已核对，以本机课表重新写入") { confirmOverride = true }.foregroundColor(GardenTheme.rose)
                 }
             }
@@ -135,6 +139,7 @@ struct CalendarSyncView: View {
         }.navigationTitle("同步上课提醒").navigationBarTitleDisplayMode(.inline)
         .onAppear { bound = store.calendar.hasBinding }
         .alert("覆盖已修改的课程？", isPresented: $confirmOverride) { Button("以本机课表覆盖", role: .destructive) { synchronize(force: true) }; Button("先保留日历变化", role: .cancel) {} } message: { Text("会把专用日历中由小花园创建的课程恢复为当前本机课表，并重建已删除的课程。其他日历不受影响。") }
+        .alert("采用日历的上课安排？", isPresented: $confirmImport) { Button("采用并同步") { if store.update({ $0.changes.append(contentsOf: proposals) }) { synchronize(force: true) } }; Button("取消", role: .cancel) {} } message: { Text("\(proposals.count) 项变化会保存为单次调课／停课。课程名称和提前提醒分钟数仍按本机设置重新写入。") }
     }
     private func authorize() {
         busy = true
@@ -144,7 +149,7 @@ struct CalendarSyncView: View {
     private func synchronize(force: Bool = false) {
         busy = true; defer { busy = false }
         do { let count = try store.calendar.sync(store.data, overwriteReviewed: force); review = []; result = "已向账户日历写入 \(count) 节课。请在 iPhone 16 的系统日历确认课程与通知；这里无法确认 16 是否收到。" }
-        catch let changes as CalendarReview { review = changes.messages; result = "发现外部修改，尚未写入。" }
+        catch let changes as CalendarReview { review = changes.messages; proposals = changes.proposals; result = "发现外部修改，尚未写入。" }
         catch { store.error = error.localizedDescription }
     }
 }

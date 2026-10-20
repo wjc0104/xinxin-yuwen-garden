@@ -6,7 +6,7 @@ import GardenCore
 struct CalendarAccount: Identifiable { let id: String; let title: String; let supportsRemote: Bool }
 private struct EventLink: Codable { var eventID: String; var fingerprint: String }
 private struct CalendarBinding: Codable { var calendarID: String; var nonce: String; var events: [String: EventLink] = [:] }
-struct CalendarReview: Error { let messages: [String] }
+struct CalendarReview: Error { let messages: [String]; let proposals: [ScheduleChange] }
 
 @MainActor final class CalendarBridge: ObservableObject {
     private let store = EKEventStore()
@@ -63,16 +63,19 @@ struct CalendarReview: Error { let messages: [String] }
         guard var saved = binding, let calendar = store.calendar(withIdentifier: saved.calendarID), calendar.allowsContentModifications else { throw GardenError.invalid("专用日历已删除或不可写，未写入提醒。请在系统日历恢复后再试，或在“我的”解除失效绑定。") }
         let occurrences = ScheduleEngine().occurrences(slots: snapshot.slots, changes: snapshot.changes, start: snapshot.termStart, end: snapshot.termEnd)
         guard occurrences.count <= 2000 else { throw GardenError.invalid("学期范围过大，请缩短至当前学期。") }
-        var events: [String: EKEvent] = [:]; var review: [String] = []
+        var events: [String: EKEvent] = [:]; var review: [String] = []; var proposals: [ScheduleChange] = []
         // Fetch only recorded event identifiers; never enumerate or edit unrelated events.
         for (id, link) in saved.events {
             if let event = store.event(withIdentifier: link.eventID) {
                 guard CalendarPolicy.mayEdit(boundCalendar: saved.calendarID, eventCalendar: event.calendar.calendarIdentifier, expectedMarker: marker(id, saved.nonce), actualMarker: event.url?.absoluteString ?? "") else { throw GardenError.invalid("有课程的日历归属或标记已改变，已停止同步以保护日历内容。请先在系统日历检查。") }
                 events[id] = event
-                if CalendarPolicy.needsReview(previous: link.fingerprint, actual: fingerprint(event)) { review.append("已修改：" + (event.title ?? id)) }
-            } else { review.append("已删除：" + id) }
+                if CalendarPolicy.needsReview(previous: link.fingerprint, actual: fingerprint(event)) {
+                    review.append("已修改：" + (event.title ?? id) + " · " + GardenDate.string(event.startDate) + " " + TimeLabel.clock(GardenDate.calendar.component(.hour, from: event.startDate) * 60 + GardenDate.calendar.component(.minute, from: event.startDate)))
+                    if !event.isAllDay, let change = CalendarPolicy.importChange(occurrenceID: id, start: event.startDate, end: event.endDate) { proposals.append(change) }
+                }
+            } else { review.append("已删除：" + id); if let change = CalendarPolicy.importChange(occurrenceID: id, start: nil, end: nil) { proposals.append(change) } }
         }
-        if !review.isEmpty && !overwriteReviewed { throw CalendarReview(messages: review) }
+        if !review.isEmpty && !overwriteReviewed { throw CalendarReview(messages: review, proposals: proposals) }
         let wanted = Set(occurrences.map(\.id))
         do {
             for (id, event) in events where !wanted.contains(id) { try store.remove(event, span: .thisEvent, commit: false) }
