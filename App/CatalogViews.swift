@@ -67,7 +67,7 @@ struct LessonView: View {
             }
             SourceSearchPanel(query: lesson.title + " 初中语文 十分钟 试讲 教案")
             HStack { Text("这一课的资料").font(.headline); Spacer(); Button { addResource = true } label: { Image(systemName: "plus.circle") }.accessibilityLabel("添加资料") }
-            ForEach(store.resources(lesson.id)) { resource in NavigationLink(destination: ReadingView(resource: resource)) { ResourceRow(resource: resource) }.buttonStyle(.plain) }
+            ForEach(store.resources(lesson.id)) { resource in NavigationLink(destination: ReadingView(resource: resource)) { ResourceRow(resource: resource) }.buttonStyle(.plain).accessibilityIdentifier("resource-" + resource.id) }
             if store.resources(lesson.id).isEmpty { GardenEmpty(title: "等一份好资料发芽", detail: "目录已收录。这一课暂未精选成套教案，可以先搜视频、保存原链接，或导入自己的资料。") }
             Button { importFile = true } label: { Label("导入 PDF、文字或本地视频", systemImage: "square.and.arrow.down") }.font(.subheadline)
             GardenCard { Text("十分钟练习怎么准备").font(.headline); Text("1 分钟导入 → 1 分钟整体感知 → 4 分钟核心问题 → 2 分钟迁移与评价 → 2 分钟小结、作业和板书。").font(.subheadline); Caption(text: "自编时间框架，按实际题目调整。优先讲透一个有文本依据的重点；并非真题或高频考点统计。教招时补足当地公告要求的环节。") }

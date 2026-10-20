@@ -4,7 +4,12 @@ public struct CalendarCandidate {
     public init(id: String, calendarID: String, marker: String) { self.id = id; self.calendarID = calendarID; self.marker = marker }
 }
 public enum CalendarPolicy {
-    public static func recover(calendarID: String, marker: String, candidates: [CalendarCandidate]) throws -> String? { nil }
+    public static func recover(calendarID: String, marker: String, candidates: [CalendarCandidate]) throws -> String? {
+        guard !calendarID.isEmpty, !marker.isEmpty else { return nil }
+        let matches = Set(candidates.filter { $0.calendarID == calendarID && $0.marker == marker }.map(\.id))
+        guard matches.count <= 1, !matches.contains("") else { throw GardenError.invalid("专用日历中有重复或无法识别的课程，请先在系统日历核对；未覆盖任何课程。") }
+        return matches.first
+    }
     public static func importChange(occurrenceID: String, start: Date?, end: Date?) -> ScheduleChange? {
         let parts = occurrenceID.split(separator: "@", omittingEmptySubsequences: false)
         guard parts.count == 2, !parts[0].isEmpty, GardenDate.parse(String(parts[1])) != nil else { return nil }

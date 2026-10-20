@@ -118,13 +118,41 @@ final class MarkablePDFView: PDFView {
         onMark?(selection.string ?? "", regions)
     }
 }
+final class PDFReadingHost: UIView {
+    let pdf = MarkablePDFView()
+    let status = UILabel()
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        let select = UIButton(type: .system); select.setTitle("选择本页文字", for: .normal)
+        select.addAction(UIAction { [weak self] _ in
+            guard let self = self, let page = self.pdf.currentPage, let selection = page.selection(for: page.bounds(for: .mediaBox)), !(selection.string ?? "").isEmpty else { self?.status.text = "当前页没有可选文字，可手动记备注"; return }
+            self.pdf.setCurrentSelection(selection, animate: true)
+        }, for: .touchUpInside)
+        let mark = UIButton(type: .system); mark.setTitle("高亮选区", for: .normal)
+        mark.addAction(UIAction { [weak self] _ in
+            guard let self = self else { return }
+            guard !(self.pdf.currentSelection?.string ?? "").isEmpty else { self.status.text = "先长按选中文字，或选择本页文字"; return }
+            self.pdf.markSelection()
+        }, for: .touchUpInside)
+        let row = UIStackView(arrangedSubviews: [select,mark]); row.axis = .horizontal; row.distribution = .fillEqually
+        status.font = .preferredFont(forTextStyle: .caption1); status.textAlignment = .center; status.numberOfLines = 2
+        let top = UIStackView(arrangedSubviews: [row,status]); top.axis = .vertical; top.spacing = 5
+        top.translatesAutoresizingMaskIntoConstraints = false; pdf.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(top); addSubview(pdf)
+        NSLayoutConstraint.activate([top.topAnchor.constraint(equalTo: topAnchor, constant: 8),top.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),top.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),pdf.topAnchor.constraint(equalTo: top.bottomAnchor, constant: 8),pdf.leadingAnchor.constraint(equalTo: leadingAnchor),pdf.trailingAnchor.constraint(equalTo: trailingAnchor),pdf.bottomAnchor.constraint(equalTo: bottomAnchor)])
+    }
+    required init?(coder: NSCoder) { fatalError("Not used") }
+}
 struct PDFReader: UIViewRepresentable {
     let url: URL; let marks: [StudyMark]; let onMark: (String, [PDFRegion]) -> Void
-    func makeUIView(context: Context) -> MarkablePDFView { let view = MarkablePDFView(); view.autoScales = true; view.displayDirection = .vertical; view.displayMode = .singlePageContinuous; view.document = PDFDocument(url: url); return view }
-    func updateUIView(_ view: MarkablePDFView, context: Context) {
+    func makeUIView(context: Context) -> PDFReadingHost { let host = PDFReadingHost(); let view = host.pdf; view.autoScales = true; view.displayDirection = .vertical; view.displayMode = .singlePageContinuous; view.document = PDFDocument(url: url); return host }
+    func updateUIView(_ host: PDFReadingHost, context: Context) {
+        let view = host.pdf
         view.onMark = onMark
         guard let document = view.document else { return }
         for n in 0..<document.pageCount { if let page = document.page(at: n) { for annotation in page.annotations where annotation.contents == "XinxinHighlight" { page.removeAnnotation(annotation) } } }
         for mark in marks { for region in mark.regions { guard region.page >= 0, let page = document.page(at: region.page) else { continue }; let annotation = PDFAnnotation(bounds: CGRect(x: region.x, y: region.y, width: region.width, height: region.height), forType: .highlight, withProperties: nil); annotation.color = UIColor.systemYellow.withAlphaComponent(0.4); annotation.contents = "XinxinHighlight"; page.addAnnotation(annotation) } }
+        let count = (0..<document.pageCount).reduce(0) { total, page in total + (document.page(at: page)?.annotations.filter { $0.contents == "XinxinHighlight" }.count ?? 0) }
+        host.status.text = "已保存 \(count) 处高亮"
     }
 }

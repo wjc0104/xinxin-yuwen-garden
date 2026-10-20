@@ -108,7 +108,7 @@ struct CalendarSyncView: View {
             }
             GardenCard {
                 Text("权限由你决定").font(.headline)
-                Caption(text: "仅点击下方按钮后请求日历权限。系统授权范围包含日历数据，应用在代码中只查询已记录的课程编号、只写入新建专用日历。不开权限仍可学习和查看课表。")
+                Caption(text: "仅点击下方按钮后请求日历权限。系统授权范围包含日历数据；应用只查询自己的课程编号，并在绑定的专用日历内按私有标记恢复编号，只写入专用日历。不开权限仍可学习和查看课表。")
                 Text("学期：\(store.data.termStart) 至 \(store.data.termEnd)\n提前 \(store.data.reminderMinutes) 分钟提醒").font(.subheadline)
                 if !store.data.termConfirmed { Text("请先到“我的”确认学期日期。").foregroundColor(GardenTheme.rose) }
                 Button(busy ? "正在处理…" : "允许访问并检查日历账户") { authorize() }.disabled(busy || !store.data.termConfirmed)

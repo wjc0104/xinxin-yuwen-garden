@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import GardenCore
 
 @MainActor final class AppStore: ObservableObject {
@@ -26,6 +27,15 @@ import GardenCore
                 try store.save(initial); data = initial
             }
             readable = true
+            if ProcessInfo.processInfo.arguments.contains("--ui-testing"), !data.resources.contains(where: { $0.id == "ui-pdf" }) {
+                let renderer = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 612, height: 792))
+                let bytes = renderer.pdfData { context in context.beginPage(); ("PDF Garden Focus" as NSString).draw(at: CGPoint(x: 60, y: 120), withAttributes: [.font: UIFont.systemFont(ofSize: 26)]) }
+                let temporary = FileManager.default.temporaryDirectory.appendingPathComponent("Garden-UI-Fixture.pdf")
+                try bytes.write(to: temporary, options: .atomic)
+                let name = try store.importFile(temporary)
+                data.resources.append(StudyResource(id: "ui-pdf", lessonID: "7u-01", title: "原创测试 PDF", kind: .pdf, localFile: name))
+                try store.save(data)
+            }
         } catch { self.error = "小花园暂时无法读取资料，已停止保存以保护原数据。\n" + error.localizedDescription }
     }
     var lessons: [Lesson] { catalog?.books.flatMap { $0.units.flatMap(\.lessons) } ?? [] }

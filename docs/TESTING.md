@@ -2,13 +2,13 @@
 
 ## 自动检查
 
-`swift test` 检查真实 Foundation 逻辑：周课表、作文间隔、单次与长期调课、停课、优先级、搜索编码、URL 校验、笔记保存、备份合并、附件路径、日历所有权与外部修改检测。
+`swift test` 检查真实 Foundation 逻辑：周课表、作文间隔、单次与长期调课、停课、优先级、搜索编码、URL 校验、笔记保存、备份合并、附件路径、日历所有权、标记恢复与外部修改检测。独立核心检查在 Ubuntu 24.04 运行；macOS 的 IPA 构建再次运行同一套测试。
 
 `python3 scripts/check-catalog.py` 检查六册顺序、150 个阅读课号、198 条唯一编号、官方来源与九下待更新标签。
 
-`iOS Smoke Tests` 在 iPhone 模拟器打开目录和《春》，保存笔记，切换五个页面，重启确认笔记存在，导出实际截图。
+`iOS Smoke Tests` 在 iPhone 模拟器打开目录和《春》，保存笔记，切换五个页面，重启确认笔记存在；另用只在测试启动参数下创建的原创文字 PDF 验证选区、保存高亮及重新打开。测试资料仅写入独立测试目录，不进入普通使用者的数据或种子资料库。
 
-`Build TrollStore IPA` 在 macOS 构建 Release 真机包，校验 arm64、MinimumOSVersion 15.0、完整代码签名与权限说明，输出 SHA-256 和构建提交编号。
+`Build TrollStore IPA` 在 macOS 构建 Release 真机包，校验 arm64、MinimumOSVersion 15.0、完整代码签名与权限说明，输出 SHA-256 和构建提交编号。下载后用 `scripts/inspect-ipa.py` 再检查 ZIP 完整性、Mach-O 中的真机平台与最低系统、未加密可执行文件、iPhone 设备族及不必要权限项。
 
 最终通过的运行编号在 Release 中记录。没有通过的运行不作为交付证据。
 

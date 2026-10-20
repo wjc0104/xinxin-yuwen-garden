@@ -48,6 +48,7 @@ struct MarkCard: View {
             HStack {
                 Button("编辑") { edit = true }
                 if let id = mark.resourceID, let resource = store.data.resources.first(where: { $0.id == id }) { NavigationLink("回到资料", destination: ReadingView(resource: resource, initialSeconds: mark.seconds)) }
+                if let lesson = store.lesson(mark.lessonID) { NavigationLink("回到课文", destination: LessonView(lesson: lesson)) }
                 Spacer(); Button { remove = true } label: { Image(systemName: "trash") }.foregroundColor(.secondary).accessibilityLabel("删除重点")
             }.font(.caption)
         }.sheet(isPresented: $edit) { NoteEditor(lessonID: mark.lessonID, resourceID: mark.resourceID, existing: mark) }

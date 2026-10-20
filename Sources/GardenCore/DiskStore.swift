@@ -104,6 +104,19 @@ public final class DiskStore {
         for slot in value.slots {
             guard (1...7).contains(slot.weekday), slot.startMinute >= 0, slot.endMinute < 1440, slot.endMinute > slot.startMinute else { throw GardenError.invalid("课表时间不正确。") }
         }
+        guard Set(value.slots.map(\.id)).count == value.slots.count else { throw GardenError.invalid("课表编号重复。") }
+        for change in value.changes {
+            guard let slot = value.slots.first(where: { $0.id == change.slotID }), let anchor = GardenDate.parse(change.date) else { throw GardenError.invalid("调课记录包含无效课次或日期，未导入备份。") }
+            let begin = change.startMinute ?? slot.startMinute, finish = change.endMinute ?? slot.endMinute
+            guard begin >= 0, finish < 1440, begin < finish else { throw GardenError.invalid("调课记录的开始／结束时间不正确，未导入备份。") }
+            if let target = change.targetDate {
+                guard let targetDate = GardenDate.parse(target) else { throw GardenError.invalid("调课目标日期不正确。") }
+                if change.scope == .fromDate {
+                    let shift = GardenDate.calendar.dateComponents([.day], from: anchor, to: targetDate).day ?? 999
+                    guard abs(shift) <= 6 else { throw GardenError.invalid("长期调课的星期位移超出范围，未导入备份。") }
+                }
+            }
+        }
         for mark in value.marks {
             if let seconds = mark.seconds, !(0...86400).contains(seconds) { throw GardenError.invalid("视频时间标记不正确。") }
         }

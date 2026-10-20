@@ -5,7 +5,7 @@ on:
     branches: ['feat/**']
 concurrency:
   group: ios-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   ios:
     runs-on: macos-15-intel
@@ -27,8 +27,13 @@ jobs:
           with open(os.environ['GITHUB_ENV'],'a') as f:f.write('SIMULATOR_ID='+chosen['udid']+'\n')
           print(chosen)
           PY
+      - name: Boot selected simulator
+        timeout-minutes: 5
+        run: |
+          xcrun simctl boot "$SIMULATOR_ID"
+          xcrun simctl bootstatus "$SIMULATOR_ID" -b
       - name: Test native flows
-        run: xcodebuild test -project XinxinGarden.xcodeproj -scheme XinxinGarden -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -resultBundlePath build/UI.xcresult CODE_SIGNING_ALLOWED=NO
+        run: xcodebuild test -project XinxinGarden.xcodeproj -scheme XinxinGarden -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 180 -resultBundlePath build/UI.xcresult CODE_SIGNING_ALLOWED=NO
       - name: Export screenshots
         if: always()
         run: xcrun xcresulttool export attachments --path build/UI.xcresult --output-path build/screenshots || true

@@ -35,8 +35,12 @@ public enum GardenDate {
 public struct ScheduleEngine {
     public init() {}
     public func movedChanges(occurrence: Occurrence, related: [Occurrence], targetDate: String, startMinute: Int, endMinute: Int, scope: ChangeScope, cancelled: Bool) throws -> [ScheduleChange] {
-        try related.map { item in
-            let shift = item.startMinute - occurrence.startMinute
+        let sorted = related.sorted { ($0.startMinute, $0.id) < ($1.startMinute, $1.id) }
+        guard let anchor = sorted.firstIndex(where: { $0.id == occurrence.id }) else { throw GardenError.invalid("没有找到需要调整的课次。") }
+        let duration = endMinute - startMinute
+        return try sorted.enumerated().map { index, item in
+            // A grouped composition remains two independent lessons, with a 15-minute break even when duration changes.
+            let shift = (index - anchor) * (duration + 15)
             let begin = startMinute + shift, finish = endMinute + shift
             guard cancelled || (begin >= 0 && finish < 1440 && begin < finish) else { throw GardenError.invalid("连堂课移动后超出当天，请重新设置时间。") }
             return ScheduleChange(slotID: item.slotID, date: item.originalDate, scope: scope, cancelled: cancelled, targetDate: cancelled ? nil : targetDate, startMinute: cancelled ? nil : begin, endMinute: cancelled ? nil : finish)
