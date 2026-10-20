@@ -4,11 +4,11 @@ on:
   push:
     branches: ['feat/**']
 concurrency:
-  group: ios-v1-${{ github.ref }}
+  group: ios-v2-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   ios:
-    runs-on: macos-15-intel
+    runs-on: macos-15
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -33,7 +33,7 @@ jobs:
           xcrun simctl boot "$SIMULATOR_ID"
           xcrun simctl bootstatus "$SIMULATOR_ID" -b
       - name: Test native flows
-        timeout-minutes: 12
+        timeout-minutes: 20
         run: |
           set -o pipefail
           mkdir -p build
