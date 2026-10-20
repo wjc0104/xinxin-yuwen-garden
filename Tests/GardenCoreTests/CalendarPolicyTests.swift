@@ -2,6 +2,12 @@ import XCTest
 @testable import GardenCore
 
 final class CalendarPolicyTests: XCTestCase {
+    func testIdentifierLossAndCommitBeforeLinkSaveRecoverByOwnedMarker() throws {
+        let candidates = [CalendarCandidate(id: "new-id", calendarID: "owned", marker: "nonce/mon-2"), CalendarCandidate(id: "manual", calendarID: "owned", marker: "manual"), CalendarCandidate(id: "foreign", calendarID: "other", marker: "nonce/mon-2")]
+        XCTAssertEqual(try CalendarPolicy.recover(calendarID: "owned", marker: "nonce/mon-2", candidates: candidates), "new-id")
+        XCTAssertNil(try CalendarPolicy.recover(calendarID: "owned", marker: "other-nonce/mon-2", candidates: candidates))
+        XCTAssertThrowsError(try CalendarPolicy.recover(calendarID: "owned", marker: "nonce/mon-2", candidates: candidates + [CalendarCandidate(id: "duplicate", calendarID: "owned", marker: "nonce/mon-2")]))
+    }
     func testOwnershipNeedsIdentifierAndPrivateMarker() {
         XCTAssertTrue(CalendarPolicy.mayEdit(boundCalendar: "owned", eventCalendar: "owned", expectedMarker: "private/1", actualMarker: "private/1"))
         XCTAssertFalse(CalendarPolicy.mayEdit(boundCalendar: "owned", eventCalendar: "other", expectedMarker: "private/1", actualMarker: "private/1"))

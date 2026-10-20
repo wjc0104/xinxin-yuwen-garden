@@ -23,6 +23,7 @@ final class GardenUITests: XCTestCase {
         shot("03-找资料")
         app.tabBars.buttons["小重点"].tap()
         XCTAssertTrue(app.staticTexts["test focus"].firstMatch.waitForExistence(timeout: 4))
+        XCTAssertTrue(app.buttons["回到课文"].firstMatch.waitForExistence(timeout: 4))
         shot("04-小重点")
         app.tabBars.buttons["课表"].tap()
         XCTAssertTrue(app.staticTexts["上课的小约定"].waitForExistence(timeout: 4))

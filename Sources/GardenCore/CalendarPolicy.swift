@@ -1,5 +1,10 @@
 import Foundation
+public struct CalendarCandidate {
+    public var id: String; public var calendarID: String; public var marker: String
+    public init(id: String, calendarID: String, marker: String) { self.id = id; self.calendarID = calendarID; self.marker = marker }
+}
 public enum CalendarPolicy {
+    public static func recover(calendarID: String, marker: String, candidates: [CalendarCandidate]) throws -> String? { nil }
     public static func importChange(occurrenceID: String, start: Date?, end: Date?) -> ScheduleChange? {
         let parts = occurrenceID.split(separator: "@", omittingEmptySubsequences: false)
         guard parts.count == 2, !parts[0].isEmpty, GardenDate.parse(String(parts[1])) != nil else { return nil }
