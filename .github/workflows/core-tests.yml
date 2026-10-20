@@ -1,0 +1,14 @@
+name: Garden core tests
+on:
+  push:
+    branches: [main, 'feat/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  core:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test actual Swift behavior
+        run: swift test
