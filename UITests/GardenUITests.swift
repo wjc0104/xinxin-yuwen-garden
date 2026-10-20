@@ -1,6 +1,26 @@
 import XCTest
 
 final class GardenUITests: XCTestCase {
+    func testPDFSelectionHighlightSurvivesRelaunch() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()
+        app.buttons["book-7u"].tap(); app.buttons["lesson-7u-01"].tap()
+        let resource = app.buttons["resource-ui-pdf"]
+        if !resource.isHittable { app.swipeUp() }
+        XCTAssertTrue(resource.waitForExistence(timeout: 4)); resource.tap()
+        app.buttons["选择本页文字"].tap()
+        app.buttons["高亮选区"].tap()
+        XCTAssertTrue(app.textViews["quote-input"].waitForExistence(timeout: 4))
+        XCTAssertTrue((app.textViews["quote-input"].value as? String ?? "").contains("PDF Garden Focus"))
+        app.buttons["save-note"].tap()
+        XCTAssertTrue(app.staticTexts["已保存 1 处高亮"].waitForExistence(timeout: 4))
+        shot("07-PDF高亮")
+        app.terminate(); app.launch()
+        app.buttons["book-7u"].tap(); app.buttons["lesson-7u-01"].tap()
+        if !app.buttons["resource-ui-pdf"].isHittable { app.swipeUp() }
+        app.buttons["resource-ui-pdf"].tap()
+        XCTAssertTrue(app.staticTexts["已保存 1 处高亮"].waitForExistence(timeout: 4))
+    }
     func testCatalogNotesAndAllTabs() throws {
         continueAfterFailure = false
         let app = XCUIApplication()
