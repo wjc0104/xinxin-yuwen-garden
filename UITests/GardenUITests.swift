@@ -2,6 +2,7 @@ import XCTest
 
 final class GardenUITests: XCTestCase {
     func testCatalogNotesAndAllTabs() throws {
+        continueAfterFailure = false
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing"]
         app.launch()
@@ -17,7 +18,9 @@ final class GardenUITests: XCTestCase {
         app.buttons["save-note"].tap()
         XCTAssertTrue(app.staticTexts["test focus"].firstMatch.waitForExistence(timeout: 4))
         shot("02-课文与重点")
-        app.tabBars.buttons["找资料"].tap(); shot("03-找资料")
+        app.tabBars.buttons["找资料"].tap()
+        XCTAssertTrue(app.textFields["search-input"].waitForExistence(timeout: 5))
+        shot("03-找资料")
         app.tabBars.buttons["小重点"].tap()
         XCTAssertTrue(app.staticTexts["test focus"].firstMatch.waitForExistence(timeout: 4))
         shot("04-小重点")

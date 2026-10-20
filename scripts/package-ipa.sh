@@ -10,7 +10,7 @@ while IFS= read -r -d '' item; do codesign --force --sign - "$item"; done < <(fi
 codesign --force --sign - "$APP"
 codesign --verify --deep --strict "$APP"
 test "$(/usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$APP/Info.plist")" = '15.0'
-lipo -verify_arch arm64 "$APP/XinxinGarden"
+lipo "$APP/XinxinGarden" -verify_arch arm64
 otool -l "$APP/XinxinGarden" > build/device-load-commands.txt
 codesign -d --entitlements :- "$APP" > build/entitlements.plist 2>/dev/null || true
 (
