@@ -34,6 +34,14 @@ public enum GardenDate {
 
 public struct ScheduleEngine {
     public init() {}
+    public func movedChanges(occurrence: Occurrence, related: [Occurrence], targetDate: String, startMinute: Int, endMinute: Int, scope: ChangeScope, cancelled: Bool) throws -> [ScheduleChange] {
+        try related.map { item in
+            let shift = item.startMinute - occurrence.startMinute
+            let begin = startMinute + shift, finish = endMinute + shift
+            guard cancelled || (begin >= 0 && finish < 1440 && begin < finish) else { throw GardenError.invalid("连堂课移动后超出当天，请重新设置时间。") }
+            return ScheduleChange(slotID: item.slotID, date: item.originalDate, scope: scope, cancelled: cancelled, targetDate: cancelled ? nil : targetDate, startMinute: cancelled ? nil : begin, endMinute: cancelled ? nil : finish)
+        }
+    }
     public func occurrences(slots: [TeachingSlot], changes: [ScheduleChange], start: String, end: String) -> [Occurrence] {
         guard let first = GardenDate.parse(start), let last = GardenDate.parse(end), first <= last,
               let span = GardenDate.calendar.dateComponents([.day], from: first, to: last).day, span <= 730 else { return [] }

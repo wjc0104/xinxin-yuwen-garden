@@ -77,13 +77,9 @@ struct ScheduleEditor: View {
             guard abs(shift) <= 6 else { problem = "长期调课请选择原课次前后 6 天以内的新星期；跨周单次调课可选择“只改这一次”。"; return }
         }
         let related = moveGroup && occurrence.group != nil ? store.occurrences.filter { $0.originalDate == occurrence.originalDate && $0.group == occurrence.group } : [occurrence]
-        var changes: [ScheduleChange] = []
-        for item in related {
-            let shift = item.startMinute - occurrence.startMinute
-            let begin = startMinute + shift, finish = endMinute + shift
-            guard cancelled || (begin >= 0 && finish < 1440 && begin < finish) else { problem = "连堂课移动后超出当天，请重新设置时间。"; return }
-            changes.append(ScheduleChange(slotID: item.slotID, date: item.originalDate, scope: scope, cancelled: cancelled, targetDate: cancelled ? nil : target, startMinute: cancelled ? nil : begin, endMinute: cancelled ? nil : finish))
-        }
+        let changes: [ScheduleChange]
+        do { changes = try ScheduleEngine().movedChanges(occurrence: occurrence, related: related, targetDate: target, startMinute: startMinute, endMinute: endMinute, scope: scope, cancelled: cancelled) }
+        catch { problem = error.localizedDescription; return }
         if store.update({ $0.changes.append(contentsOf: changes) }) { store.notice = "课表已更新。请点“同步到日历”更新 iPhone 16 使用的日历提醒。"; dismiss() }
     }
 }
