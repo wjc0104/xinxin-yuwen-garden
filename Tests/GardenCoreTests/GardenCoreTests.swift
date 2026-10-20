@@ -9,8 +9,10 @@ final class GardenCoreTests: XCTestCase {
         XCTAssertEqual(monday.map(\.classNumber), [3, 1, 3, 1])
         let thursday = engine.occurrences(slots: TeachingSlot.seed, changes: [], start: "2026-10-22", end: "2026-10-22")
         XCTAssertEqual(thursday.map(\.startMinute), [615, 675, 830, 890, 1020])
-        XCTAssertEqual(thursday[1].startMinute - thursday[0].endMinute, 15)
-        XCTAssertEqual(thursday[3].startMinute - thursday[2].endMinute, 15)
+        if thursday.count >= 4 {
+            XCTAssertEqual(thursday[1].startMinute - thursday[0].endMinute, 15)
+            XCTAssertEqual(thursday[3].startMinute - thursday[2].endMinute, 15)
+        }
     }
 
     func testCancelledOccurrenceDoesNotCancelTheFollowingWeek() {
