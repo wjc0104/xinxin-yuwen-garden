@@ -3,6 +3,9 @@ on:
   workflow_dispatch:
   push:
     branches: ['feat/**']
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   ios:
     runs-on: macos-15

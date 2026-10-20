@@ -2,10 +2,13 @@ name: Build TrollStore IPA
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, 'feat/**']
     tags: ['v*']
 permissions:
   contents: read
+concurrency:
+  group: ipa-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   ipa:
     runs-on: macos-15
