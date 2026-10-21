@@ -26,6 +26,7 @@ private final class PlayerClock {
     private var statusObserver: NSKeyValueObservation?
     private var playbackObserver: NSKeyValueObservation?
     private var clock: PlayerClock?
+    private var loadWatchdog: Task<Void, Never>?
     private let session: URLSession = {
         let config = URLSessionConfiguration.ephemeral
         config.httpCookieStorage = nil
@@ -67,6 +68,7 @@ private final class PlayerClock {
                 Task { @MainActor [weak self] in
                     guard let self = self, self.generation == token else { return }
                     if item.status == .readyToPlay {
+                        self.loadWatchdog?.cancel(); self.loadWatchdog = nil
                         self.ready = true; self.loading = false
                         if let track = item.asset.tracks(withMediaType: .video).first {
                             let size = track.naturalSize.applying(track.preferredTransform)
@@ -75,6 +77,7 @@ private final class PlayerClock {
                         }
                         if let initial = initial, initial > 0 { self.seek(initial) }
                     } else if item.status == .failed {
+                        self.loadWatchdog?.cancel(); self.loadWatchdog = nil
                         if let error = item.error as NSError? { print("NATIVE_PLAYER_ERROR \(error.domain) \(error.code)") }
                         self.ready = false; self.loading = false
                         self.problem = "系统播放器暂时无法连接视频源，请重试。"
@@ -82,7 +85,15 @@ private final class PlayerClock {
                 }
             }
             playbackObserver = value.observe(\.timeControlStatus, options: [.initial,.new]) { [weak self] value, _ in
-                Task { @MainActor [weak self] in guard let self = self, self.generation == token else { return }; self.playing = value.timeControlStatus == .playing }
+                Task { @MainActor [weak self] in guard let self = self, self.generation == token else { return }; self.playing = value.timeControlStatus != .paused }
+            }
+            loadWatchdog = Task { [weak self] in
+                do { try await Task.sleep(nanoseconds: 25_000_000_000) } catch { return }
+                guard let self = self, self.generation == token, !self.ready else { return }
+                self.generation = UUID()
+                self.clearPlayer()
+                self.loading = false
+                self.problem = "视频连接超时，请重试。"
             }
             clock = PlayerClock(value) { [weak self] time in
                 Task { @MainActor [weak self] in
@@ -99,7 +110,7 @@ private final class PlayerClock {
             problem = (error as? GardenError)?.localizedDescription ?? "没有取得可播放的视频源，请联网后重试。"
         }
     }
-    func playPause() { guard ready, let player = player else { return }; if player.timeControlStatus == .playing { player.pause() } else { player.play() } }
+    func playPause() { guard ready, let player = player else { return }; if player.timeControlStatus != .paused { player.pause() } else { player.play() } }
     func pause() { player?.pause() }
     func currentSeconds() -> Int? {
         guard ready, let value = player?.currentTime().seconds, value.isFinite, value >= 0, value <= 86400 else { return nil }
@@ -120,6 +131,7 @@ private final class PlayerClock {
         return data
     }
     private func clearPlayer() {
+        loadWatchdog?.cancel(); loadWatchdog = nil
         player?.pause()
         clock = nil; statusObserver = nil; playbackObserver = nil; player = nil; playing = false
     }

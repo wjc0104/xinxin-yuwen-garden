@@ -51,6 +51,17 @@ final class GardenUITests: XCTestCase {
         let old = (time.value as? String) ?? ""
         if !old.isEmpty && old != "分:秒 或 时:分:秒" { time.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: old.count)) }
         time.typeText("03:25")
+        app.buttons["收起"].tap()
+        app.buttons["边看边记"].tap()
+        XCTAssertEqual(time.value as? String, "03:25", "Reopening a draft must preserve its original time anchor")
+        XCTAssertEqual(note.value as? String, "test video timestamp")
+        app.terminate(); app.launch()
+        app.tabBars.buttons["课程"].tap()
+        app.buttons["book-7u"].tap(); app.buttons["lesson-7u-02"].tap(); video.tap()
+        app.buttons["边看边记"].tap()
+        XCTAssertEqual(time.value as? String, "03:25", "An unfinished draft must survive relaunch")
+        XCTAssertEqual(note.value as? String, "test video timestamp")
+        shot("13-视频与内联笔记草稿")
         app.buttons["video-save-note"].tap()
         XCTAssertTrue(app.staticTexts["03:25"].firstMatch.waitForExistence(timeout: 5))
         shot("10-视频时间笔记")

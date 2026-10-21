@@ -31,7 +31,7 @@ struct ReadingView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         Text(resource.title).font(.title2.bold()); Caption(text: resource.source)
                         if resource.isPaid { Text("可能需要积分或付费，请先看原页面说明。").font(.caption).foregroundColor(.orange) }
-                        if !resource.url.isEmpty { Button { if let url = SearchEngine.validatedURL(resource.url) { browser = BrowserLink(url: url) } } label: { Label(resource.kind == .video ? "打开原平台视频" : "查看原资料", systemImage: "arrow.up.right.square") }; Caption(text: "外部视频在原平台播放；返回这里可手动记录时间点与重点。") }
+                        if !resource.url.isEmpty { Button { if let url = SearchEngine.validatedURL(resource.url) { browser = BrowserLink(url: url) } } label: { Label("查看原资料", systemImage: "arrow.up.right.square") } }
                         if !resource.body.isEmpty {
                             Text("长按选中文字，再点下方“划重点”").font(.caption).foregroundColor(GardenTheme.mint)
                             let highlighted = marks.filter { !$0.quote.isEmpty }

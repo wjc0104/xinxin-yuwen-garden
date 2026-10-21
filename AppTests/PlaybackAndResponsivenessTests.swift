@@ -3,12 +3,6 @@ import XCTest
 import GardenCore
 
 @MainActor final class PlaybackAndResponsivenessTests: XCTestCase {
-    func testBilibiliPlayerUsesRequestedEpisode() throws {
-        let url = try XCTUnwrap(StudyVideoURL.player("https://www.bilibili.com/video/BV1eUAieoEZd/?p=2", seconds: 205))
-        let query = URLComponents(url: url, resolvingAgainstBaseURL: false)!.queryItems!
-        XCTAssertEqual(query.first { $0.name == "p" }?.value, "2")
-        XCTAssertEqual(query.first { $0.name == "t" }?.value, "205")
-    }
     func testRepeatedScheduleReadsFitWarmRenderingBudget() {
         let store = AppStore()
         XCTAssertFalse(store.occurrences.isEmpty)

@@ -8,11 +8,17 @@ struct VideoStudyView: View {
     let initialSeconds: Int?
     @StateObject private var video = NativeStudyPlayer()
     @State private var composing = false
-    @State private var note = ""
-    @State private var stamp = ""
+    @AppStorage private var note: String
+    @AppStorage private var stamp: String
     @State private var problem: String?
     @State private var browser: BrowserLink?
     @FocusState private var focused: Bool
+    init(resource: StudyResource, initialSeconds: Int?) {
+        self.resource = resource
+        self.initialSeconds = initialSeconds
+        _note = AppStorage(wrappedValue: "", "video-note-draft." + resource.id + ".text")
+        _stamp = AppStorage(wrappedValue: "", "video-note-draft." + resource.id + ".time")
+    }
     var marks: [StudyMark] { store.data.marks.filter { $0.resourceID == resource.id }.sorted { $0.createdAt > $1.createdAt } }
     var localURL: URL? { guard !resource.localFile.isEmpty else { return nil }; return try? store.disk?.attachmentURL(resource.localFile) }
     var body: some View {
@@ -62,7 +68,7 @@ struct VideoStudyView: View {
         .sheet(item: $browser) { SafariSheet(url: $0.url) }
     }
     private func beginNote() {
-        if !composing { stamp = video.currentSeconds().map(TimeLabel.video) ?? "" }
+        if !composing && note.isEmpty && stamp.isEmpty { stamp = video.currentSeconds().map(TimeLabel.video) ?? "" }
         problem = nil; composing = true
     }
     private func saveNote() {

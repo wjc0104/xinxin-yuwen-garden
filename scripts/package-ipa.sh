@@ -22,9 +22,9 @@ assert not p.get('get-task-allow') and not p.get('com.apple.private.security.no-
 PY
 (
   cd build/package
-  /usr/bin/zip -qry ../Xinyu-v0.0.3.ipa Payload
+  /usr/bin/zip -qry ../Xinyu-v0.0.4.ipa Payload
 )
-shasum -a 256 build/Xinyu-v0.0.3.ipa > build/SHA256SUMS.txt
+shasum -a 256 build/Xinyu-v0.0.4.ipa > build/SHA256SUMS.txt
 python3 - <<'PY'
 import json,plistlib,os
 with open('build/package/Payload/XinxinGarden.app/Info.plist','rb') as f:p=plistlib.load(f)
