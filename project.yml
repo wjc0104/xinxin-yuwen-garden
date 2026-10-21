@@ -29,7 +29,7 @@ targets:
         CFBundleShortVersionString: '0.0.4'
         CFBundleVersion: '4'
         UILaunchScreen: {}
-        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
         NSCalendarsUsageDescription: 仅在你主动清除旧版课程提醒时访问日历，避免旧版和 Bark 重复提醒。
         NSCalendarsFullAccessUsageDescription: 仅用于移除旧版由欣语创建的课程提醒，不编辑其他日历。
         LSSupportsOpeningDocumentsInPlace: true

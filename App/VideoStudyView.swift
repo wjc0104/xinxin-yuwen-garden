@@ -12,6 +12,8 @@ struct VideoStudyView: View {
     @AppStorage private var stamp: String
     @State private var problem: String?
     @State private var browser: BrowserLink?
+    @State private var fullScreen = false
+    @State private var restoreNoteFocus = false
     @FocusState private var focused: Bool
     init(resource: StudyResource, initialSeconds: Int?) {
         self.resource = resource
@@ -27,7 +29,13 @@ struct VideoStudyView: View {
                 Color.black
                 if let player = video.player { VideoPlayer(player: player).accessibilityIdentifier("native-video-player") }
                 if video.loading { ProgressView("正在连接视频…").foregroundColor(.white).padding().background(Color.black.opacity(0.65)).cornerRadius(12) }
-                if let error = video.problem { VStack(spacing: 10) { Text(error).foregroundColor(.white).multilineTextAlignment(.center); Button("重试播放") { Task { await video.load(resource, localURL: localURL, at: video.currentSeconds() ?? initialSeconds, force: true) } } }.padding(20) }
+                if let error = video.problem { VStack(spacing: 10) { Text(error).accessibilityIdentifier("video-source-error").foregroundColor(.white).multilineTextAlignment(.center); Button("重试播放") { Task { await video.load(resource, localURL: localURL, at: video.currentSeconds() ?? initialSeconds, force: true) } } }.padding(20) }
+                if video.ready {
+                    VStack { HStack { Spacer(); Button {
+                        restoreNoteFocus = focused; focused = false; fullScreen = true
+                    } label: { Label("全屏", systemImage: "arrow.up.left.and.arrow.down.right").padding(10).background(Color.black.opacity(0.75)).cornerRadius(10) }
+                        .foregroundColor(.white).accessibilityIdentifier("video-fullscreen") }; Spacer() }.padding(10)
+                }
             }.frame(height: focused ? 160 : 230)
             ScrollViewReader { proxy in
                 ScrollView {
@@ -41,7 +49,7 @@ struct VideoStudyView: View {
                         }
                         if video.lowQuality { Text("原站当前只提供这一档画质，文字可能不清晰。可以换看本课其他视频。").font(.caption).foregroundColor(.orange) }
                         Caption(text: resource.source)
-                        HStack { Button { beginNote() } label: { Label("边看边记", systemImage: "square.and.pencil") }; Spacer(); if let url = SearchEngine.validatedURL(resource.url) { Button("原视频") { browser = BrowserLink(url: url) } } }.font(.subheadline)
+                        HStack { Button { beginNote() } label: { Label("边看边记", systemImage: "square.and.pencil") }; Spacer(); if let url = video.originalURL ?? (resource.videoCID == nil ? SearchEngine.validatedURL(resource.url) : nil) { Button("原视频") { browser = BrowserLink(url: url) } } }.font(.subheadline)
                         if composing {
                             GardenCard {
                                 HStack { Text("学习笔记").font(.headline); Spacer(); Button("收起") { focused = false; composing = false } }
@@ -64,8 +72,11 @@ struct VideoStudyView: View {
             Button { beginNote() } label: { Label("标记时间 · 写笔记", systemImage: "square.and.pencil").font(.headline).frame(maxWidth: .infinity).padding(15) }.background(GardenTheme.card).accessibilityIdentifier("study-note")
         }
         .task(id: resource.id) { await video.load(resource, localURL: localURL, at: initialSeconds) }
-        .onDisappear { video.pause() }
+        .onDisappear { if !fullScreen { video.pause() } }
         .sheet(item: $browser) { SafariSheet(url: $0.url) }
+        .fullScreenCover(isPresented: $fullScreen, onDismiss: { focused = restoreNoteFocus }) {
+            if let player = video.player { FullScreenStudyPlayer(player: player) { fullScreen = false } }
+        }
     }
     private func beginNote() {
         if !composing && note.isEmpty && stamp.isEmpty { stamp = video.currentSeconds().map(TimeLabel.video) ?? "" }

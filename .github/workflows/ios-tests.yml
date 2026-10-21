@@ -1,21 +1,51 @@
 name: iOS Smoke Tests
 on:
   workflow_dispatch:
+    inputs:
+      runner:
+        description: Simulator runner (ARM default; Intel for comparison)
+        required: true
+        default: macos-15
+        type: choice
+        options: [macos-15, macos-15-intel]
   push:
     branches: ['feat/**']
 concurrency:
-  group: ios-v2-${{ github.ref }}
+  group: ios-v3-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   ios:
-    runs-on: macos-15-intel
+    runs-on: ${{ inputs.runner || 'macos-15' }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - name: Check diagnostic reporting and gate policy
+        run: python3 scripts/test-public-source-diagnostics.py
+      - name: Diagnose public source and search before simulator work
+        id: source
+        continue-on-error: true
+        timeout-minutes: 2
+        run: |
+          set -o pipefail
+          mkdir -p build
+          python3 scripts/diagnose-public-source.py --output build/public-source.json --github-output "$GITHUB_OUTPUT" 2>&1 | tee build/public-source.log
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: public-source-diagnostics
+          path: |
+            build/public-source.log
+            build/public-source.json
+          if-no-files-found: warn
+          retention-days: 7
       - name: Generate native project
+        timeout-minutes: 3
         run: |
           brew install xcodegen
           xcodegen generate
+      - name: Report partial search availability
+        if: ${{ !cancelled() && steps.source.outputs.search_ok == 'false' }}
+        run: echo "::warning::Some public search APIs are unavailable; see per-stage status/path in public-source.log. Partial refresh is supported; playback tests remain independent."
       - name: Choose simulator
         run: |
           xcrun simctl list devices available --json > /tmp/devices.json
@@ -32,18 +62,40 @@ jobs:
         run: |
           xcrun simctl boot "$SIMULATOR_ID"
           xcrun simctl bootstatus "$SIMULATOR_ID" -b
-      - name: Test native flows
-        timeout-minutes: 20
+      - name: Test deterministic native and study flows
+        id: deterministic
+        timeout-minutes: 15
         run: |
           set -o pipefail
           mkdir -p build
-          xcodebuild test -project XinxinGarden.xcodeproj -scheme XinxinGarden -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 300 -maximum-test-execution-time-allowance 360 -resultBundlePath build/UI.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee build/UI-test.log
-      - name: Export screenshots
+          xcodebuild test -project XinxinGarden.xcodeproj -scheme XinxinGarden -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 180 -skip-testing:GardenAppTests/NativePlaybackTests -skip-testing:GardenUITests/GardenUITests/testVideoPlaybackFullScreenLandscape -resultBundlePath build/Study.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee build/study-test.log
+      - name: Test actual public playback and landscape
+        if: ${{ !cancelled() && steps.source.outputs.playback_ok == 'true' && steps.deterministic.outcome == 'success' }}
+        timeout-minutes: 7
+        run: |
+          set -o pipefail
+          xcodebuild test-without-building -project XinxinGarden.xcodeproj -scheme XinxinGarden -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 150 -maximum-test-execution-time-allowance 180 -only-testing:GardenAppTests/NativePlaybackTests -only-testing:GardenUITests/GardenUITests/testVideoPlaybackFullScreenLandscape -resultBundlePath build/Playback.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee build/playback-test.log
+      - name: Export completed result attachments
         if: always()
-        run: xcrun xcresulttool export attachments --path build/UI.xcresult --output-path build/screenshots || true
+        run: |
+          for name in Study Playback; do
+            result="build/$name.xcresult"
+            if [ -f "$result/Info.plist" ]; then
+              xcrun xcresulttool export attachments --path "$result" --output-path "build/screenshots/$name" || true
+            fi
+          done
+      - name: Report real source gate failure
+        if: ${{ !cancelled() && steps.source.outcome != 'success' }}
+        run: |
+          echo "::error::Real public playback source gate failed; see public-source.log. Study logs report their independent results."
+          exit 1
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: simulator-results
-          path: build/
+          path: |
+            build/*.log
+            build/public-source.json
+            build/screenshots/
+          if-no-files-found: warn
           retention-days: 7

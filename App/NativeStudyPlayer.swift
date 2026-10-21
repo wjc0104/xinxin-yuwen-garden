@@ -130,13 +130,25 @@ private final class PlayerClock {
         var request = URLRequest(url: url)
         request.setValue("Mozilla/5.0", forHTTPHeaderField: "User-Agent")
         request.setValue("https://www.bilibili.com/", forHTTPHeaderField: "Referer")
-        let (data,response) = try await session.data(for: request)
+        let stage = url.path.hasSuffix("pagelist") ? "parts" : "playurl"
+        let result: (Data, URLResponse)
+        do { result = try await session.data(for: request) }
+        catch {
+            let error = error as NSError
+            print("NATIVE_SOURCE stage=\(stage) path=\(url.path) http=none error_domain=\(error.domain) error_code=\(error.code)")
+            throw error
+        }
+        let (data, response) = result
         guard let response = response as? HTTPURLResponse else { throw GardenError.invalid("原站暂时没有返回视频信息。") }
+        guard data.count <= 4*1024*1024 else { throw GardenError.invalid("原站视频信息过大。") }
+        // Log only the API path and numeric status, never signed media URLs or response bodies.
+        let payload = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+        let code = (payload?["code"] as? NSNumber)?.stringValue ?? "missing"
+        let quality = ((payload?["data"] as? [String: Any])?["quality"] as? NSNumber)?.stringValue ?? "none"
+        print("NATIVE_SOURCE stage=\(stage) path=\(url.path) http=\(response.statusCode) code=\(code) quality=\(quality)")
         guard response.statusCode == 200 else {
-            print("NATIVE_SOURCE_HTTP \(response.statusCode) \(url.path)")
             throw GardenError.invalid("原站请求失败（HTTP \(response.statusCode)），请稍后重试。")
         }
-        guard data.count <= 4*1024*1024 else { throw GardenError.invalid("原站视频信息过大。") }
         return data
     }
     private func clearPlayer() {

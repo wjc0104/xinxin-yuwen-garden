@@ -34,19 +34,13 @@ final class GardenUITests: XCTestCase {
         XCTAssertTrue(app.buttons["边看边记"].waitForExistence(timeout: 15), "The visible note affordance must be an actual action")
         XCTAssertEqual(app.webViews.count, 0, "Online video must use the native player rather than a webpage")
         XCTAssertTrue(app.buttons["study-note"].exists)
-        let play = app.buttons["video-play-pause"]
-        let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: play)
-        wait(for: [ready], timeout: 40)
-        play.tap()
-        let position = app.staticTexts["video-position"]
-        let moving = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label != %@ AND label != %@ AND label != %@", "--:--", "00:00", ""), object: position)
-        wait(for: [moving], timeout: 25)
         shot("09-视频学习与笔记")
         app.buttons["边看边记"].tap()
         let note = app.textViews["video-note-input"]; XCTAssertTrue(note.waitForExistence(timeout: 5))
-        note.tap(); note.typeText("test video timestamp")
+        note.tap()
+        if let old = note.value as? String, !old.isEmpty { note.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: old.count)) }
+        note.typeText("test video timestamp")
         let time = app.textFields["分:秒 或 时:分:秒"]
-        XCTAssertNotEqual(time.value as? String, "", "The note must capture the native player's real time")
         time.tap()
         let old = (time.value as? String) ?? ""
         if !old.isEmpty && old != "分:秒 或 时:分:秒" { time.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: old.count)) }
@@ -61,10 +55,71 @@ final class GardenUITests: XCTestCase {
         app.buttons["边看边记"].tap()
         XCTAssertEqual(time.value as? String, "03:25", "An unfinished draft must survive relaunch")
         XCTAssertEqual(note.value as? String, "test video timestamp")
+        note.tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
         shot("13-视频与内联笔记草稿")
+        app.buttons["收起"].tap()
+        app.buttons["边看边记"].tap()
         app.buttons["video-save-note"].tap()
         XCTAssertTrue(app.staticTexts["03:25"].firstMatch.waitForExistence(timeout: 5))
         shot("10-视频时间笔记")
+    }
+    func testVideoPlaybackFullScreenLandscape() throws {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        defer { XCUIDevice.shared.orientation = .portrait }
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()
+        app.tabBars.buttons["课程"].tap()
+        app.buttons["book-7u"].tap(); app.buttons["lesson-7u-02"].tap()
+        app.buttons["resource-curated-7u-02-BV1eUAieoEZd-2"].tap()
+        let play = app.buttons["video-play-pause"]
+        let error = app.staticTexts["video-source-error"]
+        let readyOrError = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in play.isEnabled || error.exists }, object: nil)
+        wait(for: [readyOrError], timeout: 70)
+        XCTAssertFalse(error.exists, error.exists ? error.label : "")
+        XCTAssertTrue(play.isEnabled)
+        play.tap()
+        let position = app.staticTexts["video-position"]
+        let moving = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label != %@ AND label != %@ AND label != %@", "--:--", "00:00", ""), object: position)
+        wait(for: [moving], timeout: 25)
+        play.tap() // Pause before the transition so restoring does not accidentally resume.
+        let paused = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", "播放"), object: play)
+        wait(for: [paused], timeout: 5)
+        app.buttons["边看边记"].tap()
+        let note = app.textViews["video-note-input"]
+        app.buttons["取当前时间"].tap()
+        let time = app.textFields["分:秒 或 时:分:秒"]
+        let captured = try XCTUnwrap(time.value as? String)
+        XCTAssertNotEqual(captured, "", "Notes must capture the actual player time")
+        let before = try XCTUnwrap(videoSeconds(position.label))
+        XCTAssertEqual(videoSeconds(captured), before, "The draft anchor must match the paused native player's time")
+        note.tap()
+        if let old = note.value as? String, !old.isEmpty { note.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: old.count)) }
+        note.typeText("fullscreen draft")
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        app.buttons["video-fullscreen"].tap()
+        let exit = app.buttons["video-exit-fullscreen"]
+        XCTAssertTrue(exit.waitForExistence(timeout: 5))
+        XCUIDevice.shared.orientation = .landscapeLeft
+        let landscape = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in app.frame.width > app.frame.height }, object: nil)
+        wait(for: [landscape], timeout: 8)
+        let nativeFrame = app.descendants(matching: .any)["fullscreen-native-player"].firstMatch.frame
+        XCTAssertGreaterThan(nativeFrame.width, nativeFrame.height, "The native video controller itself must occupy landscape")
+        XCTAssertGreaterThan(nativeFrame.width, app.frame.width * 0.9)
+        shot("15-原生视频横屏全屏")
+        XCUIDevice.shared.orientation = .landscapeRight
+        wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in app.frame.width > app.frame.height }, object: nil)], timeout: 8)
+        exit.tap()
+        XCTAssertTrue(app.buttons["video-fullscreen"].waitForExistence(timeout: 5))
+        XCTAssertEqual(play.label, "播放", "Exiting must respect the user's paused state")
+        XCTAssertEqual(Double(try XCTUnwrap(videoSeconds(position.label))), Double(before), accuracy: 1)
+        XCTAssertEqual(note.value as? String, "fullscreen draft")
+        XCTAssertEqual(time.value as? String, captured)
+        XCUIDevice.shared.orientation = .portrait
+        let portrait = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in app.frame.height > app.frame.width }, object: nil)
+        wait(for: [portrait], timeout: 8)
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5), "The note editor's focus returns after fullscreen")
+        shot("16-退出全屏保留草稿与键盘")
     }
     func testSearchStudyNotesAndChineseSchedule() throws {
         continueAfterFailure = false
@@ -161,5 +216,10 @@ final class GardenUITests: XCTestCase {
     private func shot(_ name: String) {
         let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         attachment.name = name; attachment.lifetime = .keepAlways; add(attachment)
+    }
+    private func videoSeconds(_ label: String) -> Int? {
+        let parts = label.split(separator: ":").compactMap { Int($0) }
+        guard parts.count == 2 || parts.count == 3 else { return nil }
+        return parts.reduce(0) { $0 * 60 + $1 }
     }
 }
