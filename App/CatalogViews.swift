@@ -120,7 +120,7 @@ struct ResourceRow: View {
             HStack(alignment: .top, spacing: 12) {
                 if resource.kind == .video {
                     ZStack(alignment: .bottomTrailing) {
-                        AsyncImage(url: URL(string: resource.thumbnail ?? "")) { image in image.resizable().scaledToFill() } placeholder: { Rectangle().fill(GardenTheme.rose.opacity(0.10)).overlay(Image(systemName: "play.fill").foregroundColor(GardenTheme.rose)) }.frame(width: 110, height: 74).clipped().cornerRadius(10)
+                        AsyncImage(url: GardenTheme.thumbnailURL(resource.thumbnail)) { image in image.resizable().scaledToFill() } placeholder: { Rectangle().fill(GardenTheme.rose.opacity(0.10)).overlay(Image(systemName: "play.fill").foregroundColor(GardenTheme.rose)) }.frame(width: 110, height: 74).clipped().cornerRadius(10)
                         if let duration = resource.durationSeconds { Text(TimeLabel.video(duration)).font(.caption2.monospacedDigit()).foregroundColor(.white).padding(3).background(Color.black.opacity(0.7)).cornerRadius(4).padding(4) }
                     }
                 }
