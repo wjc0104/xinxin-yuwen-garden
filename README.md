@@ -9,7 +9,9 @@
 - 中文课表，支持临时调课与每周调整
 - Bark 跨手机通知；自动上课提醒需另行配置在线定时服务
 
-**iPhone XR · iOS 15+ · TrollStore · 0.0.2**
+**iPhone XR · iOS 15+ · TrollStore · 0.0.3**
+
+0.0.3 修复正文选词后无法划重点：选中文字，点底部“划重点”即可保存。课表按需更新缓存，减少切页重复计算；修正视频合集分集参数。B 站视频目前仍用原平台网页播放器，尚未完成高清系统播放器接入。
 
 在 [Actions](../../actions/workflows/build-ipa.yml) 的成功运行中下载 **XinxinGarden-TrollStore**，解压后安装 IPA。安装新版前建议在“我的”导出备份，不要先卸载旧版。
 

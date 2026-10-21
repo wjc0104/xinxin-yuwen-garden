@@ -9,7 +9,7 @@ struct SettingsView: View {
     @State private var cleanCalendar = false
     var body: some View {
         GardenPage {
-            GardenCard { Text("欣语").font(.title2.bold()); Text("给欣欣的语文备课手记").foregroundColor(.secondary); Caption(text: "版本 0.0.2") }
+            GardenCard { Text("欣语").font(.title2.bold()); Text("给欣欣的语文备课手记").foregroundColor(.secondary); Caption(text: "版本 " + (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")) }
             GardenCard {
                 NavigationLink(destination: NotesView()) { Label("我的笔记与收藏", systemImage: "bookmark") }
                 Divider()
