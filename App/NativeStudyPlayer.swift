@@ -3,6 +3,16 @@ import Combine
 import AVFoundation
 import GardenCore
 
+private final class PlayerClock {
+    private let player: AVPlayer
+    private let token: Any
+    init(_ player: AVPlayer, handler: @escaping (CMTime) -> Void) {
+        self.player = player
+        token = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.5, preferredTimescale: 600), queue: .main, using: handler)
+    }
+    deinit { player.removeTimeObserver(token) }
+}
+
 @MainActor final class NativeStudyPlayer: ObservableObject {
     @Published private(set) var player: AVPlayer?
     @Published private(set) var loading = false
@@ -15,7 +25,7 @@ import GardenCore
     private var generation = UUID()
     private var statusObserver: NSKeyValueObservation?
     private var playbackObserver: NSKeyValueObservation?
-    private var timeObserver: Any?
+    private var clock: PlayerClock?
     private let session: URLSession = {
         let config = URLSessionConfiguration.ephemeral
         config.httpCookieStorage = nil
@@ -48,6 +58,7 @@ import GardenCore
             }
             guard generation == token, !Task.isCancelled else { return }
             let asset = AVURLAsset(url: url, options: options)
+            try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
             let item = AVPlayerItem(asset: asset)
             let value = AVPlayer(playerItem: item)
             value.automaticallyWaitsToMinimizeStalling = true
@@ -64,6 +75,7 @@ import GardenCore
                         }
                         if let initial = initial, initial > 0 { self.seek(initial) }
                     } else if item.status == .failed {
+                        if let error = item.error as NSError? { print("NATIVE_PLAYER_ERROR \(error.domain) \(error.code)") }
                         self.ready = false; self.loading = false
                         self.problem = "系统播放器暂时无法连接视频源，请重试。"
                     }
@@ -72,7 +84,7 @@ import GardenCore
             playbackObserver = value.observe(\.timeControlStatus, options: [.initial,.new]) { [weak self] value, _ in
                 Task { @MainActor [weak self] in guard let self = self, self.generation == token else { return }; self.playing = value.timeControlStatus == .playing }
             }
-            timeObserver = value.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.5, preferredTimescale: 600), queue: .main) { [weak self] time in
+            clock = PlayerClock(value) { [weak self] time in
                 Task { @MainActor [weak self] in
                     guard let self = self, self.generation == token, time.seconds.isFinite, time.seconds >= 0, time.seconds <= 86400 else { return }
                     let next = Int(time.seconds)
@@ -82,6 +94,8 @@ import GardenCore
         } catch {
             guard generation == token, !Task.isCancelled else { return }
             loading = false; ready = false
+            let diagnostic = error as NSError
+            print("NATIVE_SOURCE_ERROR \(diagnostic.domain) \(diagnostic.code)")
             problem = (error as? GardenError)?.localizedDescription ?? "没有取得可播放的视频源，请联网后重试。"
         }
     }
@@ -107,8 +121,6 @@ import GardenCore
     }
     private func clearPlayer() {
         player?.pause()
-        if let timeObserver = timeObserver { player?.removeTimeObserver(timeObserver) }
-        timeObserver = nil; statusObserver = nil; playbackObserver = nil; player = nil; playing = false
+        clock = nil; statusObserver = nil; playbackObserver = nil; player = nil; playing = false
     }
-    deinit { if let timeObserver = timeObserver { player?.removeTimeObserver(timeObserver) } }
 }

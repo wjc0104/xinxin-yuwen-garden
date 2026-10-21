@@ -34,11 +34,19 @@ final class GardenUITests: XCTestCase {
         XCTAssertTrue(app.buttons["边看边记"].waitForExistence(timeout: 15), "The visible note affordance must be an actual action")
         XCTAssertEqual(app.webViews.count, 0, "Online video must use the native player rather than a webpage")
         XCTAssertTrue(app.buttons["study-note"].exists)
+        let play = app.buttons["video-play-pause"]
+        let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: play)
+        wait(for: [ready], timeout: 40)
+        play.tap()
+        let position = app.staticTexts["video-position"]
+        let moving = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label != %@ AND label != %@ AND label != %@", "--:--", "00:00", ""), object: position)
+        wait(for: [moving], timeout: 25)
         shot("09-视频学习与笔记")
         app.buttons["边看边记"].tap()
         let note = app.textViews["video-note-input"]; XCTAssertTrue(note.waitForExistence(timeout: 5))
         note.tap(); note.typeText("test video timestamp")
         let time = app.textFields["分:秒 或 时:分:秒"]
+        XCTAssertNotEqual(time.value as? String, "", "The note must capture the native player's real time")
         time.tap()
         let old = (time.value as? String) ?? ""
         if !old.isEmpty && old != "分:秒 或 时:分:秒" { time.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: old.count)) }

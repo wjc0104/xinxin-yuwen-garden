@@ -22,7 +22,7 @@ struct VideoStudyView: View {
                 if let player = video.player { VideoPlayer(player: player).accessibilityIdentifier("native-video-player") }
                 if video.loading { ProgressView("正在连接视频…").foregroundColor(.white).padding().background(Color.black.opacity(0.65)).cornerRadius(12) }
                 if let error = video.problem { VStack(spacing: 10) { Text(error).foregroundColor(.white).multilineTextAlignment(.center); Button("重试播放") { Task { await video.load(resource, localURL: localURL, at: video.currentSeconds() ?? initialSeconds, force: true) } } }.padding(20) }
-            }.frame(height: 230)
+            }.frame(height: focused ? 160 : 230)
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
@@ -30,6 +30,7 @@ struct VideoStudyView: View {
                         HStack {
                             Text(video.qualityLabel).font(.caption).foregroundColor(GardenTheme.mint).accessibilityIdentifier("video-quality")
                             Spacer()
+                            Text(video.currentSeconds().map(TimeLabel.video) ?? "--:--").font(.caption.monospacedDigit()).foregroundColor(.secondary).accessibilityIdentifier("video-position")
                             Button(video.playing ? "暂停" : "播放") { video.playPause() }.disabled(!video.ready).accessibilityIdentifier("video-play-pause")
                         }
                         if video.lowQuality { Text("原站当前只提供这一档画质，文字可能不清晰。可以换看本课其他视频。").font(.caption).foregroundColor(.orange) }

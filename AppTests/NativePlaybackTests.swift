@@ -30,7 +30,7 @@ import GardenCore
             if success { seek.fulfill() }
         }
         await fulfillment(of: [seek], timeout: 15)
-        XCTAssertEqual(try XCTUnwrap(video.currentSeconds()), 205, accuracy: 1)
+        XCTAssertEqual(Double(try XCTUnwrap(video.currentSeconds())), 205, accuracy: 1)
         let same = video.player
         await video.load(resource)
         XCTAssertTrue(video.player === same, "UI refresh must preserve the playing item and position")
