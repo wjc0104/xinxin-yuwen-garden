@@ -4,6 +4,14 @@ import GardenCore
 
 final class WebStudyController: ObservableObject {
     @Published var failed = false
+    weak var webView: WKWebView?
+    func selectedText(_ completion: @escaping (String) -> Void) {
+        // Read only the user's current selection; respect original site's selection restrictions.
+        guard let webView = webView else { completion(""); return }
+        webView.evaluateJavaScript("window.getSelection().toString()") { value, _ in
+            completion(String((value as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines).prefix(4000)))
+        }
+    }
 }
 struct EmbeddedResource: UIViewRepresentable {
     let url: URL
@@ -14,6 +22,7 @@ struct EmbeddedResource: UIViewRepresentable {
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = .all
         let web = WKWebView(frame: .zero, configuration: config)
+        controller.webView = web
         web.navigationDelegate = context.coordinator
         web.scrollView.contentInsetAdjustmentBehavior = .never
         web.load(URLRequest(url: url))
@@ -25,6 +34,8 @@ struct EmbeddedResource: UIViewRepresentable {
         let controller: WebStudyController
         init(_ controller: WebStudyController) { self.controller = controller }
         func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { controller.failed = true }
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) { controller.failed = true }
+        func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) { controller.failed = false }
         func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
             let scheme = navigationAction.request.url?.scheme?.lowercased() ?? ""
             decisionHandler(["https","http","about"].contains(scheme) ? .allow : .cancel)

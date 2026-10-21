@@ -15,6 +15,7 @@ public enum ResourceKind: String, Codable, CaseIterable { case guide, script, vi
     public var label: String { switch self { case .guide: return "备课提纲"; case .script: return "试讲稿"; case .video, .localVideo: return "视频"; case .pdf: return "PDF"; case .link: return "资料链接" } }
 }
 public struct StudyResource: Codable, Identifiable, Equatable {
+    public var videoCID: Int?
     public var category: String?
     public var thumbnail: String?
     public var durationSeconds: Int?

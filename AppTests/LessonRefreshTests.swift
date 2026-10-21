@@ -1,0 +1,92 @@
+import XCTest
+@testable import XinxinGarden
+import GardenCore
+
+private final class LessonMetadataProtocol: URLProtocol {
+    static var handler: ((URLRequest) -> (Int, String))?
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+    override func startLoading() {
+        guard let handler = Self.handler, let url = request.url else { return }
+        let (status, body) = handler(request)
+        let response = HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: ["Content-Type":"application/json"])!
+        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocol(self, didLoad: Data(body.utf8))
+        client?.urlProtocolDidFinishLoading(self)
+    }
+    override func stopLoading() {}
+}
+
+@MainActor final class LessonRefreshTests: XCTestCase {
+    private func service() -> LessonContentService {
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [LessonMetadataProtocol.self]
+        return LessonContentService(session: URLSession(configuration: config))
+    }
+    func testRealEndpointPlanRetainsVideoWhenArticleSourceBlocked() async throws {
+        var requested = [URL]()
+        LessonMetadataProtocol.handler = { request in
+            requested.append(request.url!)
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Referer"), "https://www.bilibili.com/")
+            if request.url!.path == "/x/player/pagelist" {
+                return (200, #"{"code":0,"data":[{"page":45,"cid":29807281516,"part":"朝天子·咏喇叭","duration":600}]}"#)
+            }
+            let query = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)!.queryItems!
+            if query.contains(where: { $0.name == "search_type" && $0.value == "article" }) { return (412, "blocked") }
+            return (200, #"{"code":0,"data":{"result":[{"bvid":"BV137LizrE4S","title":"语文合集","author":"老师","duration":"10:00"}]}}"#)
+        }
+        defer { LessonMetadataProtocol.handler = nil }
+        let result = try await service().refresh(Lesson(id: "9d-extra6-4", number: 0, title: "朝天子·咏喇叭", author: "王磐"))
+        XCTAssertEqual(result.resources.count, 1)
+        XCTAssertEqual(result.resources[0].videoCID, 29807281516)
+        XCTAssertTrue(result.failures.contains { $0.contains("文字资料") && $0.contains("412") })
+        XCTAssertEqual(requested.filter { $0.path == "/x/player/pagelist" }.count, 1, "Duplicate BVs should be validated once")
+        XCTAssertEqual(requested.filter { $0.query?.contains("order=pubdate") == true }.count, 1)
+        XCTAssertEqual(requested.filter { $0.query?.contains("order=totalrank") == true }.count, 2)
+    }
+    func testEmptyAndFailedRefreshNeverWipesExistingResourcesOrNotes() async {
+        let store = AppStore()
+        let saved = store.data
+        defer { store.update { $0 = saved }; LessonMetadataProtocol.handler = nil }
+        let lesson = Lesson(id: "7u-01", number: 1, title: "春", author: "朱自清")
+        let own = StudyResource(lessonID: lesson.id, title: "已保存的个人链接", kind: .link, url: "https://example.com/my-notes")
+        XCTAssertTrue(store.update {
+            $0.resources.append(own)
+            $0.marks.append(StudyMark(lessonID: lesson.id, resourceID: own.id, quote: "已有摘录", note: "刷新失败时也要保留"))
+        })
+        let baseline = store.data
+        LessonMetadataProtocol.handler = { _ in (200, #"{"code":0,"data":{"result":[]}}"#) }
+        let empty = LessonRefresh(service: service())
+        await empty.refresh(lesson, store: store)
+        XCTAssertEqual(store.data, baseline)
+        XCTAssertTrue(empty.newIDs.isEmpty)
+        XCTAssertFalse(empty.hasFailure)
+        XCTAssertTrue(empty.message?.contains("没有找到新增") == true)
+        LessonMetadataProtocol.handler = { _ in (412, "blocked") }
+        let failed = LessonRefresh(service: service())
+        await failed.refresh(lesson, store: store)
+        XCTAssertEqual(store.data, baseline)
+        XCTAssertTrue(failed.hasFailure)
+        XCTAssertTrue(failed.message?.contains("刷新失败") == true)
+        XCTAssertTrue(failed.newIDs.isEmpty)
+    }
+    func testAtMostEightCandidatePartRequests() async throws {
+        var count = 0
+        LessonMetadataProtocol.handler = { request in
+            if request.url!.path == "/x/player/pagelist" {
+                count += 1
+                return (200, #"{"code":0,"data":[{"page":1,"cid":1,"part":"《春》教学","duration":600}]}"#)
+            }
+            let latest = request.url!.query?.contains("pubdate") == true
+            if request.url!.query?.contains("search_type=article") == true { return (200, #"{"code":0,"data":{"result":[]}}"#) }
+            let rows = (0..<20).map { index -> [String: Any] in
+                ["bvid": String(format: "BV%010d", (latest ? 100 : 0) + index), "title":"《春》教学", "author":"语文老师", "duration":"10:00"]
+            }
+            let body = try! JSONSerialization.data(withJSONObject: ["code":0,"data":["result":rows]])
+            return (200, String(data: body, encoding: .utf8)!)
+        }
+        defer { LessonMetadataProtocol.handler = nil }
+        _ = try await service().refresh(Lesson(id: "7u-01", number: 1, title: "春", author: "朱自清"))
+        XCTAssertEqual(count, 8)
+    }
+}

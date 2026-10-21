@@ -76,7 +76,13 @@ struct LessonView: View {
     @State private var addNote = false
     @State private var addResource = false
     @State private var importFile = false
-    var resources: [StudyResource] { store.resources(lesson.id).filter { filter == "全部" || (filter == "视频" ? $0.kind == .video || $0.kind == .localVideo : $0.kind != .video && $0.kind != .localVideo) } }
+    @StateObject private var refresh = LessonRefresh()
+    var resources: [StudyResource] { store.resources(lesson.id).filter {
+        if filter == "全部" { return true }
+        if filter == "视频" { return $0.kind == .video || $0.kind == .localVideo }
+        if filter == "试讲稿" { return $0.kind == .script }
+        return $0.category == filter || (filter == "备课提纲" && $0.kind == .guide)
+    } }
     var body: some View {
         GardenPage {
             HStack(alignment: .top) {
@@ -84,14 +90,23 @@ struct LessonView: View {
                 Spacer()
                 Button { store.update { if !$0.favorites.insert(lesson.id).inserted { $0.favorites.remove(lesson.id) } } } label: { Image(systemName: store.data.favorites.contains(lesson.id) ? "heart.fill" : "heart").font(.title2) }.accessibilityLabel("收藏课文")
             }
-            Picker("资料分类", selection: $filter) { ForEach(["全部","视频","教案与试讲"], id: \.self) { Text($0).tag($0) } }.pickerStyle(.segmented)
-            ForEach(resources) { resource in NavigationLink(destination: ReadingView(resource: resource)) { ResourceRow(resource: resource) }.buttonStyle(.plain).accessibilityIdentifier("resource-" + resource.id) }
+            GardenCard {
+                Button { Task { await refresh.refresh(lesson, store: store) } } label: {
+                    HStack { if refresh.busy { ProgressView() } else { Image(systemName: "arrow.clockwise") }; Text(refresh.busy ? "正在刷新本课资料…" : "刷新本课资料").font(.headline); Spacer() }.padding(.vertical, 6)
+                }.disabled(refresh.busy).accessibilityIdentifier("refresh-lesson")
+                Text("查找本课视频、原作者公开试讲稿、教学设计与课文解读。原文在站内页面阅读，未逐篇审定。").font(.caption).foregroundColor(.secondary)
+                if let message = refresh.message { Text(message).font(.caption).foregroundColor(refresh.hasFailure ? .orange : GardenTheme.mint).accessibilityIdentifier("refresh-status") }
+            }
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack { ForEach(["全部","视频","试讲稿","教学设计","课文解读","备课提纲"], id: \.self) { category in Button { filter = category } label: { Text(category).font(.subheadline).padding(.horizontal, 12).padding(.vertical, 8).background(filter == category ? GardenTheme.rose.opacity(0.15) : GardenTheme.card).cornerRadius(12) } } }
+            }
+            ForEach(resources) { resource in NavigationLink(destination: ReadingView(resource: resource)) { VStack(alignment: .leading, spacing: 4) { if refresh.newIDs.contains(resource.id) { Text("本次新增").font(.caption.bold()).foregroundColor(GardenTheme.mint) }; ResourceRow(resource: resource) } }.buttonStyle(.plain).accessibilityIdentifier("resource-" + resource.id) }
             if resources.isEmpty { GardenEmpty(title: "此分类暂未收录", detail: "可以切换“全部”查看这篇课文已有的学习资料。") }
             if !store.marks(lesson.id).isEmpty {
                 Text("学习笔记").font(.headline)
                 ForEach(store.marks(lesson.id)) { mark in MarkCard(mark: mark) }
             }
-        }.navigationTitle(lesson.title).navigationBarTitleDisplayMode(.inline)
+        }.refreshable { await refresh.refresh(lesson, store: store) }.navigationTitle(lesson.title).navigationBarTitleDisplayMode(.inline)
         .toolbar { Menu { Button("添加自己的资料") { addResource = true }; Button("导入文件") { importFile = true }; Button("写课文笔记") { addNote = true } } label: { Image(systemName: "ellipsis.circle") }.accessibilityLabel("更多") }
         .sheet(isPresented: $addNote) { NoteEditor(lessonID: lesson.id) }
         .sheet(isPresented: $addResource) { ResourceEditor(lessonID: lesson.id) }

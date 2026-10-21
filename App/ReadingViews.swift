@@ -12,12 +12,14 @@ struct ReadingView: View {
     @State private var draft: NoteDraft?
     @State private var browser: BrowserLink?
     @State private var showDelete = false
+    @State private var webSelectionMessage: String?
     @StateObject private var web = WebStudyController()
     @StateObject private var selection = TextSelectionController()
     @State private var textHeight: CGFloat = 400
     var marks: [StudyMark] { store.data.marks.filter { $0.resourceID == resource.id } }
     var localURL: URL? { guard !resource.localFile.isEmpty else { return nil }; return try? store.disk?.attachmentURL(resource.localFile) }
     var isVideo: Bool { resource.kind == .video || resource.kind == .localVideo }
+    var isWebText: Bool { !isVideo && resource.kind != .pdf && resource.body.isEmpty && SearchEngine.validatedURL(resource.url) != nil }
     var body: some View {
         VStack(spacing: 0) {
             if isVideo {
@@ -25,6 +27,11 @@ struct ReadingView: View {
             } else if resource.kind == .pdf, let url = localURL {
                 PDFReader(url: url, marks: marks) { text, regions in draft = NoteDraft(quote: text, regions: regions) }
             } else if resource.body.isEmpty, let url = SearchEngine.validatedURL(resource.url) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(resource.source).font(.caption)
+                    Text(web.failed ? "原站加载失败，可稍后重试或写笔记。" : "原作者公开文字 · 若原站要求登录、限制阅读或选区，请遵循页面提示。").font(.caption).foregroundColor(.secondary)
+                    if let message = webSelectionMessage { Text(message).font(.caption).foregroundColor(GardenTheme.mint) }
+                }.frame(maxWidth: .infinity, alignment: .leading).padding(12)
                 EmbeddedResource(url: url, controller: web)
             } else {
                 ScrollView {
@@ -48,6 +55,13 @@ struct ReadingView: View {
             if !isVideo {
             Divider()
             HStack(spacing: 0) {
+            if isWebText {
+                Button { web.selectedText { quote in
+                    if quote.isEmpty { webSelectionMessage = "请先长按选中文字；原站限制选区时可手动写笔记。" }
+                    else { webSelectionMessage = nil; draft = NoteDraft(quote: quote) }
+                } } label: { Label("摘录选中文字", systemImage: "highlighter").font(.headline).frame(maxWidth: .infinity).padding(15) }.accessibilityIdentifier("web-quote-selection")
+                Divider().frame(height: 24)
+            }
             if !resource.body.isEmpty && resource.kind != .pdf && resource.kind != .video && resource.kind != .localVideo {
                 Button { selection.mark() } label: { Label("划重点", systemImage: "highlighter").font(.headline).frame(maxWidth: .infinity).padding(15) }.disabled(!selection.hasSelection).accessibilityIdentifier("highlight-selection")
                 Divider().frame(height: 24)

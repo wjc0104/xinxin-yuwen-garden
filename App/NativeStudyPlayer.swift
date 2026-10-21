@@ -21,6 +21,7 @@ private final class PlayerClock {
     @Published private(set) var height: Int?
     @Published private(set) var seconds: Int?
     @Published private(set) var playing = false
+    @Published private(set) var originalURL: URL?
     private var identity: String?
     private var generation = UUID()
     private var statusObserver: NSKeyValueObservation?
@@ -39,7 +40,7 @@ private final class PlayerClock {
     func load(_ resource: StudyResource, localURL: URL? = nil, at initial: Int? = nil, force: Bool = false) async {
         if !force, identity == resource.id, player != nil, problem == nil { return }
         let token = UUID(); generation = token
-        identity = resource.id; ready = false; loading = true; problem = nil; height = nil; seconds = nil
+        identity = resource.id; ready = false; loading = true; problem = nil; height = nil; seconds = nil; originalURL = nil
         clearPlayer()
         do {
             let url: URL
@@ -49,8 +50,11 @@ private final class PlayerClock {
                 url = localURL
             } else {
                 let reference = try BilibiliPlayback.reference(resource.url)
-                let cid = try BilibiliPlayback.contentID(try await data(reference.metadataURL), page: reference.page)
-                let source = try BilibiliPlayback.source(try await data(reference.playbackURL(cid: cid)))
+                let parts = try BilibiliPlayback.parts(try await data(reference.partListURL))
+                let part = try BilibiliPlayback.resolve(parts, reference: reference, knownCID: resource.videoCID)
+                guard generation == token, !Task.isCancelled else { return }
+                originalURL = URL(string: "https://www.bilibili.com/video/\(reference.bvid)/?p=\(part.page)")
+                let source = try BilibiliPlayback.source(try await data(reference.playbackURL(cid: part.cid)))
                 url = source.url
                 guard generation == token, !Task.isCancelled else { return }
                 height = source.offeredHeight
@@ -127,7 +131,12 @@ private final class PlayerClock {
         request.setValue("Mozilla/5.0", forHTTPHeaderField: "User-Agent")
         request.setValue("https://www.bilibili.com/", forHTTPHeaderField: "Referer")
         let (data,response) = try await session.data(for: request)
-        guard let response = response as? HTTPURLResponse, response.statusCode == 200, data.count <= 4*1024*1024 else { throw GardenError.invalid("原站暂时没有返回视频信息。") }
+        guard let response = response as? HTTPURLResponse else { throw GardenError.invalid("原站暂时没有返回视频信息。") }
+        guard response.statusCode == 200 else {
+            print("NATIVE_SOURCE_HTTP \(response.statusCode) \(url.path)")
+            throw GardenError.invalid("原站请求失败（HTTP \(response.statusCode)），请稍后重试。")
+        }
+        guard data.count <= 4*1024*1024 else { throw GardenError.invalid("原站视频信息过大。") }
         return data
     }
     private func clearPlayer() {

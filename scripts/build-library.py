@@ -50,7 +50,7 @@ for path in sorted((ROOT/'scripts/resources').glob('BV*.json')):
             if not matches(p['part'],l) and explicit.get((d['bvid'],p['page']))!=l['id']: continue
             url=f"https://www.bilibili.com/video/{d['bvid']}/?p={p['page']}"
             items.append(dict(id=f"curated-{l['id']}-{d['bvid']}-{p['page']}", lessonID=l['id'],
-                title=p['part'], kind='video', body='',url=url,localFile='',source=d['owner']['name'],isPaid=False,
+                title=p['part'], kind='video', videoCID=p['cid'], body='',url=url,localFile='',source=d['owner']['name'],isPaid=False,
                 category='面试讲解' if interview else '课堂示范',
                 thumbnail=(p.get('first_frame') or d.get('pic','')).replace('http://','https://'),durationSeconds=p['duration'],
                 checkedAt='2026-10-21', summary='教资、教招备课参考；按具体题目选取十分钟教学片段。' if interview else '观察讲解顺序、提问与课堂活动，常规课时不等于十分钟试讲。'))

@@ -16,6 +16,7 @@ for r in rs:
         bv=u.path.split('/')[2];page=int(parse_qs(u.query)['p'][0])
         part=next(p for p in metadata[bv]['pages'] if p['page']==page)
         assert r['title']==part['part'] and r['durationSeconds']==part['duration'],r['id']
+        assert r.get('videoCID') == part['cid'] and r['videoCID'] > 0,r['id']
         assert r['durationSeconds']>=90 and r['checkedAt'],r['id']
     else: assert len(r['body'])>=100,r['id']
     assert 'baidu.com' not in r['url'] and '/search' not in r['url'],r['id']
