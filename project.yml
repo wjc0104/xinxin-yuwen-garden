@@ -41,6 +41,18 @@ targets:
     dependencies:
       - package: GardenCore
         product: GardenCore
+  GardenAppTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [AppTests]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.wm0104.xinxingarden.apptests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/XinxinGarden.app/XinxinGarden
+        BUNDLE_LOADER: $(TEST_HOST)
+    dependencies:
+      - target: XinxinGarden
   GardenUITests:
     type: bundle.ui-testing
     platform: iOS
@@ -59,4 +71,4 @@ schemes:
       targets:
         XinxinGarden: all
     test:
-      targets: [GardenUITests]
+      targets: [GardenAppTests, GardenUITests]
