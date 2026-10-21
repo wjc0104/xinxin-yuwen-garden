@@ -26,6 +26,8 @@ private final class PlayerClock {
     static let playbackRates: [Float] = [0.5, 0.75, 1, 1.25, 1.5, 2]
     private var identity: String?
     private var generation = UUID()
+    private var lastPosition: Int?
+    private var pendingSeek: UUID?
     private var statusObserver: NSKeyValueObservation?
     private var playbackObserver: NSKeyValueObservation?
     private var rateObserver: NSKeyValueObservation?
@@ -44,6 +46,10 @@ private final class PlayerClock {
 
     func load(_ resource: StudyResource, localURL: URL? = nil, at initial: Int? = nil, force: Bool = false) async {
         if !force, identity == resource.id, player != nil, problem == nil { return }
+        // Capture before replacing a failed item. Readiness may already be false.
+        let resume = identity == resource.id ? (currentSeconds() ?? initial) : initial
+        if identity != resource.id { lastPosition = nil }
+        if let resume = resume, (0...86400).contains(resume) { lastPosition = resume }
         let token = UUID(); generation = token
         identity = resource.id; ready = false; loading = true; problem = nil; height = nil; seconds = nil; originalURL = nil
         clearPlayer()
@@ -84,12 +90,9 @@ private final class PlayerClock {
                             let actual = Int(min(abs(size.width), abs(size.height)))
                             if actual > 0 { self.height = actual }
                         }
-                        if let initial = initial, initial > 0 { self.seek(initial) }
+                        if let resume = resume, resume > 0 { self.seek(resume) }
                     } else if item.status == .failed {
-                        self.loadWatchdog?.cancel(); self.loadWatchdog = nil
-                        if let error = item.error as NSError? { print("NATIVE_PLAYER_ERROR \(error.domain) \(error.code)") }
-                        self.ready = false; self.loading = false
-                        self.problem = "系统播放器暂时无法连接视频源，请重试。"
+                        self.playbackFailed(item)
                     }
                 }
             }
@@ -113,10 +116,13 @@ private final class PlayerClock {
                 self.loading = false
                 self.problem = "视频连接超时，请重试。"
             }
-            clock = PlayerClock(value) { [weak self] time in
+            clock = PlayerClock(value) { [weak self, weak value] _ in
                 Task { @MainActor [weak self] in
-                    guard let self = self, self.generation == token, time.seconds.isFinite, time.seconds >= 0, time.seconds <= 86400 else { return }
-                    let next = Int(time.seconds)
+                    guard let self = self, self.generation == token, self.ready, self.pendingSeek == nil, value?.currentItem?.status == .readyToPlay,
+                          let elapsed = value?.currentTime().seconds, elapsed.isFinite, elapsed >= 0, elapsed <= 86400 else { return }
+                    // Read now: an enqueued pre-seek callback must not restore its stale zero sample.
+                    let next = Int(elapsed)
+                    self.lastPosition = next
                     if self.seconds != next { self.seconds = next }
                 }
             }
@@ -128,6 +134,17 @@ private final class PlayerClock {
             problem = (error as? GardenError)?.localizedDescription ?? "没有取得可播放的视频源，请联网后重试。"
         }
     }
+    // Shared failure path; stale item callbacks cannot overwrite the current resource.
+    func playbackFailed(_ item: AVPlayerItem) {
+        guard player?.currentItem === item else { return }
+        _ = currentSeconds()
+        pendingSeek = nil
+        loadWatchdog?.cancel(); loadWatchdog = nil
+        if let error = item.error as NSError? { print("NATIVE_PLAYER_ERROR \(error.domain) \(error.code)") }
+        player?.pause()
+        ready = false; loading = false; playing = false
+        problem = "系统播放器暂时无法连接视频源，请重试。"
+    }
     func playPause() { guard ready, let player = player else { return }; if player.timeControlStatus != .paused { player.pause() } else { player.rate = playbackRate } }
     func setPlaybackRate(_ rate: Float) {
         guard Self.playbackRates.contains(rate) else { return }
@@ -137,14 +154,31 @@ private final class PlayerClock {
     }
     func pause() { player?.pause() }
     func currentSeconds() -> Int? {
-        guard ready, let value = player?.currentTime().seconds, value.isFinite, value >= 0, value <= 86400 else { return nil }
-        return Int(value)
+        if ready, pendingSeek == nil, player?.currentItem?.status == .readyToPlay, let value = player?.currentTime().seconds, value.isFinite, value >= 0, value <= 86400 {
+            lastPosition = Int(value)
+        }
+        return lastPosition
     }
     func seek(_ seconds: Int) {
         guard ready, let player = player, seconds >= 0 else { return }
         let duration = player.currentItem?.duration.seconds ?? .nan
         let target = duration.isFinite ? min(Double(seconds), max(0, duration - 0.1)) : Double(seconds)
-        player.seek(to: CMTime(seconds: target, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero)
+        let token = generation, seekToken = UUID()
+        pendingSeek = seekToken
+        player.seek(to: CMTime(seconds: target, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero) { [weak self, weak player] success in
+            Task { @MainActor [weak self] in
+                guard let self = self, self.generation == token, self.player === player,
+                      self.pendingSeek == seekToken else { return }
+                self.pendingSeek = nil
+                if success {
+                    self.lastPosition = Int(target); self.seconds = Int(target)
+                } else {
+                    // A failed restoration must not silently replace the saved position with zero.
+                    self.ready = false; player?.pause(); self.playing = false
+                    self.problem = "没有恢复到上次时间点，请重试。"
+                }
+            }
+        }
     }
     private func data(_ url: URL) async throws -> Data {
         var request = URLRequest(url: url)
@@ -174,6 +208,7 @@ private final class PlayerClock {
     private func clearPlayer() {
         loadWatchdog?.cancel(); loadWatchdog = nil
         player?.pause()
+        pendingSeek = nil
         clock = nil; statusObserver = nil; playbackObserver = nil; rateObserver = nil; player = nil; playing = false
     }
 }

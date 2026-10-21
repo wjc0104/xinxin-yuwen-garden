@@ -54,6 +54,51 @@ final class LessonContentTests: XCTestCase {
         XCTAssertEqual(resources.map(\.videoCID), [2])
         XCTAssertEqual(resources.first?.id, "live-7u-01-BV137LizrE4S-2")
     }
+    func testMissingAnthologiesUseNamedWorksAndBoundQueries() throws {
+        let groups: [(String, [String])] = [
+            ("《世说新语》二则", ["咏雪", "陈太丘与友期行"]),
+            ("《孟子》三章", ["得道多助，失道寡助", "富贵不能淫", "生于忧患，死于安乐"]),
+            ("《诗经》二首", ["关雎", "蒹葭"]),
+            ("《庄子》二则", ["北冥有鱼", "庄子与惠子游于濠梁之上"]),
+            ("《礼记》二则", ["虽有嘉肴", "大道之行也"]),
+            ("消息二则", ["我三十万大军胜利南渡长江", "人民解放军百万大军横渡长江"]),
+            ("阿西莫夫短文两篇", ["恐龙无处不有", "被压扁的沙子"]),
+            ("寓言四则", ["赫耳墨斯和雕像者", "蚊子和狮子", "穿井得一人", "杞人忧天"])
+        ]
+        for (title, works) in groups {
+            let lesson = Lesson(id: "anthology", number: 1, title: title, focus: works)
+            XCTAssertEqual(LessonContent.keys(lesson), works)
+            XCTAssertEqual(LessonContent.discoveryKeywords(lesson), works.map { $0 + " 语文" })
+            for work in works { XCTAssertTrue(LessonContent.matches("《" + work + "》语文教学", lesson: lesson)) }
+            XCTAssertFalse(LessonContent.matches("初中语文全册合集", lesson: lesson))
+        }
+        let ordinary = Lesson(id: "single", number: 1, title: "背影", focus: ["朗读", "父爱", "细节描写"])
+        XCTAssertEqual(LessonContent.discoveryKeywords(ordinary), ["背影 语文"])
+        XCTAssertFalse(LessonContent.matches("父爱教学", lesson: ordinary))
+        let zhuangzi = Lesson(id: "8d-21", number: 21, title: "《庄子》二则", focus: ["北冥有鱼", "庄子与惠子游于濠梁之上"])
+        let article = try LessonContent.articles(bytes(#"{"code":0,"data":{"result":[{"id":123,"title":"北冥有鱼教学设计","author":"老师"},{"id":124,"title":"语文全册教学设计","author":"老师"}]}}"#), lesson: zhuangzi, checkedAt: "today")
+        XCTAssertEqual(article.map(\.id), ["live-8d-21-cv123"])
+        let video = try XCTUnwrap(try LessonContent.videos(bytes(#"{"code":0,"data":{"result":[{"bvid":"BV137LizrE4S","title":"初中语文全册","author":"语文老师"}]}}"#)).first)
+        let parts = [BilibiliPart(page: 1, cid: 1, part: "北冥有鱼", duration: 600), BilibiliPart(page: 2, cid: 2, part: "庄子与惠子游于濠梁之上", duration: 600), BilibiliPart(page: 3, cid: 3, part: "泛论人生", duration: 600)]
+        XCTAssertEqual(LessonContent.resources(video, parts: parts, lesson: zhuangzi, checkedAt: "today").map(\.videoCID), [1, 2])
+        XCTAssertEqual(LessonContent.discoveryKeywords(Lesson(id: "five", number: 1, title: "唐诗五首", focus: (1...8).map { "篇名\($0)" })).count, 5)
+    }
+    func testLiveSpeakingPlanStaysALinkRatherThanTrialScript() throws {
+        let rows = try LessonContent.articles(bytes(#"{"code":0,"data":{"result":[{"id":12,"title":"《春》语文说课稿与试讲建议","author":"老师"}]}}"#), lesson: spring, checkedAt: "today")
+        let plan = try XCTUnwrap(rows.first)
+        XCTAssertEqual(plan.category, "说课稿")
+        XCTAssertEqual(plan.kind, .link)
+        XCTAssertTrue(plan.body.isEmpty)
+        XCTAssertEqual(plan.url, "https://www.bilibili.com/read/cv12")
+    }
+    func testVideoMetadataRejectsNoncanonicalBVTokens() throws {
+        for suffix in ["?p=2", "#fragment", "/", "/other", "?p=2#fragment", "\n", " "] {
+            let payload = try JSONSerialization.data(withJSONObject: ["code":0,"data":["result":[["bvid":"BV137LizrE4S" + suffix,"title":"《春》语文","author":"老师"]]]])
+            XCTAssertTrue(try LessonContent.videos(payload).isEmpty, suffix)
+        }
+        let valid = try LessonContent.videos(bytes(#"{"code":0,"data":{"result":[{"bvid":"BV137LizrE4S","title":"《春》语文","author":"老师"}]}}"#))
+        XCTAssertEqual(valid.map(\.bvid), ["BV137LizrE4S"])
+    }
     func testMergeRetainsCuratedIDNotesAndLinksWhenPartMovesOrRefreshEmpty() {
         var old = StudyResource(id: "curated-9d-extra6-4-BV137LizrE4S-46", lessonID: "9d-extra6-4", title: "朝天子·咏喇叭", kind: .video, url: "https://www.bilibili.com/video/BV137LizrE4S/?p=46")
         old.videoCID = 29807281516

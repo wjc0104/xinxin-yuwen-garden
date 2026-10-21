@@ -78,7 +78,7 @@ def collect(args):
         for row in rows:
             add_candidate(candidates, row.get('title', ''), row.get('url', ''), lessons,
                           'publisher-discovery', row.get('lessonID'))
-    if args.discover_index and not args.offline:
+    if args.discover_index and not args.offline and not getattr(args, 'recheck_scripts', False):
         raw, final, ct = fetch('https://www.gushiwen.cn/gushi/chuzhong.aspx', args.delay)
         markup, _ = decode_page(raw, ct)
         page = Page(markup)
@@ -92,7 +92,7 @@ def collect(args):
     # One genuine query per catalog entry, at most one page. Three consecutive blocks trip a circuit.
     blocked = 0
     attempted = 0
-    if not args.offline:
+    if not args.offline and not getattr(args, 'recheck_scripts', False):
         for lesson in lessons:
             lid = lesson['id']
             previous = searches.get(lid)
@@ -136,13 +136,17 @@ def collect(args):
             write(candidates_path, candidates)
             print('search', lid, state['status'], flush=True)
 
+    if not args.offline:
         # Validate each unique URL once; cache metadata, never article markup or body.
         bili_original_blocks = 0
         for url in dict.fromkeys(c['url'] for c in candidates):
             if urlparse(url).hostname == 'www.bilibili.com' and bili_original_blocks >= 3:
                 continue
             previous = evidence.get(url)
-            recheck = (getattr(args, 'recheck_unreadable_publishers', False) and
+            script_recheck = getattr(args, 'recheck_scripts', False)
+            if script_recheck and (not previous or previous.get('category') != '试讲稿' or previous.get('status') != 'readable'):
+                continue
+            recheck = script_recheck or (getattr(args, 'recheck_unreadable_publishers', False) and
                        urlparse(url).hostname != 'www.bilibili.com' and
                        previous and (previous['status'] == 'no-readable-body' or
                        previous.get('pageTitle') in {'分享到', '分享', '华图教育', '全部资讯'}))
@@ -177,11 +181,17 @@ def collect(args):
                 state.update(status='blocked' if error.code in {403, 412, 429} else 'http-error', http=error.code)
             except (URLError, TimeoutError, ValueError, OSError, UnicodeError, LookupError):
                 state['status'] = 'fetch-or-decode-error'
+            if script_recheck and state['status'] != 'readable':
+                # Keep the last verified readable association, but withdraw unverified script claims.
+                attempt = state
+                state = {k: v for k, v in previous.items() if k not in {'dialogueCount', 'scriptEnding'}}
+                state.update(category='教学设计', scriptRecheck=attempt, dialogueRule='unverified-v2')
             evidence[url] = state
             if urlparse(url).hostname == 'www.bilibili.com':
                 bili_original_blocks = bili_original_blocks + 1 if state['status'] == 'blocked' else 0
             write(evidence_path, evidence)
-            print('original', len(evidence), state['status'], url, flush=True)
+            print('original', len(evidence), state['status'], url,
+                  ('recheck=' + state['scriptRecheck']['status'] + '/http=' + str(state['scriptRecheck'].get('http'))) if 'scriptRecheck' in state else '', flush=True)
 
     resources = []
     for candidate in candidates:
@@ -195,11 +205,15 @@ def collect(args):
         host = urlparse(candidate['url']).hostname
         digest = hashlib.sha256(candidate['url'].encode()).hexdigest()[:16]
         category = '课文解读' if classical else state['category']
+        if category == '试讲稿' and state.get('dialogueRule') != 'nonoverlapping-v2':
+            category = '教学设计'  # Counts alone cannot be migrated without fetching the original body.
         summary = '原站公开正文已抽查；未逐篇审定教学质量，阅读与选区以原站为准。'
         if classical:
             summary = '原文、译注或赏析；供理解作品，不是试讲稿。'
         elif category == '教学设计' and '试讲' in state['pageTitle']:
             summary = '原题标为试讲；正文为教学流程参考，不计为逐字试讲稿。'
+        if state.get('scriptRecheck'):
+            summary = '先前核实原文可读；本次试讲稿复核受阻，暂列教学参考，不计为逐字试讲稿。'
         paid_download = host == 'zy.21cnjy.com'
         if paid_download:
             summary += ' 原站文件下载可能付费；仅计已核实可读的网页正文。'
@@ -243,6 +257,8 @@ if __name__ == '__main__':
     parser.add_argument('--import-hints', action='append', default=[])
     parser.add_argument('--discover-index', action='store_true')
     parser.add_argument('--offline', action='store_true')
+    parser.add_argument('--recheck-scripts', action='store_true',
+                        help='only recheck currently accepted script originals, never resume searches')
     parser.add_argument('--retry', action='store_true')
     parser.add_argument('--recheck-unreadable-publishers', action='store_true',
                         help='recheck non-Bili pages after article-container rule updates')

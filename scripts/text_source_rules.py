@@ -196,11 +196,12 @@ def inspect_page(data, host, content_type=''):
     markers = [m for m in ['译文', '注释', '赏析', '简析', '教学目标', '教学过程', '教学重难点', '教学重点',
                           '教学难点', '导入', '板书', '作业', '同学们', '师：', '生：', '师:', '生:', '答：',
                           '答辩', '参考答案', '回答'] if m in body]
-    dialogue = sum(body.count(m) for m in ['同学们', '师：', '生：', '师:', '生:', '请同学'])
+    # Longest alternative first: 请同学们 is one speech cue, not two.
+    dialogue = len(re.findall(r'请同学们|请同学|同学们|师[：:]|生[：:]', body))
     ending = any(m in body[len(body) * 2 // 3:] for m in ['下课', '再见', '作业', '小结', '总结', '板书'])
     # Store only counts/flags/title, never body or descriptions.
     evidence = dict(pageTitle=title[:500], encoding=charset, contentChars=len(re.sub(r'\s+', '', body)),
-                    markers=markers, dialogueCount=dialogue, scriptEnding=ending)
+                    markers=markers, dialogueCount=dialogue, dialogueRule="nonoverlapping-v2", scriptEnding=ending)
     if host == 'www.gushiwen.cn':
         category = '课文解读'
         meaningful = evidence['contentChars'] >= 200 and any(m in markers for m in ['译文', '注释', '赏析', '简析'])

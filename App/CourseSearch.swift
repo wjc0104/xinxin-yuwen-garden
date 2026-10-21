@@ -19,6 +19,8 @@ struct SearchView: View {
                 TextField("搜索课文、作者或教学重点", text: $query).submitLabel(.search).accessibilityIdentifier("search-input")
                 if !query.isEmpty { Button { query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundColor(.secondary) }.accessibilityLabel("清空搜索") }
             }.padding(14).background(GardenTheme.card).clipShape(RoundedRectangle(cornerRadius: 12))
+            Text("这里搜索本机课程和已有资料；进入课文后，可联网查找新的视频和文字资料。")
+                .font(.caption).foregroundColor(.secondary).accessibilityIdentifier("local-search-hint")
             if query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Text("按课文顺序学习").font(.headline)
                 BookGrid()

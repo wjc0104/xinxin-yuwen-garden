@@ -92,7 +92,7 @@ struct LessonView: View {
             }
             GardenCard {
                 Button { Task { await refresh.refresh(lesson, store: store) } } label: {
-                    HStack { if refresh.busy { ProgressView() } else { Image(systemName: "arrow.clockwise") }; Text(refresh.busy ? "正在刷新本课资料…" : "刷新本课资料").font(.headline); Spacer() }.padding(.vertical, 6)
+                    HStack { if refresh.busy { ProgressView() } else { Image(systemName: "arrow.clockwise") }; Text(refresh.busy ? "正在联网查找本课资料…" : "联网查找本课资料").font(.headline); Spacer() }.padding(.vertical, 6)
                 }.disabled(refresh.busy).accessibilityIdentifier("refresh-lesson")
                 Text("查找本课视频、原作者公开试讲稿、教学设计与课文解读。原文在站内页面阅读，未逐篇审定。").font(.caption).foregroundColor(.secondary)
                 if let message = refresh.message { Text(message).font(.caption).foregroundColor(refresh.hasFailure ? .orange : GardenTheme.mint).accessibilityIdentifier("refresh-status") }

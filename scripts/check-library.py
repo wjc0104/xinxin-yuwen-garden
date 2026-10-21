@@ -40,7 +40,7 @@ for r in rs:
                 r['lessonID'] in state.get('anthologyMatches',[]) or
                 r['lessonID'] in state.get('workMatches',[])),r['id']
         if r['kind']=='script':
-            assert r['category']=='试讲稿' and state['dialogueCount']>=3 and state.get('scriptEnding'),r['id']
+            assert r['category']=='试讲稿' and state['dialogueCount']>=3 and state.get('dialogueRule')=='nonoverlapping-v2' and state.get('scriptEnding'),r['id']
         else:assert r['category']!='试讲稿',r['id']
     else: assert len(r['body'])>=100,r['id']
     assert 'baidu.com' not in r['url'] and '/search' not in r['url'],r['id']

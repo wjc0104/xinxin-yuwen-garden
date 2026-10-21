@@ -15,11 +15,15 @@ struct FullScreenStudyPlayer: View {
                         .padding(12).background(Color.black.opacity(0.75)).cornerRadius(12)
                 }.accessibilityIdentifier("video-exit-fullscreen")
                 Spacer()
+                Text(video.seconds.map { String(format: "%02d:%02d", $0 / 60, $0 % 60) } ?? "--:--")
+                    .font(.caption.monospacedDigit()).accessibilityIdentifier("fullscreen-video-position")
                 PlaybackSpeedMenu(video: video, identifier: "fullscreen-video-speed")
                     .padding(12).background(Color.black.opacity(0.75)).cornerRadius(12)
             }
             .foregroundColor(.white).padding(16)
-        }.background(Color.black).accessibilityIdentifier("fullscreen-video")
+        }.background(Color.black)
+            .background(InterfaceOrientationObservation().allowsHitTesting(false))
+            .accessibilityIdentifier("fullscreen-video")
     }
 }
 
@@ -52,4 +56,35 @@ private struct NativeFullScreenPlayer: UIViewControllerRepresentable {
         return controller
     }
     func updateUIViewController(_ controller: AVPlayerViewController, context: Context) {}
+}
+
+/// Public window-scene orientation, exposed for accessibility/native rotation verification.
+private struct InterfaceOrientationObservation: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> OrientationController { OrientationController() }
+    func updateUIViewController(_ controller: OrientationController, context: Context) {}
+
+    final class OrientationController: UIViewController {
+        override func viewDidLoad() {
+            super.viewDidLoad()
+            view.backgroundColor = .clear
+            view.isAccessibilityElement = true
+            view.accessibilityIdentifier = "fullscreen-interface-orientation"
+            view.accessibilityLabel = "屏幕方向"
+        }
+        override func viewDidAppear(_ animated: Bool) { super.viewDidAppear(animated); updateOrientation() }
+        override func viewDidLayoutSubviews() { super.viewDidLayoutSubviews(); updateOrientation() }
+        override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+            super.viewWillTransition(to: size, with: coordinator)
+            coordinator.animate(alongsideTransition: nil) { [weak self] _ in self?.updateOrientation() }
+        }
+        private func updateOrientation() {
+            switch view.window?.windowScene?.interfaceOrientation {
+            case .landscapeLeft: view.accessibilityValue = "landscapeLeft"
+            case .landscapeRight: view.accessibilityValue = "landscapeRight"
+            case .portrait: view.accessibilityValue = "portrait"
+            case .portraitUpsideDown: view.accessibilityValue = "portraitUpsideDown"
+            default: view.accessibilityValue = "unknown"
+            }
+        }
+    }
 }

@@ -95,6 +95,39 @@ import GardenCore
         XCTAssertEqual(video.playbackRate, 2)
         video.playPause()
         await assertRate(player, equals: 2)
+        // Exercise the same handler used by AVPlayerItem failure after a nonzero seek.
+        video.pause()
+        video.playbackFailed(item)
+        XCTAssertFalse(video.ready)
+        XCTAssertEqual(Double(try XCTUnwrap(video.currentSeconds())), 205, accuracy: 2)
+        var unavailable = resource; unavailable.url = "invalid"
+        await video.load(unavailable, force: true)
+        XCTAssertFalse(video.ready)
+        XCTAssertNotNil(video.problem)
+        XCTAssertEqual(Double(try XCTUnwrap(video.currentSeconds())), 205, accuracy: 2, "A failed retry must retain the same resource's position")
+        await video.load(resource, force: true)
+        XCTAssertEqual(Double(try XCTUnwrap(video.currentSeconds())), 205, accuracy: 2, "Replacement loading/initial seek cannot overwrite the retained position with zero")
+        let retried = expectation(description: "Retry restores the last position on the replacement item")
+        let retryClock = video.$seconds.compactMap { $0 }.filter { $0 >= 204 }.prefix(1).sink { _ in retried.fulfill() }
+        await fulfillment(of: [retried], timeout: 40)
+        withExtendedLifetime(retryClock) {}
+        XCTAssertTrue(video.ready)
+        XCTAssertEqual(video.playbackRate, 2)
+        XCTAssertEqual(video.player?.rate, 0, "Retry and seek preserve the paused state")
+        XCTAssertEqual(Double(try XCTUnwrap(video.currentSeconds())), 205, accuracy: 2)
+        video.playbackFailed(item) // callback from the replaced generation
+        XCTAssertNil(video.problem)
+        video.seek(0)
+        let reset = expectation(description: "An explicit seek to zero still replaces the retained position")
+        let resetClock = video.$seconds.filter { $0 == 0 }.prefix(1).sink { _ in reset.fulfill() }
+        await fulfillment(of: [reset], timeout: 10)
+        withExtendedLifetime(resetClock) {}
+        XCTAssertEqual(video.currentSeconds(), 0)
+        var other = resource; other.id = "different-video"; other.url = "invalid"
+        await video.load(other, force: true)
+        XCTAssertNil(video.currentSeconds(), "The old resource's position must not leak into another video")
+        video.playbackFailed(item)
+        XCTAssertNil(video.currentSeconds())
     }
     private func assertRate(_ player: AVPlayer, equals expected: Float) async {
         let settled = expectation(description: "Native player retains selected \(expected)x speed")

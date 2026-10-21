@@ -35,7 +35,7 @@ public enum LessonContent {
     }
     public static func videos(_ data: Data) throws -> [LessonVideoCandidate] {
         try rows(data).compactMap { row in
-            guard let bv = row["bvid"] as? String, (try? BilibiliPlayback.reference("https://www.bilibili.com/video/" + bv)) != nil else { return nil }
+            guard let bv = row["bvid"] as? String, bv.count == 12, bv.range(of: "^BV[A-Za-z0-9]{10}$", options: .regularExpression) != nil else { return nil }
             let title = text(row["title"] as? String ?? ""), author = text(row["author"] as? String ?? "")
             guard !title.isEmpty, !author.isEmpty else { return nil }
             return LessonVideoCandidate(bvid: bv, title: title, author: author, thumbnail: imageURL(row["pic"] as? String), duration: TimeLabel.seconds(row["duration"] as? String ?? ""))
@@ -54,15 +54,21 @@ public enum LessonContent {
         }
     }
     public static func articleCategory(_ title: String) -> String {
-        if ["试讲稿", "逐字稿", "试讲", "说课稿"].contains(where: title.contains) { return "试讲稿" }
+        if title.contains("说课") { return "说课稿" }
+        if ["试讲稿", "逐字稿", "试讲"].contains(where: title.contains) { return "试讲稿" }
         if ["教学设计", "教案", "教学实录"].contains(where: title.contains) { return "教学设计" }
         return "课文解读"
     }
     public static func keys(_ lesson: Lesson) -> [String] {
-        let aliases = ["7d-02":["说和做"], "8u-04":["飞天凌空"], "8u-05":["一着惊海天"], "9u-05":["你是人间的四月天"], "8u-21":["人民英雄永垂不朽"]]
-        let anthologies = ["短文两篇", "短文二篇", "散文二篇", "散文诗二首", "古代诗歌四首", "古代诗歌五首", "唐诗五首", "诗词五首", "词四首", "诗词三首", "诗词曲五首", "短诗五首", "唐诗三首"]
+        let aliases = ["7d-02":["说和做"], "8u-04":["飞天凌空"], "8u-05":["一着惊海天"], "9u-05":["你是人间的四月天"], "8u-21":["人民英雄永垂不朽"], "7d-extra3-4":["晚春二首·其一"], "7d-extra6-3":["过松源晨炊漆公店六首·其五"], "9u-extra6-2":["无题·相见时难别亦难"]]
+        let anthologies = ["短文两篇", "短文二篇", "散文二篇", "散文诗二首", "古代诗歌四首", "古代诗歌五首", "唐诗五首", "诗词五首", "词四首", "诗词三首", "诗词曲五首", "短诗五首", "唐诗三首", "《世说新语》二则", "《孟子》三章", "《诗经》二首", "《庄子》二则", "《礼记》二则", "消息二则", "阿西莫夫短文两篇", "寓言四则"]
         let titles = anthologies.contains(lesson.title) ? lesson.focus.filter { $0 != "课外古诗词诵读" } : [lesson.title] + (aliases[lesson.id] ?? [])
-        return titles.map { $0.replacingOccurrences(of: "（节选）", with: "").components(separatedBy: "——")[0] }.filter { !$0.isEmpty }
+        return titles.map { $0.replacingOccurrences(of: "（节选）", with: "").replacingOccurrences(of: "(节选)", with: "").components(separatedBy: "——")[0] }.filter { !$0.isEmpty }
+    }
+    /// At most five named works, three first-page searches each; never use arbitrary teaching focus.
+    public static func discoveryKeywords(_ lesson: Lesson) -> [String] {
+        var seen = Set<String>()
+        return keys(lesson).filter { seen.insert($0).inserted }.prefix(5).map { $0 + " 语文" }
     }
     public static func matches(_ raw: String, lesson: Lesson, context: String = "") -> Bool {
         let title = text(raw)

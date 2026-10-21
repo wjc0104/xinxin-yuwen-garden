@@ -3,10 +3,10 @@
   "lessonCount": 198,
   "publicTextCount": 336,
   "publicTextCovered": 198,
-  "trialScriptCovered": 11,
+  "trialScriptCovered": 8,
   "categoryCounts": {
-    "教学设计": 165,
-    "试讲稿": 16,
+    "教学设计": 168,
+    "试讲稿": 13,
     "说课稿": 8,
     "课文解读": 144,
     "面试答辩": 3
@@ -49,8 +49,16 @@
       "title": "《世说新语》二则"
     },
     {
+      "lessonID": "7u-09",
+      "title": "从百草园到三味书屋"
+    },
+    {
       "lessonID": "7u-10",
       "title": "往事依依"
+    },
+    {
+      "lessonID": "7u-11",
+      "title": "再塑生命的人"
     },
     {
       "lessonID": "7u-12",
@@ -139,6 +147,10 @@
     {
       "lessonID": "7d-03",
       "title": "列夫·托尔斯泰"
+    },
+    {
+      "lessonID": "7d-04",
+      "title": "孙权劝学"
     },
     {
       "lessonID": "7d-05",
@@ -1305,10 +1317,9 @@
       "publicTextCount": 4,
       "categories": [
         "教学设计",
-        "试讲稿",
         "课文解读"
       ],
-      "trialScriptCount": 1,
+      "trialScriptCount": 0,
       "bilibiliSearch": {
         "query": "从百草园到三味书屋 语文 试讲 教学设计",
         "checkedAt": "2026-10-21",
@@ -1339,7 +1350,7 @@
           "status": "http-error"
         }
       ],
-      "missing": ""
+      "missing": "未找到已核实的试讲稿"
     },
     {
       "lessonID": "7u-10",
@@ -1382,10 +1393,9 @@
       "title": "再塑生命的人",
       "publicTextCount": 3,
       "categories": [
-        "教学设计",
-        "试讲稿"
+        "教学设计"
       ],
-      "trialScriptCount": 1,
+      "trialScriptCount": 0,
       "bilibiliSearch": {
         "query": "再塑生命的人 语文 试讲 教学设计",
         "checkedAt": "2026-10-21",
@@ -1412,7 +1422,7 @@
           "status": "http-error"
         }
       ],
-      "missing": ""
+      "missing": "未找到已核实的试讲稿"
     },
     {
       "lessonID": "7u-12",
@@ -1982,10 +1992,10 @@
       "title": "孙权劝学",
       "publicTextCount": 2,
       "categories": [
-        "试讲稿",
+        "教学设计",
         "课文解读"
       ],
-      "trialScriptCount": 1,
+      "trialScriptCount": 0,
       "bilibiliSearch": {
         "status": "unsearched"
       },
@@ -2007,7 +2017,7 @@
           "status": "http-error"
         }
       ],
-      "missing": ""
+      "missing": "未找到已核实的试讲稿"
     },
     {
       "lessonID": "7d-05",

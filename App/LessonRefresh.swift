@@ -38,25 +38,32 @@ final class LessonContentService {
         return url.url!
     }
     func refresh(_ lesson: Lesson) async throws -> LessonRefreshResult {
-        var result = LessonRefreshResult(), videos: [LessonVideoCandidate] = []
+        var result = LessonRefreshResult()
+        var batches: [(latest: Bool, videos: [LessonVideoCandidate])] = []
         let date = ISO8601DateFormatter().string(from: Date())
         // Keep discovery broad enough for titles without author names; validate author/context locally.
-        let keyword = (LessonContent.keys(lesson).first ?? lesson.title) + " 语文"
-        for (type, order, label) in [("video", "totalrank", "相关视频"), ("article", "totalrank", "文字资料"), ("video", "pubdate", "最新视频")] {
-            try Task.checkCancellation()
-            do {
-                let bytes = try await data(searchURL(type: type, keyword: keyword, order: order))
-                if type == "video" {
-                    let candidates = try LessonContent.videos(bytes)
-                    let ordered = candidates.filter { LessonContent.matches($0.title, lesson: lesson, context: $0.author) } + candidates.filter { !LessonContent.matches($0.title, lesson: lesson, context: $0.author) }
-                    // Reserve validation space for both relevant and latest results.
-                    videos += ordered.prefix(4)
-                }
-                else { result.resources += try LessonContent.articles(bytes, lesson: lesson, checkedAt: date) }
-                result.completedSearches += 1
-            } catch is CancellationError { throw CancellationError() }
-            catch { result.failures.append(label + "：" + error.localizedDescription) }
+        for keyword in LessonContent.discoveryKeywords(lesson) {
+            for (type, order, label) in [("video", "totalrank", "相关视频"), ("article", "totalrank", "文字资料"), ("video", "pubdate", "最新视频")] {
+                try Task.checkCancellation()
+                do {
+                    let bytes = try await data(searchURL(type: type, keyword: keyword, order: order))
+                    if type == "video" {
+                        let candidates = try LessonContent.videos(bytes)
+                        let ordered = candidates.filter { LessonContent.matches($0.title, lesson: lesson, context: $0.author) } + candidates.filter { !LessonContent.matches($0.title, lesson: lesson, context: $0.author) }
+                        // Reserve validation space for both relevant and latest results.
+                        batches.append((latest: order == "pubdate", videos: Array(ordered.prefix(4))))
+                    }
+                    else { result.resources += try LessonContent.articles(bytes, lesson: lesson, checkedAt: date) }
+                    result.completedSearches += 1
+                } catch is CancellationError { throw CancellationError() }
+                catch { result.failures.append(label + "：" + error.localizedDescription) }
+            }
         }
+        // Round-robin across named works before taking extra candidates; keep the eight-part bound.
+        let ranked = batches.filter { !$0.latest } + batches.filter { $0.latest }
+        let videos = (0..<4).flatMap { offset in ranked.compactMap { batch in
+            offset < batch.videos.count ? batch.videos[offset] : nil
+        } }
         var seen = Set<String>()
         // At most 8 extra API requests per refresh; sequential validation bounds concurrency to 1.
         let candidates = videos.filter { seen.insert($0.bvid).inserted }.prefix(8)

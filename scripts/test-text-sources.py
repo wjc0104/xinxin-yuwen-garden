@@ -85,6 +85,18 @@ class SourceRulesTests(unittest.TestCase):
         self.assertFalse(evidence['meaningful'])
         self.assertTrue(evidence['readingLimited'])
 
+    def test_mixed_design_does_not_double_count_nested_speech_cues(self):
+        body = '教学目标 教学过程 请同学们朗读。' + '教学流程参考' * 180 + '请同学回答。作业：练习。'
+        markup = '<title>《再塑生命的人》试讲稿</title><div class="block-content">' + body + '</div>'
+        evidence, _ = inspect_page(markup.encode(), 'www.hqwx.com')
+        self.assertTrue(evidence['meaningful'])
+        self.assertEqual(evidence['dialogueCount'], 2)
+        self.assertEqual(evidence['category'], '教学设计')
+        markup = markup.replace('作业：练习。', '师：归纳。作业：练习。')
+        evidence, _ = inspect_page(markup.encode(), 'www.hqwx.com')
+        self.assertEqual(evidence['dialogueCount'], 3)
+        self.assertEqual(evidence['category'], '试讲稿')
+
     def test_block_circuit_records_unsearched_and_resume_does_not_wipe(self):
         spec = importlib.util.spec_from_file_location('collector', Path(__file__).with_name('collect-text-sources.py'))
         collector = importlib.util.module_from_spec(spec)
@@ -115,6 +127,46 @@ class SourceRulesTests(unittest.TestCase):
                 collector.collect(args)
             self.assertEqual(collector.read(collector.OUTPUT / 'text-coverage.json', {}), report)
             self.assertEqual(len(calls), 3)
+
+    def test_script_recheck_is_targeted_and_withdraws_unverifiable_counts(self):
+        spec = importlib.util.spec_from_file_location('collector', Path(__file__).with_name('collect-text-sources.py'))
+        collector = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(collector)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            collector.ROOT, collector.DATA, collector.OUTPUT = root, root / 'data', root / 'out'
+            lesson = dict(id='7u-01', title='春', author='朱自清', focus=[])
+            collector.write(root / 'App/Resources/catalog.json', dict(books=[dict(units=[dict(lessons=[lesson])])]))
+            good, failed, untouched = ['https://bj.huatu.com/2020/1031/' + str(i) + '.html' for i in [1, 2, 3]]
+            collector.write(collector.DATA / 'text-source-candidates.json',
+                            [dict(lessonID=lesson['id'], title='《春》试讲稿', url=u) for u in [good, failed, untouched]])
+            old = dict(checkedAt='earlier', status='readable', http=200, pageTitle='《春》试讲稿',
+                       contentChars=900, meaningful=True, category='试讲稿', dialogueCount=3, scriptEnding=True)
+            evidence = {good: dict(old), failed: dict(old), untouched: dict(old, category='教学设计')}
+            collector.write(collector.DATA / 'text-source-checks.json', evidence)
+            calls = []
+            def fetch(url, delay):
+                calls.append(url)
+                if url == failed:
+                    raise HTTPError(url, 500, 'unavailable', {}, None)
+                markup = '<title>《春》试讲稿</title><div class="artBcon">教学过程 ' + '课堂教学参考' * 150 + '师：请同学们朗读。生：好的。作业：练习。</div>'
+                return markup.encode(), url, 'text/html'
+            collector.fetch = fetch
+            args = SimpleNamespace(import_hints=[], discover_index=False, offline=False, retry=False,
+                                   delay=.5, search_limit=198, recheck_scripts=True)
+            with contextlib.redirect_stdout(io.StringIO()):
+                collector.collect(args)
+            updated = collector.read(collector.DATA / 'text-source-checks.json', {})
+            self.assertEqual(calls, [good, failed], 'No searches and no unrelated original fetches')
+            self.assertEqual(updated[good]['dialogueCount'], 3)
+            self.assertEqual(updated[good]['dialogueRule'], 'nonoverlapping-v2')
+            self.assertEqual(updated[failed]['scriptRecheck']['http'], 500)
+            self.assertNotIn('dialogueCount', updated[failed])
+            self.assertEqual(updated[untouched], evidence[untouched])
+            resources = collector.read(collector.DATA / 'text-sources.json', [])
+            self.assertEqual(len(resources), 3)
+            self.assertEqual(sum(r['kind'] == 'script' for r in resources), 1)
+            self.assertIn('复核受阻', next(r for r in resources if r['url'] == failed)['summary'])
 
     def test_same_anthology_heading_requires_real_constituents(self):
         spec = importlib.util.spec_from_file_location('collector', Path(__file__).with_name('collect-text-sources.py'))

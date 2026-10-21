@@ -92,7 +92,25 @@ final class GardenUITests: XCTestCase {
         let moving = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label != %@ AND label != %@ AND label != %@", "--:--", "00:00", ""), object: position)
         wait(for: [moving], timeout: 25)
         XCTAssertEqual(speed.label, "倍速 1.5×")
-        play.tap() // Pause before the transition so restoring does not accidentally resume.
+        // A real running item must advance across presentation and dismissal at the selected rate.
+        let entering = try XCTUnwrap(videoSeconds(position.label))
+        app.buttons["video-fullscreen"].tap()
+        let runningExit = app.buttons["video-exit-fullscreen"]
+        XCTAssertTrue(runningExit.waitForExistence(timeout: 5))
+        let runningPosition = app.staticTexts["fullscreen-video-position"]
+        wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            (self.videoSeconds(runningPosition.label) ?? -1) >= entering + 2
+        }, object: nil)], timeout: 15)
+        XCTAssertEqual(app.buttons["fullscreen-video-speed"].label, "倍速 1.5×")
+        let exiting = try XCTUnwrap(videoSeconds(runningPosition.label))
+        runningExit.tap()
+        XCTAssertTrue(app.buttons["video-fullscreen"].waitForExistence(timeout: 5))
+        XCTAssertEqual(play.label, "暂停", "Dismissal must preserve running playback")
+        wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            (self.videoSeconds(position.label) ?? -1) >= exiting + 2
+        }, object: nil)], timeout: 15)
+        XCTAssertEqual(speed.label, "倍速 1.5×")
+        play.tap() // Also retain the paused/draft transition case.
         let paused = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", "播放"), object: play)
         wait(for: [paused], timeout: 5)
         app.buttons["边看边记"].tap()
@@ -115,6 +133,9 @@ final class GardenUITests: XCTestCase {
         fullscreenSpeed.tap(); app.buttons["video-speed-option-2"].tap()
         XCTAssertEqual(fullscreenSpeed.label, "倍速 2×")
         XCUIDevice.shared.orientation = .landscapeLeft
+        // Device landscapeLeft maps to interface landscapeRight (home indicator on the opposite side).
+        let orientation = app.descendants(matching: .any)["fullscreen-interface-orientation"].firstMatch
+        wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "landscapeRight"), object: orientation)], timeout: 8)
         let landscape = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in app.frame.width > app.frame.height }, object: nil)
         wait(for: [landscape], timeout: 8)
         let nativeFrame = app.descendants(matching: .any)["fullscreen-native-player"].firstMatch.frame
@@ -122,7 +143,11 @@ final class GardenUITests: XCTestCase {
         XCTAssertGreaterThan(nativeFrame.width, app.frame.width * 0.9)
         shot("15-原生视频横屏全屏")
         XCUIDevice.shared.orientation = .landscapeRight
-        wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in app.frame.width > app.frame.height }, object: nil)], timeout: 8)
+        wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "landscapeLeft"), object: orientation)], timeout: 8)
+        XCTAssertGreaterThan(app.frame.width, app.frame.height)
+        let secondNativeFrame = app.descendants(matching: .any)["fullscreen-native-player"].firstMatch.frame
+        XCTAssertGreaterThan(secondNativeFrame.width, secondNativeFrame.height)
+        XCTAssertGreaterThan(secondNativeFrame.width, app.frame.width * 0.9)
         exit.tap()
         XCTAssertTrue(app.buttons["video-fullscreen"].waitForExistence(timeout: 5))
         XCTAssertEqual(play.label, "播放", "Exiting must respect the user's paused state")
@@ -147,6 +172,7 @@ final class GardenUITests: XCTestCase {
         app.buttons["book-7u"].tap()
         app.buttons["lesson-7u-02"].tap()
         XCTAssertTrue(app.buttons["refresh-lesson"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.buttons["refresh-lesson"].label, "联网查找本课资料")
         shot("02-济南的冬天资料")
         XCTAssertFalse(app.buttons["B站试讲 ↗"].exists)
         openOutlineCategory(app)
@@ -176,6 +202,9 @@ final class GardenUITests: XCTestCase {
         continueAfterFailure = false
         let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()
         app.tabBars.buttons["课程"].tap()
+        XCTAssertTrue(app.staticTexts["local-search-hint"].exists)
+        XCTAssertTrue(app.staticTexts["local-search-hint"].label.contains("本机"))
+        XCTAssertTrue(app.staticTexts["local-search-hint"].label.contains("联网查找"))
         let search = app.textFields["search-input"]; search.tap(); search.typeText("老舍\n")
         XCTAssertTrue(app.staticTexts["result-count"].waitForExistence(timeout: 4))
         XCTAssertTrue(app.buttons["search-lesson-7u-02"].waitForExistence(timeout: 4))

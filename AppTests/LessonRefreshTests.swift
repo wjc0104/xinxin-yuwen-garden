@@ -44,6 +44,33 @@ private final class LessonMetadataProtocol: URLProtocol {
         XCTAssertEqual(requested.filter { $0.query?.contains("order=pubdate") == true }.count, 1)
         XCTAssertEqual(requested.filter { $0.query?.contains("order=totalrank") == true }.count, 2)
     }
+    func testAnthologyQueriesBothWorksAndAcceptsConstituentArticleAndPart() async throws {
+        var keywords = [String](), partRequests = 0
+        LessonMetadataProtocol.handler = { request in
+            if request.url!.path == "/x/player/pagelist" {
+                partRequests += 1
+                return (200, #"{"code":0,"data":[{"page":1,"cid":12,"part":"庄子与惠子游于濠梁之上","duration":600},{"page":2,"cid":13,"part":"无关合集","duration":600}]}"#)
+            }
+            let query = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)!.queryItems!
+            let keyword = query.first { $0.name == "keyword" }!.value!
+            keywords.append(keyword)
+            if keyword == "北冥有鱼 语文" { return (200, #"{"code":0,"data":{"result":[]}}"#) }
+            if query.contains(where: { $0.name == "search_type" && $0.value == "article" }) {
+                return (200, #"{"code":0,"data":{"result":[{"id":123,"title":"庄子与惠子游于濠梁之上教学设计","author":"老师"}]}}"#)
+            }
+            return (200, #"{"code":0,"data":{"result":[{"bvid":"BV137LizrE4S","title":"初中语文全册合集","author":"老师"}]}}"#)
+        }
+        defer { LessonMetadataProtocol.handler = nil }
+        let lesson = Lesson(id: "8d-21", number: 21, title: "《庄子》二则", focus: ["北冥有鱼", "庄子与惠子游于濠梁之上"])
+        let result = try await service().refresh(lesson)
+        XCTAssertEqual(keywords.filter { $0 == "北冥有鱼 语文" }.count, 3)
+        XCTAssertEqual(keywords.filter { $0 == "庄子与惠子游于濠梁之上 语文" }.count, 3)
+        XCTAssertEqual(keywords.count, 6)
+        XCTAssertEqual(partRequests, 1)
+        XCTAssertEqual(result.resources.filter { $0.kind == .video }.map(\.videoCID), [12])
+        XCTAssertEqual(result.resources.filter { $0.kind == .link }.map(\.id), ["live-8d-21-cv123"])
+        XCTAssertTrue(result.failures.isEmpty)
+    }
     func testEmptyAndFailedRefreshNeverWipesExistingResourcesOrNotes() async {
         let store = AppStore()
         let saved = store.data
