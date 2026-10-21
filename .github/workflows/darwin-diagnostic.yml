@@ -1,0 +1,16 @@
+name: Temporary Darwin lesson-content diagnosis
+on:
+  push:
+    branches: ['diagnostics/lesson-content']
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: macos-15-intel
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Diagnose fixed public-metadata fixture
+        run: |
+          swift --version
+          swift scripts/diagnose-lesson-content.swift
