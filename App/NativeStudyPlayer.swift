@@ -22,10 +22,13 @@ private final class PlayerClock {
     @Published private(set) var seconds: Int?
     @Published private(set) var playing = false
     @Published private(set) var originalURL: URL?
+    @Published private(set) var playbackRate: Float = 1
+    static let playbackRates: [Float] = [0.5, 0.75, 1, 1.25, 1.5, 2]
     private var identity: String?
     private var generation = UUID()
     private var statusObserver: NSKeyValueObservation?
     private var playbackObserver: NSKeyValueObservation?
+    private var rateObserver: NSKeyValueObservation?
     private var clock: PlayerClock?
     private var loadWatchdog: Task<Void, Never>?
     private let session: URLSession = {
@@ -36,6 +39,8 @@ private final class PlayerClock {
     }()
     var lowQuality: Bool { height.map { $0 < 720 } ?? false }
     var qualityLabel: String { height.map { "\($0)P · 系统播放器" } ?? "系统播放器" }
+    var playbackRateLabel: String { Self.rateLabel(playbackRate) }
+    static func rateLabel(_ rate: Float) -> String { String(format: "%g", Double(rate)) }
 
     func load(_ resource: StudyResource, localURL: URL? = nil, at initial: Int? = nil, force: Bool = false) async {
         if !force, identity == resource.id, player != nil, problem == nil { return }
@@ -91,6 +96,15 @@ private final class PlayerClock {
             playbackObserver = value.observe(\.timeControlStatus, options: [.initial,.new]) { [weak self] value, _ in
                 Task { @MainActor [weak self] in guard let self = self, self.generation == token else { return }; self.playing = value.timeControlStatus != .paused }
             }
+            // iOS 15 system controls can resume using play(), which resets rate to 1.
+            // Read the current rate on the main actor so a queued resume event cannot undo a later pause.
+            rateObserver = value.observe(\.rate, options: [.new]) { [weak self] value, _ in
+                Task { @MainActor [weak self] in
+                    guard let self = self, self.generation == token, self.player === value,
+                          value.rate > 0, value.rate != self.playbackRate else { return }
+                    value.rate = self.playbackRate
+                }
+            }
             loadWatchdog = Task { [weak self] in
                 do { try await Task.sleep(nanoseconds: 25_000_000_000) } catch { return }
                 guard let self = self, self.generation == token, !self.ready else { return }
@@ -114,7 +128,13 @@ private final class PlayerClock {
             problem = (error as? GardenError)?.localizedDescription ?? "没有取得可播放的视频源，请联网后重试。"
         }
     }
-    func playPause() { guard ready, let player = player else { return }; if player.timeControlStatus != .paused { player.pause() } else { player.play() } }
+    func playPause() { guard ready, let player = player else { return }; if player.timeControlStatus != .paused { player.pause() } else { player.rate = playbackRate } }
+    func setPlaybackRate(_ rate: Float) {
+        guard Self.playbackRates.contains(rate) else { return }
+        playbackRate = rate
+        // A speed selection is not a request to play. Preserve a paused player's zero rate.
+        if let player = player, player.rate > 0 { player.rate = rate }
+    }
     func pause() { player?.pause() }
     func currentSeconds() -> Int? {
         guard ready, let value = player?.currentTime().seconds, value.isFinite, value >= 0, value <= 86400 else { return nil }
@@ -154,6 +174,6 @@ private final class PlayerClock {
     private func clearPlayer() {
         loadWatchdog?.cancel(); loadWatchdog = nil
         player?.pause()
-        clock = nil; statusObserver = nil; playbackObserver = nil; player = nil; playing = false
+        clock = nil; statusObserver = nil; playbackObserver = nil; rateObserver = nil; player = nil; playing = false
     }
 }

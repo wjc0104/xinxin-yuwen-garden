@@ -78,10 +78,20 @@ final class GardenUITests: XCTestCase {
         wait(for: [readyOrError], timeout: 70)
         XCTAssertFalse(error.exists, error.exists ? error.label : "")
         XCTAssertTrue(play.isEnabled)
+        let speed = app.buttons["video-speed"]
+        XCTAssertEqual(speed.label, "倍速 1×")
+        speed.tap()
+        for value in ["0.5", "0.75", "1", "1.25", "1.5", "2"] {
+            XCTAssertTrue(app.buttons["video-speed-option-" + value].exists)
+        }
+        app.buttons["video-speed-option-1.5"].tap()
+        XCTAssertEqual(play.label, "播放", "Changing speed while paused cannot start playback")
+        XCTAssertEqual(speed.label, "倍速 1.5×")
         play.tap()
         let position = app.staticTexts["video-position"]
         let moving = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label != %@ AND label != %@ AND label != %@", "--:--", "00:00", ""), object: position)
         wait(for: [moving], timeout: 25)
+        XCTAssertEqual(speed.label, "倍速 1.5×")
         play.tap() // Pause before the transition so restoring does not accidentally resume.
         let paused = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", "播放"), object: play)
         wait(for: [paused], timeout: 5)
@@ -100,6 +110,10 @@ final class GardenUITests: XCTestCase {
         app.buttons["video-fullscreen"].tap()
         let exit = app.buttons["video-exit-fullscreen"]
         XCTAssertTrue(exit.waitForExistence(timeout: 5))
+        let fullscreenSpeed = app.buttons["fullscreen-video-speed"]
+        XCTAssertEqual(fullscreenSpeed.label, "倍速 1.5×")
+        fullscreenSpeed.tap(); app.buttons["video-speed-option-2"].tap()
+        XCTAssertEqual(fullscreenSpeed.label, "倍速 2×")
         XCUIDevice.shared.orientation = .landscapeLeft
         let landscape = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in app.frame.width > app.frame.height }, object: nil)
         wait(for: [landscape], timeout: 8)
@@ -112,6 +126,7 @@ final class GardenUITests: XCTestCase {
         exit.tap()
         XCTAssertTrue(app.buttons["video-fullscreen"].waitForExistence(timeout: 5))
         XCTAssertEqual(play.label, "播放", "Exiting must respect the user's paused state")
+        XCTAssertEqual(speed.label, "倍速 2×", "Fullscreen speed selection must survive exit")
         XCTAssertEqual(Double(try XCTUnwrap(videoSeconds(position.label))), Double(before), accuracy: 1)
         XCTAssertEqual(note.value as? String, "fullscreen draft")
         XCTAssertEqual(time.value as? String, captured)

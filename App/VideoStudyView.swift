@@ -45,6 +45,7 @@ struct VideoStudyView: View {
                             Text(video.qualityLabel).font(.caption).foregroundColor(GardenTheme.mint).accessibilityIdentifier("video-quality")
                             Spacer()
                             Text(video.currentSeconds().map(TimeLabel.video) ?? "--:--").font(.caption.monospacedDigit()).foregroundColor(.secondary).accessibilityIdentifier("video-position")
+                            PlaybackSpeedMenu(video: video, identifier: "video-speed").disabled(!video.ready)
                             Button(video.playing ? "暂停" : "播放") { video.playPause() }.disabled(!video.ready).accessibilityIdentifier("video-play-pause")
                         }
                         if video.lowQuality { Text("原站当前只提供这一档画质，文字可能不清晰。可以换看本课其他视频。").font(.caption).foregroundColor(.orange) }
@@ -75,7 +76,7 @@ struct VideoStudyView: View {
         .onDisappear { if !fullScreen { video.pause() } }
         .sheet(item: $browser) { SafariSheet(url: $0.url) }
         .fullScreenCover(isPresented: $fullScreen, onDismiss: { focused = restoreNoteFocus }) {
-            if let player = video.player { FullScreenStudyPlayer(player: player) { fullScreen = false } }
+            if video.player != nil { FullScreenStudyPlayer(video: video) { fullScreen = false } }
         }
     }
     private func beginNote() {

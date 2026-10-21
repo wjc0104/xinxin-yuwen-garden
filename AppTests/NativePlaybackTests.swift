@@ -13,6 +13,8 @@ import GardenCore
         var resource = StudyResource(id: "native-network-sample", lessonID: "7u-02", title: "济南的冬天", kind: .video, url: "https://www.bilibili.com/video/BV1eUAieoEZd/?p=2")
         resource.videoCID = 37155308866
         let video = NativeStudyPlayer()
+        XCTAssertEqual(video.playbackRate, 1)
+        XCTAssertEqual(NativeStudyPlayer.playbackRates, [0.5, 0.75, 1, 1.25, 1.5, 2])
         await video.load(resource)
         defer { video.pause() }
         guard video.problem == nil else { XCTFail(video.problem ?? "source error"); return }
@@ -24,21 +26,41 @@ import GardenCore
         XCTAssertEqual(video.height, 720)
         let player = try XCTUnwrap(video.player)
         let item = try XCTUnwrap(player.currentItem)
+        video.setPlaybackRate(0.75)
+        XCTAssertEqual(player.rate, 0, "Selecting speed while paused must not start playback")
+        video.setPlaybackRate(3)
+        XCTAssertEqual(video.playbackRate, 0.75, "Reject rates outside the explicit menu")
         XCTAssertFalse(item.asset.tracks(withMediaType: .audio).isEmpty, "The source must contain audio, not a silent DASH video track")
         XCTAssertGreaterThan(item.duration.seconds, 600, "The complete requested second episode must load")
         let output = AVPlayerItemVideoOutput(pixelBufferAttributes: [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA])
         item.add(output)
         defer { item.remove(output) }
         video.playPause()
+        await assertRate(player, equals: 0.75)
         let progressed = expectation(description: "Media clock advances during real playback")
         let clock = video.$seconds.compactMap { $0 }.filter { $0 >= 1 }.prefix(1).sink { _ in progressed.fulfill() }
         await fulfillment(of: [progressed], timeout: 20)
         withExtendedLifetime(clock) {}
+        video.setPlaybackRate(1.5)
+        await assertRate(player, equals: 1.5)
+        // Native AVKit controls call play()/pause(); play() resets rate on iOS15.
+        player.pause()
+        video.setPlaybackRate(1.25)
+        XCTAssertEqual(player.rate, 0)
+        player.play()
+        await assertRate(player, equals: 1.25)
+        // A queued rate correction must not undo a subsequent system pause.
+        player.play(); player.pause()
+        try await Task.sleep(nanoseconds: 150_000_000)
+        XCTAssertEqual(player.rate, 0)
+        player.play()
+        await assertRate(player, equals: 1.25)
         let framePosition = expectation(description: "Inspect an informative lesson frame after the opening")
         player.seek(to: CMTime(seconds: 20, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero) { success in
             if success { framePosition.fulfill() }
         }
         await fulfillment(of: [framePosition], timeout: 10)
+        await assertRate(player, equals: 1.25)
         // Inspect the frame emitted by this actual AVPlayerItem, not a separate image generator.
         var decoded: CVPixelBuffer?
         for _ in 0..<80 {
@@ -57,15 +79,32 @@ import GardenCore
         attachment.name = "14-实际AVPlayer输出720P视频帧"; attachment.lifetime = .keepAlways; add(attachment)
         XCTAssertTrue(hasSpatialDetail(buffer), "A uniform green/black output is not evidence of the lesson picture; inspect the retained frame")
         video.pause()
+        video.setPlaybackRate(2)
+        XCTAssertEqual(player.rate, 0)
         let seek = expectation(description: "Native player seeks to a note timestamp")
         player.seek(to: CMTime(seconds: 205, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero) { success in
             if success { seek.fulfill() }
         }
         await fulfillment(of: [seek], timeout: 15)
         XCTAssertEqual(Double(try XCTUnwrap(video.currentSeconds())), 205, accuracy: 1)
+        XCTAssertEqual(video.playbackRate, 2)
+        XCTAssertEqual(player.rate, 0, "Seek must not resume a paused player")
         let same = video.player
         await video.load(resource)
         XCTAssertTrue(video.player === same, "UI refresh must preserve the playing item and position")
+        XCTAssertEqual(video.playbackRate, 2)
+        video.playPause()
+        await assertRate(player, equals: 2)
+    }
+    private func assertRate(_ player: AVPlayer, equals expected: Float) async {
+        let settled = expectation(description: "Native player retains selected \(expected)x speed")
+        let observer = player.observe(\.rate, options: [.initial, .new]) { player, _ in
+            if player.rate == expected { settled.fulfill() }
+        }
+        settled.assertForOverFulfill = false
+        await fulfillment(of: [settled], timeout: 3)
+        withExtendedLifetime(observer) {}
+        XCTAssertEqual(player.rate, expected)
     }
     private func hasSpatialDetail(_ buffer: CVPixelBuffer) -> Bool {
         guard CVPixelBufferLockBaseAddress(buffer, .readOnly) == kCVReturnSuccess else { return false }
