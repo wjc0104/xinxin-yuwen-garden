@@ -43,18 +43,13 @@ struct PlaybackSpeedMenu: View {
 
 private struct NativeFullScreenPlayer: UIViewControllerRepresentable {
     let player: AVPlayer
-    func makeUIViewController(context: Context) -> RotatingStudyPlayerController {
-        let controller = RotatingStudyPlayerController()
+    func makeUIViewController(context: Context) -> AVPlayerViewController {
+        // Rotation follows the app's portrait/both-landscape declarations.
+        let controller = AVPlayerViewController()
         controller.player = player
         controller.showsPlaybackControls = true
         controller.view.accessibilityIdentifier = "fullscreen-native-player"
         return controller
     }
-    func updateUIViewController(_ controller: RotatingStudyPlayerController, context: Context) {}
-}
-
-/// Public iOS 15 rotation support. Rotation still follows the device/OS lock.
-private final class RotatingStudyPlayerController: AVPlayerViewController {
-    override var supportedInterfaceOrientations: UIInterfaceOrientationMask { .allButUpsideDown }
-    override var shouldAutorotate: Bool { true }
+    func updateUIViewController(_ controller: AVPlayerViewController, context: Context) {}
 }
