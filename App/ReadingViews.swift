@@ -11,33 +11,19 @@ struct ReadingView: View {
     var initialSeconds: Int?
     @State private var draft: NoteDraft?
     @State private var browser: BrowserLink?
-    @State private var player: AVPlayer?
     @State private var showDelete = false
     @StateObject private var web = WebStudyController()
     @StateObject private var selection = TextSelectionController()
     @State private var textHeight: CGFloat = 400
     var marks: [StudyMark] { store.data.marks.filter { $0.resourceID == resource.id } }
     var localURL: URL? { guard !resource.localFile.isEmpty else { return nil }; return try? store.disk?.attachmentURL(resource.localFile) }
+    var isVideo: Bool { resource.kind == .video || resource.kind == .localVideo }
     var body: some View {
         VStack(spacing: 0) {
-            if resource.kind == .pdf, let url = localURL {
+            if isVideo {
+                VideoStudyView(resource: resource, initialSeconds: initialSeconds)
+            } else if resource.kind == .pdf, let url = localURL {
                 PDFReader(url: url, marks: marks) { text, regions in draft = NoteDraft(quote: text, regions: regions) }
-            } else if resource.kind == .localVideo, let player = player {
-                VideoPlayer(player: player).frame(minHeight: 230, maxHeight: 320)
-                ScrollView { VStack(alignment: .leading, spacing: 14) { Text(resource.title).font(.headline); Caption(text: "点下方“标记当前时间”记重点；点击已有时间点可跳转。"); markList }.padding(20) }
-            } else if resource.kind == .video, let url = StudyVideoURL.player(resource.url, seconds: initialSeconds) {
-                EmbeddedResource(url: url, controller: web).frame(height: 240)
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 14) {
-                        Text(resource.title).font(.headline)
-                        Caption(text: resource.source + (resource.durationSeconds.map { " · " + TimeLabel.video($0) } ?? ""))
-                        if let summary = resource.summary { Text(summary).font(.subheadline).foregroundColor(.secondary) }
-                        HStack { Label("边看边记", systemImage: "highlighter").foregroundColor(GardenTheme.mint); Spacer(); Button("打开原视频") { if let url = SearchEngine.validatedURL(resource.url) { browser = BrowserLink(url: url) } } }.font(.subheadline)
-                        if web.failed { Text("播放器暂时未加载，可打开原视频继续学习。").font(.caption).foregroundColor(.secondary) }
-                        Caption(text: "视频由原平台播放，登录与清晰度按平台规定。")
-                        markList
-                    }.padding(16)
-                }
             } else if resource.body.isEmpty, let url = SearchEngine.validatedURL(resource.url) {
                 EmbeddedResource(url: url, controller: web)
             } else {
@@ -59,6 +45,7 @@ struct ReadingView: View {
                     }.padding(20)
                 }
             }
+            if !isVideo {
             Divider()
             HStack(spacing: 0) {
             if !resource.body.isEmpty && resource.kind != .pdf && resource.kind != .video && resource.kind != .localVideo {
@@ -66,25 +53,21 @@ struct ReadingView: View {
                 Divider().frame(height: 24)
             }
             Button {
-                if resource.kind == .video { web.currentSeconds { seconds in draft = NoteDraft(seconds: seconds) }; return }
-                var seconds: Int?
-                if let time = player?.currentTime().seconds, time.isFinite, time >= 0, time <= 86400 { seconds = Int(time) }
-                draft = NoteDraft(seconds: seconds)
+                draft = NoteDraft()
             } label: { Label(resource.kind == .localVideo || resource.kind == .video ? "标记时间 · 写笔记" : "写笔记", systemImage: "square.and.pencil").font(.headline).frame(maxWidth: .infinity).padding(15) }.accessibilityIdentifier("study-note")
             }.background(GardenTheme.card)
+            }
         }.background(GardenTheme.background).navigationTitle(resource.kind.label).navigationBarTitleDisplayMode(.inline)
         .toolbar { if !resource.id.hasPrefix("curated-") && resource.checkedAt == nil { Button { showDelete = true } label: { Image(systemName: "trash") }.accessibilityLabel("移除资料") } }
         .sheet(item: $draft) { value in NoteEditor(lessonID: resource.lessonID, resourceID: resource.id, regions: value.regions, quote: value.quote, timestamp: value.seconds.map(TimeLabel.video) ?? "") }
         .sheet(item: $browser) { SafariSheet(url: $0.url) }
-        .onAppear { store.remember(resource); if resource.kind == .localVideo, player == nil, let url = localURL { let value = AVPlayer(url: url); if let seconds = initialSeconds { value.seek(to: CMTime(seconds: Double(seconds), preferredTimescale: 600)) }; player = value } }
-        .onDisappear { player?.pause() }
+        .onAppear { store.remember(resource) }
         .alert("从资料库移除？", isPresented: $showDelete) { Button("移除", role: .destructive) { remove() }; Button("取消", role: .cancel) {} } message: { Text("笔记会保留。已导入的文件保留在本机，不会删除外部原资料。") }
     }
     @Environment(\.dismiss) private var dismiss
     @ViewBuilder private var markList: some View {
         if !marks.isEmpty { Text("学习笔记").font(.headline) }
         ForEach(marks) { mark in
-            if let seconds = mark.seconds, player != nil { Button("跳到 " + TimeLabel.video(seconds)) { player?.seek(to: CMTime(seconds: Double(seconds), preferredTimescale: 600)) } }
             MarkCard(mark: mark)
         }
     }
