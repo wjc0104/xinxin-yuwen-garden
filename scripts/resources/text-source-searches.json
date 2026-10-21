@@ -1,0 +1,84 @@
+{
+  "7u-01": {
+    "query": "春 语文 试讲 教学设计",
+    "checkedAt": "2026-10-21",
+    "status": "searched",
+    "resultCount": 20,
+    "matchingCount": 2
+  },
+  "7u-02": {
+    "query": "济南的冬天 语文 试讲 教学设计",
+    "checkedAt": "2026-10-21",
+    "status": "searched",
+    "resultCount": 20,
+    "matchingCount": 20
+  },
+  "7u-03": {
+    "query": "雨的四季 语文 试讲 教学设计",
+    "checkedAt": "2026-10-21",
+    "status": "blocked",
+    "resultCount": 0,
+    "matchingCount": 0,
+    "http": 412
+  },
+  "7u-04": {
+    "query": "古代诗歌四首 语文 试讲 教学设计",
+    "checkedAt": "2026-10-21",
+    "status": "searched",
+    "resultCount": 20,
+    "matchingCount": 1
+  },
+  "7u-05": {
+    "query": "秋天的怀念 语文 试讲 教学设计",
+    "checkedAt": "2026-10-21",
+    "status": "searched",
+    "resultCount": 20,
+    "matchingCount": 20
+  },
+  "7u-06": {
+    "query": "散步 语文 试讲 教学设计",
+    "checkedAt": "2026-10-21",
+    "status": "searched",
+    "resultCount": 20,
+    "matchingCount": 12
+  },
+  "7u-07": {
+    "query": "散文诗二首 语文 试讲 教学设计",
+    "checkedAt": "2026-10-21",
+    "status": "blocked",
+    "resultCount": 0,
+    "matchingCount": 0,
+    "http": 412
+  },
+  "7u-08": {
+    "query": "《世说新语》二则 语文 试讲 教学设计",
+    "checkedAt": "2026-10-21",
+    "status": "searched",
+    "resultCount": 20,
+    "matchingCount": 2
+  },
+  "7u-09": {
+    "query": "从百草园到三味书屋 语文 试讲 教学设计",
+    "checkedAt": "2026-10-21",
+    "status": "blocked",
+    "resultCount": 0,
+    "matchingCount": 0,
+    "http": 412
+  },
+  "7u-10": {
+    "query": "往事依依 语文 试讲 教学设计",
+    "checkedAt": "2026-10-21",
+    "status": "blocked",
+    "resultCount": 0,
+    "matchingCount": 0,
+    "http": 412
+  },
+  "7u-11": {
+    "query": "再塑生命的人 语文 试讲 教学设计",
+    "checkedAt": "2026-10-21",
+    "status": "blocked",
+    "resultCount": 0,
+    "matchingCount": 0,
+    "http": 412
+  }
+}

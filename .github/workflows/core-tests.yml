@@ -20,6 +20,7 @@ jobs:
         run: |
           python3 scripts/check-catalog.py
           python3 scripts/check-library.py
+          python3 scripts/test-text-sources.py
           node --test reminder-service/worker.test.js
       - name: Test actual Swift behavior
         run: swift test

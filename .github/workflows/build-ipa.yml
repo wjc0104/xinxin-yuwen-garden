@@ -20,6 +20,7 @@ jobs:
           swift test
           python3 scripts/check-catalog.py
           python3 scripts/check-library.py
+          python3 scripts/test-text-sources.py
       - name: Generate Xcode project
         run: |
           brew install xcodegen
@@ -35,6 +36,7 @@ jobs:
             build/*.ipa
             build/SHA256SUMS.txt
             build/package-verification.json
+            build/ipa-inspection.json
             build/device-load-commands.txt
             build/entitlements.plist
           retention-days: 14

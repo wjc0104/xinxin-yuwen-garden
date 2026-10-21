@@ -26,8 +26,8 @@ targets:
         CFBundleDisplayName: 欣语
         CFBundleDevelopmentRegion: zh_CN
         CFBundleLocalizations: [zh_CN]
-        CFBundleShortVersionString: '0.0.4'
-        CFBundleVersion: '4'
+        CFBundleShortVersionString: '0.0.5'
+        CFBundleVersion: '5'
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
         NSCalendarsUsageDescription: 仅在你主动清除旧版课程提醒时访问日历，避免旧版和 Bark 重复提醒。

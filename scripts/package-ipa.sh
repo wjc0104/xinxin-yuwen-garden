@@ -22,13 +22,14 @@ assert not p.get('get-task-allow') and not p.get('com.apple.private.security.no-
 PY
 (
   cd build/package
-  /usr/bin/zip -qry ../Xinyu-v0.0.4.ipa Payload
+  /usr/bin/zip -qry ../Xinyu-v0.0.5.ipa Payload
 )
-shasum -a 256 build/Xinyu-v0.0.4.ipa > build/SHA256SUMS.txt
+shasum -a 256 build/Xinyu-v0.0.5.ipa > build/SHA256SUMS.txt
+python3 scripts/inspect-ipa.py build/Xinyu-v0.0.5.ipa --report build/ipa-inspection.json
 python3 - <<'PY'
 import json,plistlib,os
 with open('build/package/Payload/XinxinGarden.app/Info.plist','rb') as f:p=plistlib.load(f)
-report={'minimumOS':p['MinimumOSVersion'],'bundleID':p['CFBundleIdentifier'],'version':p['CFBundleShortVersionString'],'architectures':['arm64'],'calendarUsage':p.get('NSCalendarsUsageDescription'),'calendarFullAccessUsage':p.get('NSCalendarsFullAccessUsageDescription'),'deviceTested':False,'commit':os.environ.get('GITHUB_SHA')}
+report={'minimumOS':p['MinimumOSVersion'],'bundleID':p['CFBundleIdentifier'],'version':p['CFBundleShortVersionString'],'build':p['CFBundleVersion'],'orientations':p['UISupportedInterfaceOrientations'],'architectures':['arm64'],'calendarUsage':p.get('NSCalendarsUsageDescription'),'calendarFullAccessUsage':p.get('NSCalendarsFullAccessUsageDescription'),'deviceTested':False,'commit':os.environ.get('GITHUB_SHA')}
 with open('build/package-verification.json','w') as f:json.dump(report,f,ensure_ascii=False,indent=2)
 print(json.dumps(report,ensure_ascii=False,indent=2))
 PY

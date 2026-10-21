@@ -1,0 +1,5630 @@
+{
+  "checkedAt": "2026-10-22",
+  "lessonCount": 198,
+  "publicTextCount": 336,
+  "publicTextCovered": 198,
+  "trialScriptCovered": 11,
+  "categoryCounts": {
+    "教学设计": 165,
+    "试讲稿": 16,
+    "说课稿": 8,
+    "课文解读": 144,
+    "面试答辩": 3
+  },
+  "bilibiliSearchCounts": {
+    "searched": 6,
+    "no-match": 0,
+    "blocked": 5,
+    "error": 0,
+    "unsearched": 187
+  },
+  "missingPublicText": [],
+  "missingTrialScripts": [
+    {
+      "lessonID": "7u-01",
+      "title": "春"
+    },
+    {
+      "lessonID": "7u-03",
+      "title": "雨的四季"
+    },
+    {
+      "lessonID": "7u-04",
+      "title": "古代诗歌四首"
+    },
+    {
+      "lessonID": "7u-05",
+      "title": "秋天的怀念"
+    },
+    {
+      "lessonID": "7u-06",
+      "title": "散步"
+    },
+    {
+      "lessonID": "7u-07",
+      "title": "散文诗二首"
+    },
+    {
+      "lessonID": "7u-08",
+      "title": "《世说新语》二则"
+    },
+    {
+      "lessonID": "7u-10",
+      "title": "往事依依"
+    },
+    {
+      "lessonID": "7u-12",
+      "title": "《论语》十二章"
+    },
+    {
+      "lessonID": "7u-extra3-1",
+      "title": "峨眉山月歌"
+    },
+    {
+      "lessonID": "7u-extra3-2",
+      "title": "江南逢李龟年"
+    },
+    {
+      "lessonID": "7u-extra3-3",
+      "title": "行军九日思长安故园"
+    },
+    {
+      "lessonID": "7u-extra3-4",
+      "title": "夜上受降城闻笛"
+    },
+    {
+      "lessonID": "7u-13",
+      "title": "纪念白求恩"
+    },
+    {
+      "lessonID": "7u-14",
+      "title": "回忆我的母亲"
+    },
+    {
+      "lessonID": "7u-15",
+      "title": "梅岭三章"
+    },
+    {
+      "lessonID": "7u-16",
+      "title": "诫子书"
+    },
+    {
+      "lessonID": "7u-18",
+      "title": "我的白鸽"
+    },
+    {
+      "lessonID": "7u-19",
+      "title": "大雁归来"
+    },
+    {
+      "lessonID": "7u-21",
+      "title": "小圣施威降大圣"
+    },
+    {
+      "lessonID": "7u-22",
+      "title": "皇帝的新装"
+    },
+    {
+      "lessonID": "7u-23",
+      "title": "女娲造人"
+    },
+    {
+      "lessonID": "7u-24",
+      "title": "寓言四则"
+    },
+    {
+      "lessonID": "7u-extra6-1",
+      "title": "秋词（其一）"
+    },
+    {
+      "lessonID": "7u-extra6-2",
+      "title": "夜雨寄北"
+    },
+    {
+      "lessonID": "7u-extra6-3",
+      "title": "十一月四日风雨大作（其二）"
+    },
+    {
+      "lessonID": "7u-extra6-4",
+      "title": "潼关"
+    },
+    {
+      "lessonID": "7d-01",
+      "title": "邓稼先"
+    },
+    {
+      "lessonID": "7d-02",
+      "title": "说和做——记闻一多先生言行片段"
+    },
+    {
+      "lessonID": "7d-03",
+      "title": "列夫·托尔斯泰"
+    },
+    {
+      "lessonID": "7d-05",
+      "title": "黄河颂"
+    },
+    {
+      "lessonID": "7d-06",
+      "title": "老山界"
+    },
+    {
+      "lessonID": "7d-07",
+      "title": "谁是最可爱的人"
+    },
+    {
+      "lessonID": "7d-08",
+      "title": "土地的誓言"
+    },
+    {
+      "lessonID": "7d-09",
+      "title": "木兰诗"
+    },
+    {
+      "lessonID": "7d-10",
+      "title": "阿长与《山海经》"
+    },
+    {
+      "lessonID": "7d-11",
+      "title": "山地回忆"
+    },
+    {
+      "lessonID": "7d-12",
+      "title": "台阶"
+    },
+    {
+      "lessonID": "7d-13",
+      "title": "卖油翁"
+    },
+    {
+      "lessonID": "7d-extra3-1",
+      "title": "竹里馆"
+    },
+    {
+      "lessonID": "7d-extra3-2",
+      "title": "春夜洛城闻笛"
+    },
+    {
+      "lessonID": "7d-extra3-3",
+      "title": "逢入京使"
+    },
+    {
+      "lessonID": "7d-extra3-4",
+      "title": "晚春"
+    },
+    {
+      "lessonID": "7d-14",
+      "title": "驿路梨花"
+    },
+    {
+      "lessonID": "7d-15",
+      "title": "青春之光"
+    },
+    {
+      "lessonID": "7d-16",
+      "title": "有为有不为"
+    },
+    {
+      "lessonID": "7d-17",
+      "title": "短文两篇"
+    },
+    {
+      "lessonID": "7d-18",
+      "title": "井冈翠竹"
+    },
+    {
+      "lessonID": "7d-19",
+      "title": "紫藤萝瀑布"
+    },
+    {
+      "lessonID": "7d-20",
+      "title": "外国诗二首"
+    },
+    {
+      "lessonID": "7d-21",
+      "title": "古代诗歌五首"
+    },
+    {
+      "lessonID": "7d-22",
+      "title": "太空一日"
+    },
+    {
+      "lessonID": "7d-23",
+      "title": "“蛟龙”探海"
+    },
+    {
+      "lessonID": "7d-24",
+      "title": "带上她的眼睛"
+    },
+    {
+      "lessonID": "7d-25",
+      "title": "活板"
+    },
+    {
+      "lessonID": "7d-extra6-1",
+      "title": "泊秦淮"
+    },
+    {
+      "lessonID": "7d-extra6-2",
+      "title": "贾生"
+    },
+    {
+      "lessonID": "7d-extra6-3",
+      "title": "过松源晨炊漆公店（其五）"
+    },
+    {
+      "lessonID": "7d-extra6-4",
+      "title": "约客"
+    },
+    {
+      "lessonID": "8u-01",
+      "title": "消息二则"
+    },
+    {
+      "lessonID": "8u-02",
+      "title": "中国人首次进入自己的空间站"
+    },
+    {
+      "lessonID": "8u-03",
+      "title": "首届诺贝尔奖颁发"
+    },
+    {
+      "lessonID": "8u-04",
+      "title": "“飞天”凌空——跳水姑娘吕伟夺魁记"
+    },
+    {
+      "lessonID": "8u-05",
+      "title": "一着惊海天——目击我国航母舰载战斗机首架次成功着舰"
+    },
+    {
+      "lessonID": "8u-06",
+      "title": "国行公祭，为佑世界和平"
+    },
+    {
+      "lessonID": "8u-08",
+      "title": "回忆鲁迅先生（节选）"
+    },
+    {
+      "lessonID": "8u-09",
+      "title": "天上有颗“南仁东星”"
+    },
+    {
+      "lessonID": "8u-10",
+      "title": "美丽的颜色"
+    },
+    {
+      "lessonID": "8u-11",
+      "title": "三峡"
+    },
+    {
+      "lessonID": "8u-12",
+      "title": "短文二篇"
+    },
+    {
+      "lessonID": "8u-13",
+      "title": "与朱元思书"
+    },
+    {
+      "lessonID": "8u-14",
+      "title": "唐诗五首"
+    },
+    {
+      "lessonID": "8u-extra3-1",
+      "title": "庭中有奇树"
+    },
+    {
+      "lessonID": "8u-extra3-2",
+      "title": "龟虽寿"
+    },
+    {
+      "lessonID": "8u-extra3-3",
+      "title": "赠从弟（其二）"
+    },
+    {
+      "lessonID": "8u-extra3-4",
+      "title": "梁甫行"
+    },
+    {
+      "lessonID": "8u-16",
+      "title": "白杨礼赞"
+    },
+    {
+      "lessonID": "8u-17",
+      "title": "散文二篇"
+    },
+    {
+      "lessonID": "8u-18",
+      "title": "昆明的雨"
+    },
+    {
+      "lessonID": "8u-19",
+      "title": "中国石拱桥"
+    },
+    {
+      "lessonID": "8u-20",
+      "title": "苏州园林"
+    },
+    {
+      "lessonID": "8u-21",
+      "title": "人民英雄永垂不朽——瞻仰首都人民英雄纪念碑"
+    },
+    {
+      "lessonID": "8u-22",
+      "title": "梦回繁华"
+    },
+    {
+      "lessonID": "8u-23",
+      "title": "《孟子》三章"
+    },
+    {
+      "lessonID": "8u-24",
+      "title": "愚公移山"
+    },
+    {
+      "lessonID": "8u-25",
+      "title": "周亚夫军细柳"
+    },
+    {
+      "lessonID": "8u-26",
+      "title": "诗词五首"
+    },
+    {
+      "lessonID": "8u-extra6-1",
+      "title": "浣溪沙（一曲新词酒一杯）"
+    },
+    {
+      "lessonID": "8u-extra6-2",
+      "title": "采桑子（轻舟短棹西湖好）"
+    },
+    {
+      "lessonID": "8u-extra6-3",
+      "title": "相见欢（金陵城上西楼）"
+    },
+    {
+      "lessonID": "8u-extra6-4",
+      "title": "如梦令（常记溪亭日暮）"
+    },
+    {
+      "lessonID": "8d-01",
+      "title": "社戏"
+    },
+    {
+      "lessonID": "8d-02",
+      "title": "回延安"
+    },
+    {
+      "lessonID": "8d-03",
+      "title": "安塞腰鼓"
+    },
+    {
+      "lessonID": "8d-04",
+      "title": "灯笼"
+    },
+    {
+      "lessonID": "8d-05",
+      "title": "大自然的语言"
+    },
+    {
+      "lessonID": "8d-06",
+      "title": "阿西莫夫短文两篇"
+    },
+    {
+      "lessonID": "8d-07",
+      "title": "月亮是从哪里来的"
+    },
+    {
+      "lessonID": "8d-08",
+      "title": "时间的脚印"
+    },
+    {
+      "lessonID": "8d-09",
+      "title": "桃花源记"
+    },
+    {
+      "lessonID": "8d-10",
+      "title": "小石潭记"
+    },
+    {
+      "lessonID": "8d-11",
+      "title": "核舟记"
+    },
+    {
+      "lessonID": "8d-12",
+      "title": "《诗经》二首"
+    },
+    {
+      "lessonID": "8d-extra3-1",
+      "title": "式微"
+    },
+    {
+      "lessonID": "8d-extra3-2",
+      "title": "子衿"
+    },
+    {
+      "lessonID": "8d-extra3-3",
+      "title": "送杜少府之任蜀州"
+    },
+    {
+      "lessonID": "8d-extra3-4",
+      "title": "望洞庭湖赠张丞相"
+    },
+    {
+      "lessonID": "8d-13",
+      "title": "最后一次讲演"
+    },
+    {
+      "lessonID": "8d-14",
+      "title": "敬业与乐业"
+    },
+    {
+      "lessonID": "8d-15",
+      "title": "应有格物致知精神"
+    },
+    {
+      "lessonID": "8d-16",
+      "title": "我一生中的重要抉择"
+    },
+    {
+      "lessonID": "8d-17",
+      "title": "壶口瀑布"
+    },
+    {
+      "lessonID": "8d-18",
+      "title": "在长江源头各拉丹冬"
+    },
+    {
+      "lessonID": "8d-19",
+      "title": "登勃朗峰"
+    },
+    {
+      "lessonID": "8d-20",
+      "title": "一滴水经过丽江"
+    },
+    {
+      "lessonID": "8d-21",
+      "title": "《庄子》二则"
+    },
+    {
+      "lessonID": "8d-22",
+      "title": "《礼记》二则"
+    },
+    {
+      "lessonID": "8d-23",
+      "title": "马说"
+    },
+    {
+      "lessonID": "8d-24",
+      "title": "唐诗三首"
+    },
+    {
+      "lessonID": "8d-extra6-1",
+      "title": "题破山寺后禅院"
+    },
+    {
+      "lessonID": "8d-extra6-2",
+      "title": "送友人"
+    },
+    {
+      "lessonID": "8d-extra6-3",
+      "title": "卜算子·黄州定慧院寓居作"
+    },
+    {
+      "lessonID": "8d-extra6-4",
+      "title": "卜算子·咏梅"
+    },
+    {
+      "lessonID": "9u-02",
+      "title": "周总理，你在哪里"
+    },
+    {
+      "lessonID": "9u-03",
+      "title": "我爱这土地"
+    },
+    {
+      "lessonID": "9u-04",
+      "title": "乡愁"
+    },
+    {
+      "lessonID": "9u-05",
+      "title": "你是人间的四月天——一句爱的赞颂"
+    },
+    {
+      "lessonID": "9u-06",
+      "title": "我看"
+    },
+    {
+      "lessonID": "9u-07",
+      "title": "培养德智体美劳全面发展的社会主义建设者和接班人"
+    },
+    {
+      "lessonID": "9u-08",
+      "title": "中国人失掉自信力了吗"
+    },
+    {
+      "lessonID": "9u-09",
+      "title": "谈骨气"
+    },
+    {
+      "lessonID": "9u-10",
+      "title": "创造宣言"
+    },
+    {
+      "lessonID": "9u-11",
+      "title": "岳阳楼记"
+    },
+    {
+      "lessonID": "9u-12",
+      "title": "醉翁亭记"
+    },
+    {
+      "lessonID": "9u-13",
+      "title": "湖心亭看雪"
+    },
+    {
+      "lessonID": "9u-14",
+      "title": "诗词三首"
+    },
+    {
+      "lessonID": "9u-extra3-1",
+      "title": "月夜忆舍弟"
+    },
+    {
+      "lessonID": "9u-extra3-2",
+      "title": "长沙过贾谊宅"
+    },
+    {
+      "lessonID": "9u-extra3-3",
+      "title": "左迁至蓝关示侄孙湘"
+    },
+    {
+      "lessonID": "9u-extra3-4",
+      "title": "商山早行"
+    },
+    {
+      "lessonID": "9u-15",
+      "title": "故乡"
+    },
+    {
+      "lessonID": "9u-16",
+      "title": "我的叔叔于勒"
+    },
+    {
+      "lessonID": "9u-17",
+      "title": "孤独之旅"
+    },
+    {
+      "lessonID": "9u-18",
+      "title": "蒲柳人家（节选）"
+    },
+    {
+      "lessonID": "9u-19",
+      "title": "想和做"
+    },
+    {
+      "lessonID": "9u-20",
+      "title": "怀疑与学问"
+    },
+    {
+      "lessonID": "9u-21",
+      "title": "就英法联军远征中国致巴特勒上尉的信"
+    },
+    {
+      "lessonID": "9u-22",
+      "title": "精神的三间小屋"
+    },
+    {
+      "lessonID": "9u-23",
+      "title": "曹刿论战"
+    },
+    {
+      "lessonID": "9u-24",
+      "title": "邹忌讽齐王纳谏"
+    },
+    {
+      "lessonID": "9u-25",
+      "title": "陈涉世家"
+    },
+    {
+      "lessonID": "9u-26",
+      "title": "出师表"
+    },
+    {
+      "lessonID": "9u-27",
+      "title": "诗词曲五首"
+    },
+    {
+      "lessonID": "9u-extra6-1",
+      "title": "咸阳城东楼"
+    },
+    {
+      "lessonID": "9u-extra6-2",
+      "title": "无题"
+    },
+    {
+      "lessonID": "9u-extra6-3",
+      "title": "浣溪沙（漠漠轻寒上小楼）"
+    },
+    {
+      "lessonID": "9u-extra6-4",
+      "title": "丑奴儿·书博山道中壁"
+    },
+    {
+      "lessonID": "9d-01",
+      "title": "祖国啊，我亲爱的祖国"
+    },
+    {
+      "lessonID": "9d-02",
+      "title": "梅岭三章"
+    },
+    {
+      "lessonID": "9d-03",
+      "title": "短诗五首"
+    },
+    {
+      "lessonID": "9d-04",
+      "title": "海燕"
+    },
+    {
+      "lessonID": "9d-06",
+      "title": "变色龙"
+    },
+    {
+      "lessonID": "9d-07",
+      "title": "溜索"
+    },
+    {
+      "lessonID": "9d-08",
+      "title": "蒲柳人家（节选）"
+    },
+    {
+      "lessonID": "9d-09",
+      "title": "鱼我所欲也"
+    },
+    {
+      "lessonID": "9d-11",
+      "title": "送东阳马生序"
+    },
+    {
+      "lessonID": "9d-12",
+      "title": "词四首"
+    },
+    {
+      "lessonID": "9d-extra3-1",
+      "title": "定风波（莫听穿林打叶声）"
+    },
+    {
+      "lessonID": "9d-extra3-2",
+      "title": "临江仙·夜登小阁，忆洛中旧游"
+    },
+    {
+      "lessonID": "9d-extra3-3",
+      "title": "太常引·建康中秋夜为吕叔潜赋"
+    },
+    {
+      "lessonID": "9d-extra3-4",
+      "title": "浣溪沙（身向云山那畔行）"
+    },
+    {
+      "lessonID": "9d-13",
+      "title": "短文两篇"
+    },
+    {
+      "lessonID": "9d-14",
+      "title": "山水画的意境"
+    },
+    {
+      "lessonID": "9d-15",
+      "title": "无言之美"
+    },
+    {
+      "lessonID": "9d-16",
+      "title": "驱遣我们的想象"
+    },
+    {
+      "lessonID": "9d-17",
+      "title": "屈原（节选）"
+    },
+    {
+      "lessonID": "9d-18",
+      "title": "天下第一楼（节选）"
+    },
+    {
+      "lessonID": "9d-19",
+      "title": "枣儿"
+    },
+    {
+      "lessonID": "9d-20",
+      "title": "曹刿论战"
+    },
+    {
+      "lessonID": "9d-21",
+      "title": "邹忌讽齐王纳谏"
+    },
+    {
+      "lessonID": "9d-22",
+      "title": "陈涉世家"
+    },
+    {
+      "lessonID": "9d-23",
+      "title": "出师表"
+    },
+    {
+      "lessonID": "9d-24",
+      "title": "诗词曲五首"
+    },
+    {
+      "lessonID": "9d-extra6-1",
+      "title": "南安军"
+    },
+    {
+      "lessonID": "9d-extra6-2",
+      "title": "别云间"
+    },
+    {
+      "lessonID": "9d-extra6-3",
+      "title": "山坡羊·骊山怀古"
+    },
+    {
+      "lessonID": "9d-extra6-4",
+      "title": "朝天子·咏喇叭"
+    }
+  ],
+  "verification": "Original public HTTP/content/title checks, not full pedagogical review. Metadata only; no copyrighted bodies shipped. Search blocks and unsearched lessons are not no-match.",
+  "lessons": [
+    {
+      "lessonID": "7u-01",
+      "title": "春",
+      "publicTextCount": 4,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "query": "春 语文 试讲 教学设计",
+        "checkedAt": "2026-10-21",
+        "status": "searched",
+        "resultCount": 20,
+        "matchingCount": 2
+      },
+      "originalChecks": [
+        {
+          "url": "https://ah.huatu.com/2022/0930/2430866.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://m.hqwx.com/jszg-kaoshi/news/17434749834223.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv11654040",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv16505142",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv11128018",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.ruiwen.com/wenxue/zhuziqing/998109.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/201901/06100902382.html",
+          "status": "http-error"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7u-02",
+      "title": "济南的冬天",
+      "publicTextCount": 4,
+      "categories": [
+        "试讲稿",
+        "说课稿"
+      ],
+      "trialScriptCount": 3,
+      "bilibiliSearch": {
+        "query": "济南的冬天 语文 试讲 教学设计",
+        "checkedAt": "2026-10-21",
+        "status": "searched",
+        "resultCount": 20,
+        "matchingCount": 20
+      },
+      "originalChecks": [
+        {
+          "url": "https://bj.huatu.com/2020/1031/979599.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://m.ah.huatu.com/2023/0323/2574650.html",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.qiqishangan.com/web/detail/show/2479.html",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv11669445",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv11669361",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv11669399",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv8541640",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv43802400",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv20296178",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv25319811",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv12105261",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv11054626",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv19571898",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv25872789",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv20230056",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv27353088",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv11128990",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv11113442",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv39938103",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv17724360",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv25406169",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv17123154",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv17832254",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.sohu.com/a/560007252_121124027",
+          "status": "readable"
+        },
+        {
+          "url": "https://m.fj.huatu.com/2022/0925/2051570.html",
+          "status": "readable"
+        }
+      ],
+      "missing": ""
+    },
+    {
+      "lessonID": "7u-03",
+      "title": "雨的四季",
+      "publicTextCount": 3,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "query": "雨的四季 语文 试讲 教学设计",
+        "checkedAt": "2026-10-21",
+        "status": "blocked",
+        "resultCount": 0,
+        "matchingCount": 0,
+        "http": 412
+      },
+      "originalChecks": [
+        {
+          "url": "https://zy.21cnjy.com/21260770",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://zy.21cnjy.com/17164581",
+          "status": "http-error"
+        },
+        {
+          "url": "https://www.gerenjianli.cn/jiaoxue/jiaoan/10007265.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gerenjianli.cn/jiaoxue/jiaoan/10271256.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://xiaoxue.ruiwen.com/jiaoan/362915.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7u-04",
+      "title": "古代诗歌四首",
+      "publicTextCount": 4,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "query": "古代诗歌四首 语文 试讲 教学设计",
+        "checkedAt": "2026-10-21",
+        "status": "searched",
+        "resultCount": 20,
+        "matchingCount": 1
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_62280919c9c5.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_630c04c81858.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_720b46d38537.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_9dcf133d25cc.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv42248031",
+          "status": "no-readable-body"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7u-05",
+      "title": "秋天的怀念",
+      "publicTextCount": 5,
+      "categories": [
+        "教学设计",
+        "说课稿",
+        "面试答辩"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "query": "秋天的怀念 语文 试讲 教学设计",
+        "checkedAt": "2026-10-21",
+        "status": "searched",
+        "resultCount": 20,
+        "matchingCount": 20
+      },
+      "originalChecks": [
+        {
+          "url": "https://m.ah.huatu.com/2023/0403/2584096.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://m.gd.huatu.com/jsks/2021/0607/2067520.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://fj.huatu.com/2022/0617/2014741.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://sd.huatu.com/2023/0423/1424091.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv25427322",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv21974694",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv9482427",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv23602160",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv23602168",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv25406439",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv8508480",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv19572356",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv42541046",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv2400918",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv46726814",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv39702142",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv48309593",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv18773063",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv24781690",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv41189247",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv18804080",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv27414695",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv28256300",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv23086747",
+          "status": "no-readable-body"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7u-06",
+      "title": "散步",
+      "publicTextCount": 6,
+      "categories": [
+        "教学设计",
+        "说课稿",
+        "面试答辩"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "query": "散步 语文 试讲 教学设计",
+        "checkedAt": "2026-10-21",
+        "status": "searched",
+        "resultCount": 20,
+        "matchingCount": 12
+      },
+      "originalChecks": [
+        {
+          "url": "https://m.he.huatu.com/2023/0327/1390966.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://fj.huatu.com/2022/0115/1958987.html",
+          "status": "http-error"
+        },
+        {
+          "url": "https://m.hqwx.com/jszg-kaoshi/news/15729405422604.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.hqwx.com/jszg-kaoshi/news/14477472381387.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv10135251",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv8810574",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv8933560",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv10135200",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv25465757",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv23176647",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv25431549",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv23140042",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv11153234",
+          "status": "blocked"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv10135303",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv11168915",
+          "status": "blocked"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv23258857",
+          "status": "blocked"
+        },
+        {
+          "url": "https://www.yeyulingfeng.com/a/1164501.html",
+          "status": "no-readable-body"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7u-07",
+      "title": "散文诗二首",
+      "publicTextCount": 4,
+      "categories": [
+        "教学设计",
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "query": "散文诗二首 语文 试讲 教学设计",
+        "checkedAt": "2026-10-21",
+        "status": "blocked",
+        "resultCount": 0,
+        "matchingCount": 0,
+        "http": 412
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.233.com/teacher/mianshi/201711/13000000123.html",
+          "status": "http-error"
+        },
+        {
+          "url": "https://zy.21cnjy.com/26622711",
+          "status": "readable"
+        },
+        {
+          "url": "https://zy.21cnjy.com/21486859",
+          "status": "readable"
+        },
+        {
+          "url": "https://zy.21cnjy.com/13007414",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.shouyihuo.com/jiaoan/1661011144358741.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7u-08",
+      "title": "《世说新语》二则",
+      "publicTextCount": 2,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "query": "《世说新语》二则 语文 试讲 教学设计",
+        "checkedAt": "2026-10-21",
+        "status": "searched",
+        "resultCount": 20,
+        "matchingCount": 2
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_a24c4f626d63.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_d913f1cd0834.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv3672369",
+          "status": "blocked"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv3672422",
+          "status": "blocked"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7u-09",
+      "title": "从百草园到三味书屋",
+      "publicTextCount": 4,
+      "categories": [
+        "教学设计",
+        "试讲稿",
+        "课文解读"
+      ],
+      "trialScriptCount": 1,
+      "bilibiliSearch": {
+        "query": "从百草园到三味书屋 语文 试讲 教学设计",
+        "checkedAt": "2026-10-21",
+        "status": "blocked",
+        "resultCount": 0,
+        "matchingCount": 0,
+        "http": 412
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.hqwx.com/jszg-kaoshi/news/16088664739590.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://ah.huatu.com/2023/1001/2727546.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://m.hb.huatu.com/jiaoshi/1162041.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://zy.21cnjy.com/19438095",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/chuzhongyuwen/202105/11104208505102.html",
+          "status": "http-error"
+        }
+      ],
+      "missing": ""
+    },
+    {
+      "lessonID": "7u-10",
+      "title": "往事依依",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "query": "往事依依 语文 试讲 教学设计",
+        "checkedAt": "2026-10-21",
+        "status": "blocked",
+        "resultCount": 0,
+        "matchingCount": 0,
+        "http": 412
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.86yw.com/html/296159.html",
+          "status": "fetch-or-decode-error"
+        },
+        {
+          "url": "https://www.86yw.com/html/296151.html",
+          "status": "fetch-or-decode-error"
+        },
+        {
+          "url": "https://www.kaoke.com/xuexi/chuzhongyuwen/452256.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.86yw.com/html/296155.html",
+          "status": "fetch-or-decode-error"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7u-11",
+      "title": "再塑生命的人",
+      "publicTextCount": 3,
+      "categories": [
+        "教学设计",
+        "试讲稿"
+      ],
+      "trialScriptCount": 1,
+      "bilibiliSearch": {
+        "query": "再塑生命的人 语文 试讲 教学设计",
+        "checkedAt": "2026-10-21",
+        "status": "blocked",
+        "resultCount": 0,
+        "matchingCount": 0,
+        "http": 412
+      },
+      "originalChecks": [
+        {
+          "url": "https://sd.huatu.com/2023/0407/1418299.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.hqwx.com/jszg-kaoshi/news/17292380782085.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://ah.huatu.com/2022/1001/2431335.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/chuzhongyuwen/202202/02143607146431.html",
+          "status": "http-error"
+        }
+      ],
+      "missing": ""
+    },
+    {
+      "lessonID": "7u-12",
+      "title": "《论语》十二章",
+      "publicTextCount": 2,
+      "categories": [
+        "说课稿",
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_d6640103678f.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.yeyulingfeng.com/wendang/452884.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/chuzhongyuwen/202105/11104552217917.html",
+          "status": "http-error"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/chuzhongyuwen/202202/03143800515271.html",
+          "status": "http-error"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7u-extra3-1",
+      "title": "峨眉山月歌",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_f13ab2fe8afd.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/chuzhongyuwen/202305/12094701930777.html",
+          "status": "http-error"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7u-extra3-2",
+      "title": "江南逢李龟年",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_514b8bc0ee4f.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7u-extra3-3",
+      "title": "行军九日思长安故园",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_1a98a1d6bae1.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7u-extra3-4",
+      "title": "夜上受降城闻笛",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_d89eb1125b6d.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7u-13",
+      "title": "纪念白求恩",
+      "publicTextCount": 3,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.hqwx.com/jszg-kaoshi/news/15127021371430.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.kaoke.com/xuexi/chuzhongyuwen/434113.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://m.hb.huatu.com/jiaoshi/1161942.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7u-14",
+      "title": "回忆我的母亲",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://ah.huatu.com/2024/0126/2801991.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7u-15",
+      "title": "梅岭三章",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_2abf9e2270bf.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7u-16",
+      "title": "诫子书",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_c0509bfa84a1.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/chuzhongyuwen/202112/15101419698921.html",
+          "status": "http-error"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7u-17",
+      "title": "猫",
+      "publicTextCount": 1,
+      "categories": [
+        "试讲稿"
+      ],
+      "trialScriptCount": 1,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://m.he.huatu.com/2020/0428/1008816.html",
+          "status": "readable"
+        }
+      ],
+      "missing": ""
+    },
+    {
+      "lessonID": "7u-18",
+      "title": "我的白鸽",
+      "publicTextCount": 6,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://zy.21cnjy.com/26375237",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.yeyulingfeng.com/wendang/645655.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.yeyulingfeng.com/wendang/645656.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://zy.21cnjy.com/26306633",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://zy.21cnjy.com/26540866",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://zy.21cnjy.com/21027436",
+          "status": "readable"
+        },
+        {
+          "url": "https://zy.21cnjy.com/23407618",
+          "status": "readable"
+        },
+        {
+          "url": "https://zy.21cnjy.com/20953096",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7u-19",
+      "title": "大雁归来",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.kaoke.com/xuexi/chuzhongyuwen/453830.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7u-20",
+      "title": "狼",
+      "publicTextCount": 6,
+      "categories": [
+        "教学设计",
+        "试讲稿",
+        "课文解读"
+      ],
+      "trialScriptCount": 4,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_1eeb1373f910.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://sd.huatu.com/2023/0418/1422085.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://m.sd.huatu.com/2021/1116/1256281.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://ah.huatu.com/2021/1119/2170893.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://sd.huatu.com/2022/0323/1299992.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://ah.huatu.com/2023/0406/2587601.html",
+          "status": "readable"
+        }
+      ],
+      "missing": ""
+    },
+    {
+      "lessonID": "7u-21",
+      "title": "小圣施威降大圣",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_033e6d3c91e2.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7u-22",
+      "title": "皇帝的新装",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://m.hb.huatu.com/jiaoshi/1162022.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.kaoke.com/xuexi/chuzhongyuwen/443154.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7u-23",
+      "title": "女娲造人",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.kaoke.com/xuexi/chuzhongyuwen/465785.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://m.koolearn.com/zhongkao/20181010/935633.html",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://m.sohu.com/a/522226039_120329065/",
+          "status": "no-readable-body"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7u-24",
+      "title": "寓言四则",
+      "publicTextCount": 2,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_b7959c9c542a.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_db9c5e1ca3f2.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7u-extra6-1",
+      "title": "秋词（其一）",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_4995f2f0581b.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7u-extra6-2",
+      "title": "夜雨寄北",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_e46c43d13b97.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7u-extra6-3",
+      "title": "十一月四日风雨大作（其二）",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_beab5faf1894.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7u-extra6-4",
+      "title": "潼关",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_2093a1259999.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-01",
+      "title": "邓稼先",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1090421.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://zhongkao.koolearn.com/20181010/935640.html",
+          "status": "unapproved-redirect"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-02",
+      "title": "说和做——记闻一多先生言行片段",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1090380.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-03",
+      "title": "列夫·托尔斯泰",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1090390.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.kaoke.com/xuexi/chuzhongyuwen/477182.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/201905/15151219369.html",
+          "status": "http-error"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-04",
+      "title": "孙权劝学",
+      "publicTextCount": 2,
+      "categories": [
+        "试讲稿",
+        "课文解读"
+      ],
+      "trialScriptCount": 1,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_87cc93edceb0.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://zy.21cnjy.com/15093193",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/201905/15150629954.html",
+          "status": "http-error"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/chuzhongyuwen/202204/26112157619675.html",
+          "status": "http-error"
+        }
+      ],
+      "missing": ""
+    },
+    {
+      "lessonID": "7d-05",
+      "title": "黄河颂",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1090408.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-06",
+      "title": "老山界",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1090398.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.yuwenmi.com/jiaoan/banianji/448393.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-07",
+      "title": "谁是最可爱的人",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://zy.21cnjy.com/19214436",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-08",
+      "title": "土地的誓言",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.kaoke.com/jiaoxue/jiaoxuesheji/295089.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-09",
+      "title": "木兰诗",
+      "publicTextCount": 2,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_2d6b0c83a500.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.hqwx.com/jszg-kaoshi/news/16087916991718.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-10",
+      "title": "阿长与《山海经》",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.kaoke.com/xuexi/chuzhongyuwen/446248.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.chinajiaoan.cn/doc/1655405851321393.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/chuzhongyuwen/202305/12095140518912.html",
+          "status": "http-error"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-11",
+      "title": "山地回忆",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1108663.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.chinajiaoan.cn/doc/1655406470325520.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-12",
+      "title": "台阶",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1108626.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.chinajiaoan.cn/doc/1655405044317523.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/201901/06181626794.html",
+          "status": "http-error"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/201905/06142432572.html",
+          "status": "http-error"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-13",
+      "title": "卖油翁",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_2e3bc3aa2f6b.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-extra3-1",
+      "title": "竹里馆",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_4809b5e7a16a.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-extra3-2",
+      "title": "春夜洛城闻笛",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_be1894114330.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/chuzhongyuwen/202201/31143350241287.html",
+          "status": "http-error"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-extra3-3",
+      "title": "逢入京使",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_10d21c96ba71.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-extra3-4",
+      "title": "晚春",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_9aadcdc29984.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-14",
+      "title": "驿路梨花",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1108656.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-15",
+      "title": "青春之光",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1108680.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-16",
+      "title": "有为有不为",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1108650.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-17",
+      "title": "短文两篇",
+      "publicTextCount": 2,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_6c1ea9b7dd44.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_6d2dcbe80f96.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://m.shanxiangjiaoyu.com/zixun/20200415/93711.html",
+          "status": "no-readable-body"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-18",
+      "title": "井冈翠竹",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1113108.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-19",
+      "title": "紫藤萝瀑布",
+      "publicTextCount": 3,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://ah.huatu.com/2024/0129/2804843.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://m.ah.huatu.com/2024/0907/2928073.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://m.he.huatu.com/2020/0326/992561.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/chuzhongyuwen/202201/29143142453907.html",
+          "status": "http-error"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/chuzhongyuwen/202105/14105124819322.html",
+          "status": "http-error"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-20",
+      "title": "外国诗二首",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/wendang/431836.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-21",
+      "title": "古代诗歌五首",
+      "publicTextCount": 5,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_09294abb5f67.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_4083a01ac833.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_4a272f472fee.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_efec283b31e0.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_d78d2dc95f06.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-22",
+      "title": "太空一日",
+      "publicTextCount": 3,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1113057.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.yeyulingfeng.com/wendang/431855.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.yeyulingfeng.com/wendang/431851.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-23",
+      "title": "“蛟龙”探海",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1113044.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-24",
+      "title": "带上她的眼睛",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1113063.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.sohu.com/a/530442981_120329065",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-25",
+      "title": "活板",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_9dab6e43f97a.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-extra6-1",
+      "title": "泊秦淮",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_8e8011f614fb.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-extra6-2",
+      "title": "贾生",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_cd908d31f388.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-extra6-3",
+      "title": "过松源晨炊漆公店（其五）",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计",
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_9b06cd24ed3a.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.yeyulingfeng.com/wendang/91317788.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "7d-extra6-4",
+      "title": "约客",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_c1537124e930.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-01",
+      "title": "消息二则",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.daowen.com/jiaoan/3188100.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-02",
+      "title": "中国人首次进入自己的空间站",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://zy.21cnjy.com/23196185",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.yeyulingfeng.com/wendang/91241032.html",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://zy.21cnjy.com/20879309",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-03",
+      "title": "首届诺贝尔奖颁发",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.chinajiaoan.cn/doc/1655406100322875.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-04",
+      "title": "“飞天”凌空——跳水姑娘吕伟夺魁记",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1024705.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-05",
+      "title": "一着惊海天——目击我国航母舰载战斗机首架次成功着舰",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.chinajiaoan.cn/doc/1655406100322877.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-06",
+      "title": "国行公祭，为佑世界和平",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.abcjiaoyu.com/ziyuan/202175.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-07",
+      "title": "藤野先生",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计",
+        "试讲稿"
+      ],
+      "trialScriptCount": 1,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.kaoke.com/xuexi/chuzhongyuwen/449010.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.kaoke.com/xuexi/chuzhongyuwen/441425.html",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.sohu.com/a/731505284_121124034",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/chuzhongyuwen/202105/13104835818967.html",
+          "status": "http-error"
+        }
+      ],
+      "missing": ""
+    },
+    {
+      "lessonID": "8u-08",
+      "title": "回忆鲁迅先生（节选）",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.abcjiaoyu.com/ziyuan/158874.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.abcjiaoyu.com/ziyuan/158881.html",
+          "status": "no-readable-body"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-09",
+      "title": "天上有颗“南仁东星”",
+      "publicTextCount": 3,
+      "categories": [
+        "教学设计",
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.86yw.com/html/296225.html",
+          "status": "fetch-or-decode-error"
+        },
+        {
+          "url": "https://zy.21cnjy.com/23212488",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.yeyulingfeng.com/wendang/91241271.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.86yw.com/html/296219.html",
+          "status": "fetch-or-decode-error"
+        },
+        {
+          "url": "https://zy.21cnjy.com/26417251",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-10",
+      "title": "美丽的颜色",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.chinajiaoan.cn/doc/1655406100322881.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-11",
+      "title": "三峡",
+      "publicTextCount": 2,
+      "categories": [
+        "说课稿",
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_e3a32488d62a.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.yeyulingfeng.com/a/1131377.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-12",
+      "title": "短文二篇",
+      "publicTextCount": 2,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_221828a8f12d.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_96919608472f.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-13",
+      "title": "与朱元思书",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_b992d3699612.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/chuzhongyuwen/202305/12095331248015.html",
+          "status": "http-error"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/chuzhongyuwen/202305/10092059689729.html",
+          "status": "http-error"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-14",
+      "title": "唐诗五首",
+      "publicTextCount": 5,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_13c4e7658327.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_af218ed70405.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_b0d3f72465ef.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_d50eb19399e6.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_eae647c5c110.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-extra3-1",
+      "title": "庭中有奇树",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_d4f03889eaad.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-extra3-2",
+      "title": "龟虽寿",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_d78b6331098e.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-extra3-3",
+      "title": "赠从弟（其二）",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_2d0c9ade951e.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-extra3-4",
+      "title": "梁甫行",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_7ddbcf2c2131.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-15",
+      "title": "背影",
+      "publicTextCount": 5,
+      "categories": [
+        "教学设计",
+        "试讲稿",
+        "课文解读"
+      ],
+      "trialScriptCount": 1,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1134633.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.yuwenmi.com/jiaoxuesheji/4658888.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.shanxiangjiaoyu.com/zixun/20240424/11553",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.jiajiaoban.com/e/20180731/5b606d3828ec8.shtml",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/chuzhongyuwen/202006/23090115725.html",
+          "status": "http-error"
+        },
+        {
+          "url": "https://www.hqwx.com/jszg-kaoshi/news/17016729582283.html",
+          "status": "readable"
+        }
+      ],
+      "missing": ""
+    },
+    {
+      "lessonID": "8u-16",
+      "title": "白杨礼赞",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1134634.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://m.ah.huatu.com/2022/1201/2483985.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-17",
+      "title": "散文二篇",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1134625.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-18",
+      "title": "昆明的雨",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1134628.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.chinajiaoan.cn/doc/1655406099322860.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-19",
+      "title": "中国石拱桥",
+      "publicTextCount": 3,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://m.ah.huatu.com/2024/0126/2802751.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.kaoke.com/jiaoxue/jiaoxuesheji/252407.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/chuzhongyuwen/202006/12092830877.html",
+          "status": "http-error"
+        },
+        {
+          "url": "https://www.sohu.com/a/473710981_121124351",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-20",
+      "title": "苏州园林",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.kaoke.com/jiaoxue/jiaoxuesheji/227111.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.yuwenmi.com/kebiao/banianji1/529290.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/chuzhongyuwen/202105/13105333999093.html",
+          "status": "http-error"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-21",
+      "title": "人民英雄永垂不朽——瞻仰首都人民英雄纪念碑",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://zy.21cnjy.com/14190032",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-22",
+      "title": "梦回繁华",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.chinajiaoan.cn/doc/1655406100322878.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.chinajiaoan.cn/doc/1655406002322161.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-23",
+      "title": "《孟子》三章",
+      "publicTextCount": 3,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_294c939b3665.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_888fba6d27c9.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_ff66d475ee44.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-24",
+      "title": "愚公移山",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_979c04d4b32a.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-25",
+      "title": "周亚夫军细柳",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_90e9963e6316.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-26",
+      "title": "诗词五首",
+      "publicTextCount": 4,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_3fb397218a1e.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_89d3a63c6d7f.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_a60e7fd3031b.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_5b90a9bb5230.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_f547ff97e13f.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-extra6-1",
+      "title": "浣溪沙（一曲新词酒一杯）",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_7e5b6ca97ef2.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_eda29e11ff49.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-extra6-2",
+      "title": "采桑子（轻舟短棹西湖好）",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_a3f6ef2ac6f7.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-extra6-3",
+      "title": "相见欢（金陵城上西楼）",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_a3d4996007f0.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8u-extra6-4",
+      "title": "如梦令（常记溪亭日暮）",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_3e33bfbb8f79.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-01",
+      "title": "社戏",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1161283.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.kaoke.com/xuexi/chuzhongyuwen/442792.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-02",
+      "title": "回延安",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1161293.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-03",
+      "title": "安塞腰鼓",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1161307.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.yuwenmi.com/jiaoxuesheji/5133233.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-04",
+      "title": "灯笼",
+      "publicTextCount": 3,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1161295.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.chinajiaoan.cn/doc/1655406099322872.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.kaoke.com/xuexi/chuzhongyuwen/315759.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-05",
+      "title": "大自然的语言",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://ah.huatu.com/2024/0129/2805431.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/chuzhongyuwen/202105/12104751125976.html",
+          "status": "http-error"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-06",
+      "title": "阿西莫夫短文两篇",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.chinajiaoan.cn/doc/1655406036322294.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.yuwenmi.com/kebiao/banianji1/526994.html",
+          "status": "fetch-or-decode-error"
+        },
+        {
+          "url": "https://www.yuwenmi.com/jiaoan/banianji/463522.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-07",
+      "title": "月亮是从哪里来的",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1161260.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-08",
+      "title": "时间的脚印",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1161266.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.chinajiaoan.cn/doc/1655406099322871.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-09",
+      "title": "桃花源记",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计",
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_73add8822103.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.sohu.com/a/473328066_121124351",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-10",
+      "title": "小石潭记",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计",
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_1ab58966cf83.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://m.ah.huatu.com/2023/0407/2588088.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/201905/06142019126.html",
+          "status": "http-error"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-11",
+      "title": "核舟记",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_6acca7d24158.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-12",
+      "title": "《诗经》二首",
+      "publicTextCount": 3,
+      "categories": [
+        "教学设计",
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_15cd220102d6.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_4c5705b99143.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.yeyulingfeng.com/a/1156229.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-extra3-1",
+      "title": "式微",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_0e1fe871ec57.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-extra3-2",
+      "title": "子衿",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_cfe0289eb931.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-extra3-3",
+      "title": "送杜少府之任蜀州",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_5775c79bcd34.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-extra3-4",
+      "title": "望洞庭湖赠张丞相",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.chinajiaoan.cn/doc/1655405728320801.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-13",
+      "title": "最后一次讲演",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1166913.html",
+          "status": "no-readable-body"
+        },
+        {
+          "url": "https://www.abcjiaoyu.com/ziyuan/189757.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-14",
+      "title": "敬业与乐业",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1185110.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.86yw.com/html/268035.html",
+          "status": "fetch-or-decode-error"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-15",
+      "title": "应有格物致知精神",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1185081.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.yeyulingfeng.com/a/1192111.html",
+          "status": "no-readable-body"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-16",
+      "title": "我一生中的重要抉择",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1185072.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.chinajiaoan.cn/doc/1655405794321097.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-17",
+      "title": "壶口瀑布",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yuwenmi.com/jiaoxuesheji/5188700.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.chinajiaoan.cn/doc/1655406099322864.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-18",
+      "title": "在长江源头各拉丹冬",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.chinajiaoan.cn/doc/1655406100322879.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-19",
+      "title": "登勃朗峰",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.abcjiaoyu.com/ziyuan/190608.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.abcjiaoyu.com/ziyuan/190610.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-20",
+      "title": "一滴水经过丽江",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.chinajiaoan.cn/doc/1655406099322861.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-21",
+      "title": "《庄子》二则",
+      "publicTextCount": 2,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_6918b8a906d7.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_970d99153fe9.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-22",
+      "title": "《礼记》二则",
+      "publicTextCount": 2,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_b33f567e3fc5.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_b85acee19435.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-23",
+      "title": "马说",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_97ab33229f07.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-24",
+      "title": "唐诗三首",
+      "publicTextCount": 3,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_2716dfb4d439.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_8e9ecc95d6a4.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_93ac46de573f.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-extra6-1",
+      "title": "题破山寺后禅院",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_e2890c61279c.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-extra6-2",
+      "title": "送友人",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_c348339f28fd.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-extra6-3",
+      "title": "卜算子·黄州定慧院寓居作",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_c1a07129a6d3.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "8d-extra6-4",
+      "title": "卜算子·咏梅",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_2523dc7baa84.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-01",
+      "title": "沁园春·雪",
+      "publicTextCount": 2,
+      "categories": [
+        "试讲稿",
+        "课文解读"
+      ],
+      "trialScriptCount": 1,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_202a800b9239.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://m.sd.huatu.com/2022/1205/1382438.html",
+          "status": "readable"
+        }
+      ],
+      "missing": ""
+    },
+    {
+      "lessonID": "9u-02",
+      "title": "周总理，你在哪里",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://zy.21cnjy.com/20870022",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-03",
+      "title": "我爱这土地",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.kaoke.com/xuexi/chuzhongyuwen/446862.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.kaoke.com/xuexi/chuzhongyuwen/446122.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-04",
+      "title": "乡愁",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://m.he.huatu.com/2022/0509/1291793.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/chuzhongyuwen/202305/12094629305970.html",
+          "status": "http-error"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-05",
+      "title": "你是人间的四月天——一句爱的赞颂",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://zy.21cnjy.com/26254029",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-06",
+      "title": "我看",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://zy.21cnjy.com/26254032",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-07",
+      "title": "培养德智体美劳全面发展的社会主义建设者和接班人",
+      "publicTextCount": 6,
+      "categories": [
+        "教学设计",
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://zy.21cnjy.com/26436855",
+          "status": "readable"
+        },
+        {
+          "url": "https://zy.21cnjy.com/26483437",
+          "status": "readable"
+        },
+        {
+          "url": "https://zy.21cnjy.com/26509186",
+          "status": "readable"
+        },
+        {
+          "url": "https://zy.21cnjy.com/26252831",
+          "status": "readable"
+        },
+        {
+          "url": "https://zy.21cnjy.com/26313880",
+          "status": "readable"
+        },
+        {
+          "url": "https://zy.21cnjy.com/26532153",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-08",
+      "title": "中国人失掉自信力了吗",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://zy.21cnjy.com/26252958",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-09",
+      "title": "谈骨气",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://m.hb.huatu.com/jiaoshi/1161912.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-10",
+      "title": "创造宣言",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.abcjiaoyu.com/ziyuan/201602.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.yeyulingfeng.com/wendang/91261009.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-11",
+      "title": "岳阳楼记",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_f3d6556dbcad.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/201905/06143451119.html",
+          "status": "http-error"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-12",
+      "title": "醉翁亭记",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_5cbf5b7be38f.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/chuzhongyuwen/202006/05090508476.html",
+          "status": "http-error"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-13",
+      "title": "湖心亭看雪",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_a950a04e5645.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-14",
+      "title": "诗词三首",
+      "publicTextCount": 3,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_f6c40e3d4893.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_632c5beb84eb.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_870828ca8aaa.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-extra3-1",
+      "title": "月夜忆舍弟",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_ad6f7cfa10c2.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-extra3-2",
+      "title": "长沙过贾谊宅",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_a9a0b6b0eede.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-extra3-3",
+      "title": "左迁至蓝关示侄孙湘",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_076cedfce20c.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-extra3-4",
+      "title": "商山早行",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_8d18260838e2.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-15",
+      "title": "故乡",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yuwenmi.com/jiaoxuesheji/5311182.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-16",
+      "title": "我的叔叔于勒",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.kaoke.com/jiaoxue/jiaoxuesheji/152335.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.chinajiaoan.cn/doc/1655407046327459.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-17",
+      "title": "孤独之旅",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://zy.21cnjy.com/17277278",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-18",
+      "title": "蒲柳人家（节选）",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1167270.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-19",
+      "title": "想和做",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://m.hb.huatu.com/jiaoshi/1161955.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-20",
+      "title": "怀疑与学问",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.abcjiaoyu.com/ziyuan/201525.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.abcjiaoyu.com/ziyuan/201526.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-21",
+      "title": "就英法联军远征中国致巴特勒上尉的信",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.abcjiaoyu.com/ziyuan/201231.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.abcjiaoyu.com/ziyuan/201215.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-22",
+      "title": "精神的三间小屋",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.chinajiaoan.cn/doc/1655405794321052.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.yeyulingfeng.com/a/1177360.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-23",
+      "title": "曹刿论战",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_0c4d9d86a850.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-24",
+      "title": "邹忌讽齐王纳谏",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计",
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_1bba692e2e4c.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://ah.huatu.com/2020/0108/1630647.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-25",
+      "title": "陈涉世家",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_2a61bc6fe7d4.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-26",
+      "title": "出师表",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_8bc0871fe00b.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-27",
+      "title": "诗词曲五首",
+      "publicTextCount": 5,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_1bd53945715b.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_3cfc9856b57a.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_444df93c9bdf.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_5796865dca4a.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_5f6efd08156d.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-extra6-1",
+      "title": "咸阳城东楼",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_65bc4719e0b1.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-extra6-2",
+      "title": "无题",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_1a4c484f9364.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-extra6-3",
+      "title": "浣溪沙（漠漠轻寒上小楼）",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_7e5b6ca97ef2.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_8cd9a96daaa4.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9u-extra6-4",
+      "title": "丑奴儿·书博山道中壁",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_2ee36eb2ccf7.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-01",
+      "title": "祖国啊，我亲爱的祖国",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://zhongkao.koolearn.com/20181016/936236.html",
+          "status": "unapproved-redirect"
+        },
+        {
+          "url": "https://www.yeyulingfeng.com/wendang/411754.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-02",
+      "title": "梅岭三章",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_2abf9e2270bf.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-03",
+      "title": "短诗五首",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.abcjiaoyu.com/ziyuan/195462.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-04",
+      "title": "海燕",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.kaoke.com/xuexi/chuzhongyuwen/451488.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.yuwenmi.com/yuwenban/qinianji21/327555.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-05",
+      "title": "孔乙己",
+      "publicTextCount": 3,
+      "categories": [
+        "教学设计",
+        "试讲稿"
+      ],
+      "trialScriptCount": 1,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.kaoke.com/xuexi/chuzhongyuwen/453695.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://m.ah.huatu.com/2023/0719/2671398.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.sohu.com/a/475892781_121124346",
+          "status": "readable"
+        }
+      ],
+      "missing": ""
+    },
+    {
+      "lessonID": "9d-06",
+      "title": "变色龙",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://m.hb.huatu.com/jiaoshi/1161913.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://zhongkao.koolearn.com/20181016/936250.html",
+          "status": "unapproved-redirect"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/chuzhongyuwen/202305/13095516788772.html",
+          "status": "http-error"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-07",
+      "title": "溜索",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.chinajiaoan.cn/doc/1655405897321535.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-08",
+      "title": "蒲柳人家（节选）",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/a/1167270.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-09",
+      "title": "鱼我所欲也",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_740f1087a38c.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-10",
+      "title": "唐雎不辱使命",
+      "publicTextCount": 2,
+      "categories": [
+        "试讲稿",
+        "课文解读"
+      ],
+      "trialScriptCount": 1,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_21c247ed876f.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/chuzhongyuwen/202105/11104129424906.html",
+          "status": "http-error"
+        },
+        {
+          "url": "https://www.sohu.com/a/609696658_269059",
+          "status": "readable"
+        }
+      ],
+      "missing": ""
+    },
+    {
+      "lessonID": "9d-11",
+      "title": "送东阳马生序",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_6fb0a58e157c.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.233.com/teacher/mszt/201905/06143105119.html",
+          "status": "http-error"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-12",
+      "title": "词四首",
+      "publicTextCount": 4,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_76a124fc2fb8.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_85b8792a66ac.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_2a4e8dfccc72.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_9822debcdc64.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-extra3-1",
+      "title": "定风波（莫听穿林打叶声）",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_6b30455fdd3c.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-extra3-2",
+      "title": "临江仙·夜登小阁，忆洛中旧游",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_ac19428da949.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-extra3-3",
+      "title": "太常引·建康中秋夜为吕叔潜赋",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_9d2a73f5e3bd.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-extra3-4",
+      "title": "浣溪沙（身向云山那畔行）",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_7e5b6ca97ef2.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-13",
+      "title": "短文两篇",
+      "publicTextCount": 3,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.233.com/teacher/shuoke/20060715/151145677.html",
+          "status": "http-error"
+        },
+        {
+          "url": "https://zy.21cnjy.com/20195859",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gerenjianli.cn/jiaoxue/jiaoan/10039714.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gerenjianli.cn/jiaoxue/jiaoan/10354227.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gerenjianli.cn/jiaoxue/jiaoan/10527429.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-14",
+      "title": "山水画的意境",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.abcjiaoyu.com/ziyuan/195685.html",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.abcjiaoyu.com/ziyuan/195687.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-15",
+      "title": "无言之美",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.sohu.com/a/855108136_121921560",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-16",
+      "title": "驱遣我们的想象",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.chinajiaoan.cn/doc/1655405897321571.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-17",
+      "title": "屈原（节选）",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.yeyulingfeng.com/wendang/91257084.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-18",
+      "title": "天下第一楼（节选）",
+      "publicTextCount": 1,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://zy.21cnjy.com/15280265",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-19",
+      "title": "枣儿",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.jiajiaoban.com/e/20170102/5869f8a0a5b84.shtml",
+          "status": "readable"
+        },
+        {
+          "url": "https://xiaoxue.ruiwen.com/jiaoxuesheji/187592.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-20",
+      "title": "曹刿论战",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_0c4d9d86a850.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-21",
+      "title": "邹忌讽齐王纳谏",
+      "publicTextCount": 2,
+      "categories": [
+        "教学设计",
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_1bba692e2e4c.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://ah.huatu.com/2020/0108/1630647.html",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-22",
+      "title": "陈涉世家",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_2a61bc6fe7d4.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-23",
+      "title": "出师表",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_8bc0871fe00b.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-24",
+      "title": "诗词曲五首",
+      "publicTextCount": 5,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_1bd53945715b.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_3cfc9856b57a.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_444df93c9bdf.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_5796865dca4a.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_5f6efd08156d.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-extra6-1",
+      "title": "南安军",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_04c121ce6a85.aspx",
+          "status": "readable"
+        },
+        {
+          "url": "https://www.bilibili.com/read/cv23518507",
+          "status": "no-readable-body"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-extra6-2",
+      "title": "别云间",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_d01bc3fbb10b.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-extra6-3",
+      "title": "山坡羊·骊山怀古",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_614c91077b60.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    },
+    {
+      "lessonID": "9d-extra6-4",
+      "title": "朝天子·咏喇叭",
+      "publicTextCount": 1,
+      "categories": [
+        "课文解读"
+      ],
+      "trialScriptCount": 0,
+      "bilibiliSearch": {
+        "status": "unsearched"
+      },
+      "originalChecks": [
+        {
+          "url": "https://www.gushiwen.cn/shiwenv_dff01ff4925b.aspx",
+          "status": "readable"
+        }
+      ],
+      "missing": "未找到已核实的试讲稿"
+    }
+  ]
+}

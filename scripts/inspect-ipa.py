@@ -10,10 +10,12 @@ with zipfile.ZipFile(path) as z:
     prefix='Payload/XinxinGarden.app/'
     info=plistlib.loads(z.read(prefix+'Info.plist'))
     assert info['CFBundleIdentifier']=='com.wm0104.xinxingarden'
-    assert info['CFBundleDisplayName']=='欣语' and info['CFBundleShortVersionString']=='0.0.4'
-    assert info['CFBundleVersion']=='4'
+    assert info['CFBundleDisplayName']=='欣语' and info['CFBundleShortVersionString']=='0.0.5'
+    assert info['CFBundleVersion']=='5'
     assert info['MinimumOSVersion']=='15.0'
     assert info['UIDeviceFamily']==[1],info.get('UIDeviceFamily')
+    expected_orientations={'UIInterfaceOrientationPortrait','UIInterfaceOrientationLandscapeLeft','UIInterfaceOrientationLandscapeRight'}
+    assert set(info['UISupportedInterfaceOrientations'])==expected_orientations,info.get('UISupportedInterfaceOrientations')
     assert 'iPhoneOS' in info['CFBundleSupportedPlatforms']
     assert info['NSCalendarsUsageDescription'] and info['NSCalendarsFullAccessUsageDescription']
     forbidden=['NSLocationWhenInUseUsageDescription','NSContactsUsageDescription','NSMicrophoneUsageDescription','NSCameraUsageDescription','NSPhotoLibraryUsageDescription']
@@ -39,7 +41,7 @@ with zipfile.ZipFile(path) as z:
     assert not encrypted,'Encrypted executable'
     assert prefix+'_CodeSignature/CodeResources' in z.namelist(),'Signature resources missing'
     catalog=json.loads(z.read(prefix+'catalog.json'))
-    report=dict(ipa=path.name,sha256=hashlib.sha256(path.read_bytes()).hexdigest(),bytes=path.stat().st_size,bundleID=info['CFBundleIdentifier'],version=info['CFBundleShortVersionString'],minimumOS=info['MinimumOSVersion'],machOMinimumOS=os_version,architecture='arm64',deviceFamily=info['UIDeviceFamily'],books=len(catalog['books']),entries=sum(len(u['lessons']) for b in catalog['books'] for u in b['units']),zipIntegrity='passed',deviceTested=False)
+    report=dict(ipa=path.name,sha256=hashlib.sha256(path.read_bytes()).hexdigest(),bytes=path.stat().st_size,bundleID=info['CFBundleIdentifier'],version=info['CFBundleShortVersionString'],build=info['CFBundleVersion'],orientations=info['UISupportedInterfaceOrientations'],minimumOS=info['MinimumOSVersion'],machOMinimumOS=os_version,architecture='arm64',deviceFamily=info['UIDeviceFamily'],books=len(catalog['books']),entries=sum(len(u['lessons']) for b in catalog['books'] for u in b['units']),zipIntegrity='passed',deviceTested=False)
     text=json.dumps(report,ensure_ascii=False,indent=2)
     print(text)
     if a.report:Path(a.report).write_text(text+'\n',encoding='utf-8')

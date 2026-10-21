@@ -97,9 +97,15 @@ for r in base:
     if r['body']:
         r['source']=r['source'].replace('小花园原创练习','欣语原创练习')
         result.append(r)
+texts=json.loads((ROOT/'scripts/resources/text-sources.json').read_text(encoding='utf-8'))
+result.extend(texts)
 (ROOT/'App/Resources/library.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 missing=[l['id']+' '+l['title'] for l in lessons if not any(r['lessonID']==l['id'] and r['kind']=='video' for r in result)]
-report={'checkedAt':'2026-10-21','resources':len(result),'lessonCount':len(lessons),'videoCovered':len(lessons)-len(missing),'videoCount':sum(r['kind']=='video' for r in result),'guideCount':sum(r['kind']=='guide' for r in result),'missingVideo':missing,
- 'verification':'Public platform metadata (title, page, duration) checked; full videos not watched. Availability/login may change.'}
-(ROOT/'docs/revision-002/coverage.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
+report={'checkedAt':max(r.get('checkedAt','') for r in result),'resources':len(result),'lessonCount':len(lessons),'videoCovered':len(lessons)-len(missing),'videoCount':sum(r['kind']=='video' for r in result),'guideCount':sum(r['kind']=='guide' for r in result),'missingVideo':missing,
+ 'publicTextCount':len(texts),'publicTextCovered':len({r['lessonID'] for r in texts}),
+ 'publicTrialScriptCount':sum(r['kind']=='script' for r in texts),
+ 'verification':'Video metadata and direct text HTTP/content/title checked; full videos not watched and articles not fully reviewed. Availability/login may change.'}
+report_path=ROOT/'docs/revision-005/library-coverage.json'
+report_path.parent.mkdir(parents=True,exist_ok=True)
+report_path.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 print(json.dumps(report,ensure_ascii=False,indent=2))
