@@ -15,7 +15,10 @@ final class GardenUITests: XCTestCase {
         let note = app.textViews["note-input"]; XCTAssertTrue(note.waitForExistence(timeout: 5))
         note.tap(); note.typeText("test video timestamp")
         let time = app.textFields["分:秒 或 时:分:秒"]
-        time.tap(); time.typeText("03:25")
+        time.tap()
+        let old = (time.value as? String) ?? ""
+        if !old.isEmpty && old != "分:秒 或 时:分:秒" { time.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: old.count)) }
+        time.typeText("03:25")
         app.buttons["save-note"].tap()
         XCTAssertTrue(app.staticTexts["03:25"].firstMatch.waitForExistence(timeout: 5))
         shot("10-视频时间笔记")
