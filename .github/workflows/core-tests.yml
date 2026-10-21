@@ -13,5 +13,13 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check lesson coverage and reminder delivery behavior
+        run: |
+          python3 scripts/check-catalog.py
+          python3 scripts/check-library.py
+          node --test reminder-service/worker.test.js
       - name: Test actual Swift behavior
         run: swift test

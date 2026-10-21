@@ -10,7 +10,7 @@ with zipfile.ZipFile(path) as z:
     prefix='Payload/XinxinGarden.app/'
     info=plistlib.loads(z.read(prefix+'Info.plist'))
     assert info['CFBundleIdentifier']=='com.wm0104.xinxingarden'
-    assert info['CFBundleDisplayName']=='欣语' and info['CFBundleShortVersionString']=='0.0.1'
+    assert info['CFBundleDisplayName']=='欣语' and info['CFBundleShortVersionString']=='0.0.2'
     assert info['MinimumOSVersion']=='15.0'
     assert info['UIDeviceFamily']==[1],info.get('UIDeviceFamily')
     assert 'iPhoneOS' in info['CFBundleSupportedPlatforms']
@@ -18,6 +18,8 @@ with zipfile.ZipFile(path) as z:
     forbidden=['NSLocationWhenInUseUsageDescription','NSContactsUsageDescription','NSMicrophoneUsageDescription','NSCameraUsageDescription','NSPhotoLibraryUsageDescription']
     assert all(k not in info for k in forbidden),'Unnecessary protected-resource description'
     assert z.read(prefix+'catalog.json') and z.read(prefix+'seed-resources.json')
+    library=json.loads(z.read(prefix+'library.json'))
+    assert len(library)>700 and any(r['id']=='curated-guide-7u-02' for r in library)
     exe=z.read(prefix+info['CFBundleExecutable'])
     magic,cpu,subtype,filetype,count,size,flags,reserved=struct.unpack_from('<8I',exe)
     assert magic==0xfeedfacf and cpu==0x0100000c,'Expected little-endian arm64 Mach-O'

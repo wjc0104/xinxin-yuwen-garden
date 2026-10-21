@@ -1,0 +1,11 @@
+name = "xinyu-reminders"
+main = "worker.js"
+compatibility_date = "2025-09-01"
+
+[[durable_objects.bindings]]
+name = "SCHEDULE"
+class_name = "ReminderQueue"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ReminderQueue"]

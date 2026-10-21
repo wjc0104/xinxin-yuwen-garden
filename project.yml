@@ -24,12 +24,14 @@ targets:
       path: App/Info.plist
       properties:
         CFBundleDisplayName: 欣语
-        CFBundleShortVersionString: '0.0.1'
-        CFBundleVersion: '1'
+        CFBundleDevelopmentRegion: zh_CN
+        CFBundleLocalizations: [zh_CN]
+        CFBundleShortVersionString: '0.0.2'
+        CFBundleVersion: '2'
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
-        NSCalendarsUsageDescription: 只有你点按同步时，才把上课提醒写入小花园专用日历。使用 iCloud 日历可在同账号 iPhone 16 提醒。
-        NSCalendarsFullAccessUsageDescription: 用于创建和更新小花园专用课表日历，并核对你在日历中改过的课程。不会编辑其他日历。
+        NSCalendarsUsageDescription: 仅在你主动清除旧版课程提醒时访问日历，避免旧版和 Bark 重复提醒。
+        NSCalendarsFullAccessUsageDescription: 仅用于移除旧版由欣语创建的课程提醒，不编辑其他日历。
         LSSupportsOpeningDocumentsInPlace: true
     settings:
       base:

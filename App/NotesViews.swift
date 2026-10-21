@@ -15,13 +15,15 @@ struct NoteEditor: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("摘下这一句")) { TextEditor(text: $quote).frame(minHeight: 85).accessibilityIdentifier("quote-input") }
-                Section(header: Text("我的理解与课堂灵感")) { TextEditor(text: $note).frame(minHeight: 180).accessibilityIdentifier("note-input") }
-                Section(header: Text("视频时间点（可选）"), footer: Text("本地视频可自动带入；外部平台请手动记录播放器时间，例如 03:25。")) {
+                Section(header: Text("摘录")) { TextEditor(text: $quote).frame(minHeight: 85).accessibilityIdentifier("quote-input") }
+                Section(header: Text("我的笔记")) { TextEditor(text: $note).frame(minHeight: 180).accessibilityIdentifier("note-input") }
+                if let resourceID = resourceID, let resource = store.data.resources.first(where: { $0.id == resourceID }), resource.kind == .video || resource.kind == .localVideo {
+                Section(header: Text("视频时间点（可选）"), footer: Text("可自动读取的播放器会带入时间；没有带入时，填写播放器上的时间，例如 03:25。")) {
                     TextField("分:秒 或 时:分:秒", text: $timestamp).keyboardType(.numbersAndPunctuation)
                 }
+                }
                 if let problem = problem { Text(problem).foregroundColor(.red) }
-            }.navigationTitle(existing == nil ? "记一朵小重点" : "整理小重点").navigationBarTitleDisplayMode(.inline)
+            }.navigationTitle(existing == nil ? "写笔记" : "编辑笔记").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }; ToolbarItem(placement: .confirmationAction) { Button("保存") { save() }.accessibilityIdentifier("save-note") } }
             .onAppear { if let mark = existing { quote = mark.quote; note = mark.note; timestamp = mark.seconds.map(TimeLabel.video) ?? "" } }
         }.navigationViewStyle(.stack)
@@ -52,7 +54,7 @@ struct MarkCard: View {
                 Spacer(); Button { remove = true } label: { Image(systemName: "trash") }.foregroundColor(.secondary).accessibilityLabel("删除重点")
             }.font(.caption)
         }.sheet(isPresented: $edit) { NoteEditor(lessonID: mark.lessonID, resourceID: mark.resourceID, existing: mark) }
-        .alert("删除这条小重点？", isPresented: $remove) { Button("删除", role: .destructive) { store.update { $0.marks.removeAll { $0.id == mark.id } } }; Button("取消", role: .cancel) {} } message: { Text("建议先在“我的”导出备份。") }
+        .alert("删除这条笔记？", isPresented: $remove) { Button("删除", role: .destructive) { store.update { $0.marks.removeAll { $0.id == mark.id } } }; Button("取消", role: .cancel) {} } message: { Text("建议先在“我的”导出备份。") }
     }
 }
 struct NotesView: View {
@@ -62,14 +64,14 @@ struct NotesView: View {
     var filtered: [StudyMark] { store.data.marks.filter { query.isEmpty || ($0.quote + $0.note + (store.lesson($0.lessonID)?.title ?? "")).localizedCaseInsensitiveContains(query) }.sorted { $0.createdAt > $1.createdAt } }
     var body: some View {
         GardenPage {
-            GardenCard { Text("灵感很小，也值得收好 🌼").font(.headline); TextField("搜索笔记或课文", text: $query).textFieldStyle(.roundedBorder); Picker("查看", selection: $favorites) { Text("小重点").tag(false); Text("收藏课文").tag(true) }.pickerStyle(.segmented) }
+            GardenCard { Text("学习笔记").font(.headline); TextField("搜索笔记或课文", text: $query).textFieldStyle(.roundedBorder); Picker("查看", selection: $favorites) { Text("笔记").tag(false); Text("收藏课文").tag(true) }.pickerStyle(.segmented) }
             if favorites {
                 ForEach(store.lessons.filter { store.data.favorites.contains($0.id) }) { lesson in NavigationLink(destination: LessonView(lesson: lesson)) { GardenCard { Label(lesson.title, systemImage: "heart.fill") } }.buttonStyle(.plain) }
-                if store.data.favorites.isEmpty { GardenEmpty(title: "收藏还在等你", detail: "打开一篇课文，点“种进收藏”就能在这里找到。") }
+                if store.data.favorites.isEmpty { GardenEmpty(title: "还没有收藏", detail: "在课文右上角点收藏，就能在这里找到。") }
             } else {
                 ForEach(filtered) { mark in MarkCard(mark: mark) }
-                if filtered.isEmpty { GardenEmpty(title: "这一页留给小灵感", detail: "在课文里记一笔，或在文字、PDF 中选中文字划重点；视频也能记录时间点。") }
+                if filtered.isEmpty { GardenEmpty(title: "还没有笔记", detail: "在课文里记一笔，或在文字、PDF 中选中文字划重点；视频也能记录时间点。") }
             }
-        }.navigationTitle("小重点")
+        }.navigationTitle("笔记")
     }
 }

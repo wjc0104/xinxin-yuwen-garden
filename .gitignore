@@ -10,3 +10,6 @@ xcuserdata/
 .superpowers/
 *.log
 __pycache__/
+node_modules/
+.wrangler/
+.dev.vars

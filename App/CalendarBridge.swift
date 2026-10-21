@@ -167,6 +167,28 @@ struct CalendarReview: Error { let messages: [String]; let proposals: [ScheduleC
         if let url = bindingURL, FileManager.default.fileExists(atPath: url.path) { try FileManager.default.removeItem(at: url) }
         self.binding = nil; UserDefaults.standard.removeObject(forKey: key)
     }
+    func removeLegacyEvents() throws -> Int {
+        if let error = bindingError { throw GardenError.invalid(error) }
+        guard isAuthorized, let saved = binding else { throw GardenError.invalid("没有可清除的旧版绑定。") }
+        guard let calendar = store.calendar(withIdentifier: saved.calendarID) else { try forgetMissingBinding(); return 0 }
+        guard calendar.allowsContentModifications else { throw GardenError.invalid("旧日历不可修改，请在系统日历手动关闭该日历的提醒。") }
+        var owned: [String: EKEvent] = [:]
+        for (occurrenceID, link) in saved.events {
+            let expected = marker(occurrenceID, saved.nonce)
+            if let event = store.event(withIdentifier: link.eventID), event.calendar.calendarIdentifier == saved.calendarID, event.url?.absoluteString == expected, let id = event.eventIdentifier { owned[id] = event }
+            for date in link.dates ?? [] {
+                let predicate = store.predicateForEvents(withStart: date.addingTimeInterval(-86400), end: date.addingTimeInterval(86400), calendars: [calendar])
+                for event in store.events(matching: predicate) where event.url?.absoluteString == expected { if let id = event.eventIdentifier { owned[id] = event } }
+            }
+        }
+        do {
+            for event in owned.values { try store.remove(event, span: .thisEvent, commit: false) }
+            try store.commit()
+            if let url = bindingURL, FileManager.default.fileExists(atPath: url.path) { try FileManager.default.removeItem(at: url) }
+            binding = nil; UserDefaults.standard.removeObject(forKey: key)
+            return owned.count
+        } catch { store.reset(); throw error }
+    }
     private func persist() throws {
         guard let url = bindingURL else { throw GardenError.invalid("日历绑定文件不可用，未开始写入。") }
         try JSONEncoder().encode(binding).write(to: url, options: [.atomic,.completeFileProtectionUntilFirstUserAuthentication])

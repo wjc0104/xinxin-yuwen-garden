@@ -13,6 +13,8 @@ struct ReadingView: View {
     @State private var browser: BrowserLink?
     @State private var player: AVPlayer?
     @State private var showDelete = false
+    @StateObject private var web = WebStudyController()
+    @State private var textHeight: CGFloat = 400
     var marks: [StudyMark] { store.data.marks.filter { $0.resourceID == resource.id } }
     var localURL: URL? { guard !resource.localFile.isEmpty else { return nil }; return try? store.disk?.attachmentURL(resource.localFile) }
     var body: some View {
@@ -22,6 +24,21 @@ struct ReadingView: View {
             } else if resource.kind == .localVideo, let player = player {
                 VideoPlayer(player: player).frame(minHeight: 230, maxHeight: 320)
                 ScrollView { VStack(alignment: .leading, spacing: 14) { Text(resource.title).font(.headline); Caption(text: "点下方“标记当前时间”记重点；点击已有时间点可跳转。"); markList }.padding(20) }
+            } else if resource.kind == .video, let url = StudyVideoURL.player(resource.url, seconds: initialSeconds) {
+                EmbeddedResource(url: url, controller: web).frame(height: 240)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text(resource.title).font(.headline)
+                        Caption(text: resource.source + (resource.durationSeconds.map { " · " + TimeLabel.video($0) } ?? ""))
+                        if let summary = resource.summary { Text(summary).font(.subheadline).foregroundColor(.secondary) }
+                        HStack { Label("边看边记", systemImage: "highlighter").foregroundColor(GardenTheme.mint); Spacer(); Button("打开原视频") { if let url = SearchEngine.validatedURL(resource.url) { browser = BrowserLink(url: url) } } }.font(.subheadline)
+                        if web.failed { Text("播放器暂时未加载，可打开原视频继续学习。").font(.caption).foregroundColor(.secondary) }
+                        Caption(text: "视频由原平台播放，登录与清晰度按平台规定。")
+                        markList
+                    }.padding(16)
+                }
+            } else if resource.body.isEmpty, let url = SearchEngine.validatedURL(resource.url) {
+                EmbeddedResource(url: url, controller: web)
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
@@ -30,7 +47,7 @@ struct ReadingView: View {
                         if !resource.url.isEmpty { Button { if let url = SearchEngine.validatedURL(resource.url) { browser = BrowserLink(url: url) } } label: { Label(resource.kind == .video ? "打开原平台视频" : "查看原资料", systemImage: "arrow.up.right.square") }; Caption(text: "外部视频在原平台播放；返回这里可手动记录时间点与重点。") }
                         if !resource.body.isEmpty {
                             Text("长按选中文字 → 划重点").font(.caption).foregroundColor(GardenTheme.mint)
-                            HighlightText(text: resource.body, quotes: marks.map(\.quote)) { draft = NoteDraft(quote: $0) }.frame(minHeight: max(450, CGFloat(resource.body.count) * 1.45))
+                            HighlightText(text: resource.body, quotes: marks.map(\.quote), height: $textHeight) { draft = NoteDraft(quote: $0) }.frame(height: textHeight)
                         }
                         markList
                     }.padding(20)
@@ -38,21 +55,22 @@ struct ReadingView: View {
             }
             Divider()
             Button {
+                if resource.kind == .video { web.currentSeconds { seconds in draft = NoteDraft(seconds: seconds) }; return }
                 var seconds: Int?
                 if let time = player?.currentTime().seconds, time.isFinite, time >= 0, time <= 86400 { seconds = Int(time) }
                 draft = NoteDraft(seconds: seconds)
-            } label: { Label(resource.kind == .localVideo ? "标记当前时间" : (resource.kind == .video ? "记视频时间点与重点" : "记一笔重点"), systemImage: "highlighter").font(.headline).frame(maxWidth: .infinity).padding(15) }.background(GardenTheme.card)
+            } label: { Label(resource.kind == .localVideo || resource.kind == .video ? "标记时间 · 写笔记" : "写笔记", systemImage: "highlighter").font(.headline).frame(maxWidth: .infinity).padding(15) }.background(GardenTheme.card).accessibilityIdentifier("study-note")
         }.background(GardenTheme.background).navigationTitle(resource.kind.label).navigationBarTitleDisplayMode(.inline)
-        .toolbar { Button { showDelete = true } label: { Image(systemName: "trash") }.accessibilityLabel("移除资料") }
+        .toolbar { if !resource.id.hasPrefix("curated-") && resource.checkedAt == nil { Button { showDelete = true } label: { Image(systemName: "trash") }.accessibilityLabel("移除资料") } }
         .sheet(item: $draft) { value in NoteEditor(lessonID: resource.lessonID, resourceID: resource.id, regions: value.regions, quote: value.quote, timestamp: value.seconds.map(TimeLabel.video) ?? "") }
         .sheet(item: $browser) { SafariSheet(url: $0.url) }
-        .onAppear { if resource.kind == .localVideo, player == nil, let url = localURL { let value = AVPlayer(url: url); if let seconds = initialSeconds { value.seek(to: CMTime(seconds: Double(seconds), preferredTimescale: 600)) }; player = value } }
+        .onAppear { store.remember(resource); if resource.kind == .localVideo, player == nil, let url = localURL { let value = AVPlayer(url: url); if let seconds = initialSeconds { value.seek(to: CMTime(seconds: Double(seconds), preferredTimescale: 600)) }; player = value } }
         .onDisappear { player?.pause() }
         .alert("从资料库移除？", isPresented: $showDelete) { Button("移除", role: .destructive) { remove() }; Button("取消", role: .cancel) {} } message: { Text("笔记会保留。已导入的文件保留在本机，不会删除外部原资料。") }
     }
     @Environment(\.dismiss) private var dismiss
     @ViewBuilder private var markList: some View {
-        if !marks.isEmpty { Text("这份资料的小重点").font(.headline) }
+        if !marks.isEmpty { Text("学习笔记").font(.headline) }
         ForEach(marks) { mark in
             if let seconds = mark.seconds, player != nil { Button("跳到 " + TimeLabel.video(seconds)) { player?.seek(to: CMTime(seconds: Double(seconds), preferredTimescale: 600)) } }
             MarkCard(mark: mark)
@@ -62,6 +80,8 @@ struct ReadingView: View {
 }
 
 final class MarkableTextView: UITextView {
+    var onHeight: ((CGFloat) -> Void)?
+    override func layoutSubviews() { super.layoutSubviews(); if bounds.width > 0 { onHeight?(sizeThatFits(CGSize(width: bounds.width, height: .greatestFiniteMagnitude)).height) } }
     var onMark: ((String) -> Void)?
     override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool {
         if action == #selector(markSelection) { return selectedRange.length > 0 }
@@ -77,7 +97,7 @@ final class MarkableTextView: UITextView {
     }
 }
 struct HighlightText: UIViewRepresentable {
-    let text: String; let quotes: [String]; let onMark: (String) -> Void
+    let text: String; let quotes: [String]; @Binding var height: CGFloat; let onMark: (String) -> Void
     func makeUIView(context: Context) -> MarkableTextView {
         let view = MarkableTextView(); view.isEditable = false; view.isSelectable = true; view.isScrollEnabled = false
         view.backgroundColor = .clear; view.textContainerInset = .zero; view.textContainer.lineFragmentPadding = 0
@@ -86,6 +106,7 @@ struct HighlightText: UIViewRepresentable {
     }
     func updateUIView(_ view: MarkableTextView, context: Context) {
         view.onMark = onMark
+        view.onHeight = { value in if value.isFinite && abs(height - value) > 1 { DispatchQueue.main.async { height = max(120, value) } } }
         let value = NSMutableAttributedString(string: text, attributes: [.font: UIFont.preferredFont(forTextStyle: .body), .foregroundColor: UIColor.label])
         let source = text as NSString
         for quote in quotes where !quote.isEmpty {

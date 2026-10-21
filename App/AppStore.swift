@@ -7,6 +7,7 @@ import GardenCore
     @Published var error: String?
     @Published var notice: String?
     @Published var tab = 0
+    @Published var recentResourceID = UserDefaults.standard.string(forKey: "recent-resource")
     private(set) var catalog: Catalog?
     private(set) var disk: DiskStore?
     private(set) var readable = false
@@ -26,6 +27,13 @@ import GardenCore
                 if let url = Bundle.main.url(forResource: "seed-resources", withExtension: "json") { initial.resources = try JSONDecoder().decode([StudyResource].self, from: Data(contentsOf: url)) }
                 try store.save(initial); data = initial
             }
+            if let url = Bundle.main.url(forResource: "library", withExtension: "json") {
+                let bundled = try JSONDecoder().decode([StudyResource].self, from: Data(contentsOf: url))
+                data.resources = StudyLibrary.merge(bundled, into: data.resources)
+                if !UserDefaults.standard.bool(forKey: "reminder-v002") { data.reminderMinutes = 60 }
+                try store.save(data)
+                UserDefaults.standard.set(true, forKey: "reminder-v002")
+            }
             readable = true
             if ProcessInfo.processInfo.arguments.contains("--ui-testing"), !data.resources.contains(where: { $0.id == "ui-pdf" }) {
                 let renderer = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 612, height: 792))
@@ -36,16 +44,24 @@ import GardenCore
                 data.resources.append(StudyResource(id: "ui-pdf", lessonID: "7u-01", title: "原创测试 PDF", kind: .pdf, localFile: name))
                 try store.save(data)
             }
-        } catch { self.error = "小花园暂时无法读取资料，已停止保存以保护原数据。\n" + error.localizedDescription }
+        } catch { self.error = "暂时无法读取资料，已停止保存以保护原数据。\n" + error.localizedDescription }
     }
     var lessons: [Lesson] { catalog?.books.flatMap { $0.units.flatMap(\.lessons) } ?? [] }
+    func remember(_ resource: StudyResource) { recentResourceID = resource.id; UserDefaults.standard.set(resource.id, forKey: "recent-resource") }
+    func bookTitle(_ lessonID: String) -> String { catalog?.books.first { $0.units.contains { $0.lessons.contains { $0.id == lessonID } } }?.title ?? "" }
     func lesson(_ id: String) -> Lesson? { lessons.first { $0.id == id } }
     func resources(_ id: String) -> [StudyResource] { data.resources.filter { $0.lessonID == id }.sorted { !$0.isPaid && $1.isPaid } }
     func marks(_ id: String) -> [StudyMark] { data.marks.filter { $0.lessonID == id }.sorted { $0.createdAt > $1.createdAt } }
     @discardableResult func update(_ change: (inout GardenSnapshot) -> Void) -> Bool {
         guard readable, let disk = disk else { error = "读取异常未解决，暂时不能修改资料。"; return false }
         var copy = data; change(&copy)
-        do { try disk.save(copy); data = copy; return true } catch { self.error = error.localizedDescription; return false }
+        do {
+            try disk.save(copy)
+            let changed = copy.slots != data.slots || copy.changes != data.changes || copy.termStart != data.termStart || copy.termEnd != data.termEnd || copy.reminderMinutes != data.reminderMinutes || copy.termConfirmed != data.termConfirmed
+            data = copy
+            if changed { BarkBridge.shared.changed(copy) }
+            return true
+        } catch { self.error = error.localizedDescription; return false }
     }
     func importResource(_ url: URL, lessonID: String) {
         let accessed = url.startAccessingSecurityScopedResource()
@@ -64,7 +80,7 @@ import GardenCore
         guard readable, let disk = disk else { return nil }
         do {
             let bytes = try disk.backup(data)
-            let url = FileManager.default.temporaryDirectory.appendingPathComponent("欣欣的小花园-备份.json")
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent("欣语-备份.json")
             try bytes.write(to: url, options: .atomic); return url
         } catch { self.error = error.localizedDescription; return nil }
     }
@@ -75,7 +91,8 @@ import GardenCore
             let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
             guard size <= 90 * 1024 * 1024 else { throw GardenError.invalid("备份文件过大。") }
             data = try disk.mergeBackup(Data(contentsOf: url), into: data)
-            notice = "已合并资料和小重点；相同编号保留本机内容。学期与日历绑定保持本机设置。"
+            BarkBridge.shared.changed(data)
+            notice = "已合并资料和笔记。"
         } catch { self.error = error.localizedDescription }
     }
     var occurrences: [Occurrence] { ScheduleEngine().occurrences(slots: data.slots, changes: data.changes, start: data.termStart, end: data.termEnd) }

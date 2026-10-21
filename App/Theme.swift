@@ -15,6 +15,6 @@ struct GardenPage<Content: View>: View {
 }
 struct GardenEmpty: View {
     let title: String; let detail: String
-    var body: some View { GardenCard { Image(systemName: "leaf").font(.title).foregroundColor(GardenTheme.mint); Text(title).font(.headline); Text(detail).font(.subheadline).foregroundColor(.secondary) } }
+    var body: some View { GardenCard { Image(systemName: "doc.text.magnifyingglass").font(.title).foregroundColor(GardenTheme.mint); Text(title).font(.headline); Text(detail).font(.subheadline).foregroundColor(.secondary) } }
 }
 struct Caption: View { let text: String; var body: some View { Text(text).font(.caption).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true) } }

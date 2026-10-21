@@ -7,17 +7,24 @@ cp -R "$APP" build/package/Payload/
 APP="build/package/Payload/XinxinGarden.app"
 while IFS= read -r -d '' item; do codesign --force --sign - "$item"; done < <(find "$APP" -type f -name '*.dylib' -print0)
 while IFS= read -r -d '' item; do codesign --force --sign - "$item"; done < <(find "$APP" -type d -name '*.framework' -print0)
-codesign --force --sign - "$APP"
+codesign --force --sign - --entitlements scripts/trollstore.entitlements "$APP"
 codesign --verify --deep --strict "$APP"
 test "$(/usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$APP/Info.plist")" = '15.0'
 lipo "$APP/XinxinGarden" -verify_arch arm64
 otool -l "$APP/XinxinGarden" > build/device-load-commands.txt
 codesign -d --entitlements :- "$APP" > build/entitlements.plist 2>/dev/null || true
+python3 - <<'PY'
+import plistlib
+p=plistlib.load(open('build/entitlements.plist','rb'))
+assert p['application-identifier']=='TROLLTROLL.com.wm0104.xinxingarden'
+assert p['keychain-access-groups']==['TROLLTROLL.com.wm0104.xinxingarden']
+assert not p.get('get-task-allow') and not p.get('com.apple.private.security.no-sandbox')
+PY
 (
   cd build/package
-  /usr/bin/zip -qry ../Xinyu-v0.0.1.ipa Payload
+  /usr/bin/zip -qry ../Xinyu-v0.0.2.ipa Payload
 )
-shasum -a 256 build/Xinyu-v0.0.1.ipa > build/SHA256SUMS.txt
+shasum -a 256 build/Xinyu-v0.0.2.ipa > build/SHA256SUMS.txt
 python3 - <<'PY'
 import json,plistlib,os
 with open('build/package/Payload/XinxinGarden.app/Info.plist','rb') as f:p=plistlib.load(f)

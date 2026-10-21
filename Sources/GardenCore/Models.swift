@@ -15,6 +15,11 @@ public enum ResourceKind: String, Codable, CaseIterable { case guide, script, vi
     public var label: String { switch self { case .guide: return "教案"; case .script: return "试讲稿"; case .video, .localVideo: return "视频"; case .pdf: return "PDF"; case .link: return "资料链接" } }
 }
 public struct StudyResource: Codable, Identifiable, Equatable {
+    public var category: String?
+    public var thumbnail: String?
+    public var durationSeconds: Int?
+    public var checkedAt: String?
+    public var summary: String?
     public var id: String; public var lessonID: String; public var title: String; public var kind: ResourceKind; public var body: String; public var url: String; public var localFile: String; public var source: String; public var isPaid: Bool
     public init(id: String = UUID().uuidString, lessonID: String, title: String, kind: ResourceKind, body: String = "", url: String = "", localFile: String = "", source: String = "我的资料", isPaid: Bool = false) { self.id = id; self.lessonID = lessonID; self.title = title; self.kind = kind; self.body = body; self.url = url; self.localFile = localFile; self.source = source; self.isPaid = isPaid }
 }
@@ -53,7 +58,7 @@ public struct GardenSnapshot: Codable, Equatable {
     public var changes: [ScheduleChange] = []
     public var termStart = "2026-10-19"
     public var termEnd = "2027-01-31"
-    public var reminderMinutes = 10
+    public var reminderMinutes = 60
     public var termConfirmed = false
     public init() {}
 }

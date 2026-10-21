@@ -64,7 +64,7 @@ public final class DiskStore {
     public func mergeBackup(_ data: Data, into current: GardenSnapshot) throws -> GardenSnapshot {
         guard data.count <= 90 * 1024 * 1024 else { throw GardenError.invalid("备份文件过大。") }
         let backup = try JSONDecoder().decode(BackupEnvelope.self, from: data)
-        guard backup.format == "xinxin-garden", backup.version == 1 else { throw GardenError.invalid("这不是受支持的小花园备份。") }
+        guard backup.format == "xinxin-garden", backup.version == 1 else { throw GardenError.invalid("这不是受支持的欣语备份。") }
         try validate(backup.snapshot)
         var incoming = backup.snapshot
         // Rename restored attachments, so a backup cannot replace a current file with the same name.

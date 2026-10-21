@@ -19,6 +19,7 @@ jobs:
         run: |
           swift test
           python3 scripts/check-catalog.py
+          python3 scripts/check-library.py
       - name: Generate Xcode project
         run: |
           brew install xcodegen
