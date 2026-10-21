@@ -1,6 +1,29 @@
 import XCTest
 
 final class GardenUITests: XCTestCase {
+    func testTextSelectionHighlightsAndSurvivesRelaunch() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()
+        app.tabBars.buttons["课程"].tap()
+        app.buttons["book-7u"].tap(); app.buttons["lesson-7u-02"].tap()
+        app.segmentedControls.buttons["教案与试讲"].tap()
+        app.buttons["resource-curated-guide-7u-02"].tap()
+        let text = app.textViews.firstMatch
+        XCTAssertTrue(text.waitForExistence(timeout: 5))
+        text.coordinate(withNormalizedOffset: CGVector(dx: 0.09, dy: 0)).withOffset(CGVector(dx: 0, dy: 14)).press(forDuration: 1.2)
+        let highlight = app.buttons["划重点"].firstMatch
+        XCTAssertTrue(highlight.waitForExistence(timeout: 5), "Selecting text must expose an actionable highlight command")
+        highlight.tap()
+        XCTAssertTrue(app.staticTexts["已保存 1 处重点"].waitForExistence(timeout: 5))
+        shot("11-正文真实选词划重点")
+        app.terminate(); app.launch()
+        app.tabBars.buttons["课程"].tap()
+        app.buttons["book-7u"].tap(); app.buttons["lesson-7u-02"].tap()
+        app.segmentedControls.buttons["教案与试讲"].tap()
+        app.buttons["resource-curated-guide-7u-02"].tap()
+        XCTAssertTrue(app.staticTexts["已保存 1 处重点"].waitForExistence(timeout: 5))
+        shot("12-重启后正文高亮")
+    }
     func testVideoStudyTimestamp() throws {
         continueAfterFailure = false
         let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()
