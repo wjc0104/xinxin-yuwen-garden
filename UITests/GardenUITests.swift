@@ -31,18 +31,19 @@ final class GardenUITests: XCTestCase {
         app.buttons["book-7u"].tap(); app.buttons["lesson-7u-02"].tap()
         let video = app.buttons["resource-curated-7u-02-BV1eUAieoEZd-2"]
         XCTAssertTrue(video.waitForExistence(timeout: 5)); video.tap()
-        XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 15))
+        XCTAssertTrue(app.buttons["边看边记"].waitForExistence(timeout: 15), "The visible note affordance must be an actual action")
+        XCTAssertEqual(app.webViews.count, 0, "Online video must use the native player rather than a webpage")
         XCTAssertTrue(app.buttons["study-note"].exists)
         shot("09-视频学习与笔记")
-        app.buttons["study-note"].tap()
-        let note = app.textViews["note-input"]; XCTAssertTrue(note.waitForExistence(timeout: 5))
+        app.buttons["边看边记"].tap()
+        let note = app.textViews["video-note-input"]; XCTAssertTrue(note.waitForExistence(timeout: 5))
         note.tap(); note.typeText("test video timestamp")
         let time = app.textFields["分:秒 或 时:分:秒"]
         time.tap()
         let old = (time.value as? String) ?? ""
         if !old.isEmpty && old != "分:秒 或 时:分:秒" { time.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: old.count)) }
         time.typeText("03:25")
-        app.buttons["save-note"].tap()
+        app.buttons["video-save-note"].tap()
         XCTAssertTrue(app.staticTexts["03:25"].firstMatch.waitForExistence(timeout: 5))
         shot("10-视频时间笔记")
     }
