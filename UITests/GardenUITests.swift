@@ -1,6 +1,25 @@
 import XCTest
 
 final class GardenUITests: XCTestCase {
+    func testVideoStudyTimestamp() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()
+        app.tabBars.buttons["课程"].tap()
+        app.buttons["book-7u"].tap(); app.buttons["lesson-7u-02"].tap()
+        let video = app.buttons["resource-curated-7u-02-BV1eUAieoEZd-2"]
+        XCTAssertTrue(video.waitForExistence(timeout: 5)); video.tap()
+        XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 15))
+        XCTAssertTrue(app.buttons["study-note"].exists)
+        shot("09-视频学习与笔记")
+        app.buttons["study-note"].tap()
+        let note = app.textViews["note-input"]; XCTAssertTrue(note.waitForExistence(timeout: 5))
+        note.tap(); note.typeText("test video timestamp")
+        let time = app.textFields["分:秒 或 时:分:秒"]
+        time.tap(); time.typeText("03:25")
+        app.buttons["save-note"].tap()
+        XCTAssertTrue(app.staticTexts["03:25"].firstMatch.waitForExistence(timeout: 5))
+        shot("10-视频时间笔记")
+    }
     func testSearchStudyNotesAndChineseSchedule() throws {
         continueAfterFailure = false
         let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()

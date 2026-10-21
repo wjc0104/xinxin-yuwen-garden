@@ -78,4 +78,3 @@ private struct CalendarBinding: Codable { var calendarID: String; var nonce: Str
         } catch { store.reset(); throw error }
     }
 }
-

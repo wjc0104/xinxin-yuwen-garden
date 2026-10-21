@@ -31,6 +31,7 @@ def matches(part, l):
 
 items=[]
 explicit = {
+ ('BV1rK4y1Y7RD',1):'7u-01',
  ('BV1eUAieoEZd',36):'7u-extra6-1', ('BV1eUAieoEZd',38):'7u-extra6-3',
  ('BV17M9qYrEee',36):'7d-extra6-2', ('BV17M9qYrEee',37):'7d-extra6-3',
  ('BV1YMXPYBEkw',43):'8u-extra6-1', ('BV1YMXPYBEkw',44):'8u-extra6-3',
@@ -41,7 +42,7 @@ explicit = {
 }
 for path in sorted((ROOT/'scripts/resources').glob('BV*.json')):
     d=json.loads(path.read_text(encoding='utf-8'))
-    if not d.get('pages'): continue
+    if not d.get('pages') or '已注销' in d['owner']['name']: continue
     interview = d['owner']['name']=='教资小两口' or '试讲' in d['title'] or '面试' in d['title']
     for p in d['pages']:
         if p['duration']<90: continue
@@ -51,7 +52,7 @@ for path in sorted((ROOT/'scripts/resources').glob('BV*.json')):
             items.append(dict(id=f"curated-{l['id']}-{d['bvid']}-{p['page']}", lessonID=l['id'],
                 title=p['part'], kind='video', body='',url=url,localFile='',source=d['owner']['name'],isPaid=False,
                 category='面试讲解' if interview else '课堂示范',
-                thumbnail=d.get('pic','').replace('http://','https://'),durationSeconds=p['duration'],
+                thumbnail=(p.get('first_frame') or d.get('pic','')).replace('http://','https://'),durationSeconds=p['duration'],
                 checkedAt='2026-10-21', summary='教资、教招备课参考；按具体题目选取十分钟教学片段。' if interview else '观察讲解顺序、提问与课堂活动，常规课时不等于十分钟试讲。'))
 
 # Prefer the interview teacher and recent lesson-specific videos; cap duplicate choices.

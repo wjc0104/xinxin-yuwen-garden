@@ -12,7 +12,7 @@ public struct TeachingUnit: Codable, Identifiable { public var id: String; publi
 public struct Textbook: Codable, Identifiable { public var id: String; public var title: String; public var edition: String; public var verification: String; public var source: String; public var units: [TeachingUnit] }
 public struct Catalog: Codable { public var title: String; public var checkedAt: String; public var books: [Textbook] }
 public enum ResourceKind: String, Codable, CaseIterable { case guide, script, video, link, pdf, localVideo
-    public var label: String { switch self { case .guide: return "教案"; case .script: return "试讲稿"; case .video, .localVideo: return "视频"; case .pdf: return "PDF"; case .link: return "资料链接" } }
+    public var label: String { switch self { case .guide: return "备课提纲"; case .script: return "试讲稿"; case .video, .localVideo: return "视频"; case .pdf: return "PDF"; case .link: return "资料链接" } }
 }
 public struct StudyResource: Codable, Identifiable, Equatable {
     public var category: String?

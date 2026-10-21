@@ -1,34 +1,35 @@
-# 资料来源小篮子 📚
+# 资料来源
 
-核对日期：2026-10-21。只收录篇名、作者、来源链接和原创练习，不打包整本教材、整篇付费教案或平台视频。
+核对日期：2026-10-21。应用内搜索具体收录条目，不生成百度或 B 站搜索页。
 
-## 目录依据
+## 教材目录
 
-- [人教社中小学电子教材](https://jc.pep.com.cn/)：筛选初中、语文、六三学制。六册官方教材链接与版本状态见 README。
-- [芜湖市教育局 2026 教材信息](https://jyj.wuhu.gov.cn/xwzx/tzgg/8953250.html)：安徽地区的公开教材目录参考；不作为萧县某校实物用书证明。
+依据 [人教社电子教材](https://jc.pep.com.cn/)，六册原始教材链接与版本状态写在 `App/Resources/catalog.json`。共 150 个阅读课目与 48 个课外诵读条目；合篇保留子篇关键词。九下当前仍为过渡目录，不声称覆盖尚未确认的新修订教材；学校实物用书为准。
 
-当前 198 条为 150 个按原课号排列的阅读课目加 48 个课外诵读条目。合篇下的子篇名保存在检索关键词中，页面显示在对应合篇下；首版暂不将每个子篇独立拆成课目。
+安徽教材参考来自 [芜湖市教育局公开目录](https://jyj.wuhu.gov.cn/xwzx/tzgg/8953250.html)，不作为萧县某所学校用书的证明。当前第一版资料面向统编六三学制，多版本扩展尚未完成。
 
-## 已收录的入门原站链接
+## 视频
 
-| 资料 | 原站 | 使用说明 |
-| --- | --- | --- |
-| 《春》试讲示范 | [一起考教师 · B站](https://www.bilibili.com/video/BV1rK4y1Y7RD/) | 2020，约 9:19；用作演练参考，非最新教材权威课例 |
-| 《春》教案预览 | [21世纪教育网](https://zy.21cnjy.com/26331720) | 2026 常规课时资料；可能需积分或付费，不等于十分钟试讲稿 |
-| 《驿路梨花》试讲选段 | [小红帽 · B站](https://www.bilibili.com/video/BV1MGAJzoEJD/) | 2026，页面视频约 7:29；标题中的十分钟不等于实际视频时长 |
-| 《岳阳楼记》等合集 | [一起考教师 · B站](https://www.bilibili.com/video/BV16g4y1g7L1/) | 2023，《岳阳楼记》分集约 9:16；需对照现用教材 |
+内置 627 个课文关联的视频分集条目（同名课文出现在不同册时分别索引，不代表 627 个独立作品）。每条保存原作者、具体分集、时长、公开封面和核对日期。完整公开元数据在 `scripts/resources/BV*.json`，可由 `scripts/build-library.py` 重建。
 
-平台访问、播放、登录与收费状态可能变化，以原作者页面为准。外链并不表示获得内容转载许可。首版未对上述视频制作转录、字幕下载或内嵌离线副本。
+主要选集：
 
-## 继续寻找
+| 来源 | 具体内容 |
+| --- | --- |
+| 教资小两口 | [七上](https://www.bilibili.com/video/BV1eUAieoEZd/?p=1) · [七下](https://www.bilibili.com/video/BV17M9qYrEee/?p=1) · [八上](https://www.bilibili.com/video/BV1YMXPYBEkw/?p=1) · [八下](https://www.bilibili.com/video/BV1hdZxYCEAV/?p=1) · [九上](https://www.bilibili.com/video/BV1mNdqY8EBG/?p=1) · [九下](https://www.bilibili.com/video/BV137LizrE4S/?p=1)，教材与面试切口讲解 |
+| 一起考教师官方 | [《春》试讲示范](https://www.bilibili.com/video/BV1rK4y1Y7RD/?p=1) · [《岳阳楼记》试讲分集](https://www.bilibili.com/video/BV16g4y1g7L1/?p=13) |
+| 苏老西的初中学习站 | [七下课堂](https://www.bilibili.com/video/BV1w8zDBVESD/?p=1) · [八下课堂](https://www.bilibili.com/video/BV1a7waeBEBb/?p=1) · [九下课堂](https://www.bilibili.com/video/BV1efweeEEHS/?p=1) |
 
-- [国家中小学智慧教育平台](https://basic.smartedu.cn/)：教材配套、课例、教师研修。
-- [中小学教师资格考试官方站](https://ntce.neea.edu.cn/)：教资正式信息。教招以当地当年正式公告为准；本应用没有虚构萧县题库或频率统计。
-- B站原作者试讲；全网教学设计／逐字稿搜索。应用构造平台搜索 URL，不接入未获授权的内容抓取服务。
+已核对公开视频元数据（标题、作者、时长和分集），未逐一完整观看、转录或审定教学质量。面试讲解不等于十分钟完整示范；课堂示范也不等于面试稿，界面分类予以区分。原作者标题中的“真题”不构成本应用的真题核验结论。
 
-## 实现参考
+播放器和原链接均指向具体内容；没有下载、搬运视频或绕过登录、收费。播放、清晰度、下架与收费状态由原平台决定。优先使用分集首帧为封面，已去除已注销账号的条目。
 
-- [Apple EventKit 权限说明](https://developer.apple.com/documentation/eventkit/accessing-calendar-using-eventkit-and-eventkitui)
-- [Apple requestFullAccessToEvents](https://developer.apple.com/documentation/eventkit/ekeventstore/requestfullaccesstoevents(completion:))
-- [TrollStore 作者仓库](https://github.com/opa334/TrollStore)
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen)（MIT，构建工具；不嵌入应用）
+## 文字
+
+198 份逐课提纲：每篇给出备课切口、主问题、板书方向与十分钟练习安排；另保留《春》试讲练习和《岳阳楼记》重点卡。文字由欣语编写，不是转录稿、官方答案或教招频率统计。部分练习流程共用教学框架，需按具体题目、学情和教材调整。
+
+正式面试信息以 [中国教育考试网](https://ntce.neea.edu.cn/) 及当地当次招聘公告为准。
+
+## 技术来源
+
+[Bark](https://github.com/Finb/Bark) · [TrollStore](https://github.com/opa334/TrollStore) · [Cloudflare Alarm](https://developers.cloudflare.com/durable-objects/api/alarms/) · [Apple EventKit 权限](https://developer.apple.com/documentation/eventkit/accessing-calendar-using-eventkit-and-eventkitui)

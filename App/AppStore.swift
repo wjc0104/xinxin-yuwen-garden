@@ -24,11 +24,13 @@ import GardenCore
             if let saved = try store.load() { data = saved }
             else {
                 var initial = GardenSnapshot()
-                if let url = Bundle.main.url(forResource: "seed-resources", withExtension: "json") { initial.resources = try JSONDecoder().decode([StudyResource].self, from: Data(contentsOf: url)) }
                 try store.save(initial); data = initial
             }
             if let url = Bundle.main.url(forResource: "library", withExtension: "json") {
                 let bundled = try JSONDecoder().decode([StudyResource].self, from: Data(contentsOf: url))
+                let retired: Set<String> = ["spring-video", "spring-plan", "pear-video", "yueyang-video"]
+                let annotated = Set(data.marks.compactMap(\.resourceID))
+                data.resources.removeAll { retired.contains($0.id) && !annotated.contains($0.id) }
                 data.resources = StudyLibrary.merge(bundled, into: data.resources)
                 if !UserDefaults.standard.bool(forKey: "reminder-v002") { data.reminderMinutes = 60 }
                 try store.save(data)
