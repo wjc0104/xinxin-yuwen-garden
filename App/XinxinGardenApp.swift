@@ -7,9 +7,10 @@ import GardenCore
 struct GardenRoot: View {
     @EnvironmentObject var store: AppStore
     @Environment(\.scenePhase) private var phase
+    @State private var selectedTab = 0
     var body: some View {
-        TabView(selection: $store.tab) {
-            NavigationView { HomeView() }.navigationViewStyle(.stack).tabItem { Label("主页", systemImage: "house") }.tag(0)
+        TabView(selection: $selectedTab) {
+            NavigationView { HomeView(selectedTab: $selectedTab) }.navigationViewStyle(.stack).tabItem { Label("主页", systemImage: "house") }.tag(0)
             NavigationView { SearchView() }.navigationViewStyle(.stack).tabItem { Label("课程", systemImage: "books.vertical") }.tag(1)
             NavigationView { ScheduleView() }.navigationViewStyle(.stack).tabItem { Label("课表", systemImage: "calendar") }.tag(3)
             NavigationView { SettingsView() }.navigationViewStyle(.stack).tabItem { Label("我的", systemImage: "person.crop.circle") }.tag(4)

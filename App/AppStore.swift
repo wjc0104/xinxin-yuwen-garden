@@ -6,12 +6,13 @@ import GardenCore
     @Published private(set) var data = GardenSnapshot()
     @Published var error: String?
     @Published var notice: String?
-    @Published var tab = 0
     @Published var recentResourceID = UserDefaults.standard.string(forKey: "recent-resource")
     private(set) var catalog: Catalog?
     private(set) var disk: DiskStore?
     private(set) var readable = false
     let calendar = CalendarBridge()
+    private var cachedOccurrences: [Occurrence] = []
+    private var occurrencesByDate: [String: [Occurrence]] = [:]
 
     init() {
         do {
@@ -37,6 +38,7 @@ import GardenCore
                 UserDefaults.standard.set(true, forKey: "reminder-v002")
             }
             readable = true
+            rebuildSchedule(data)
             if ProcessInfo.processInfo.arguments.contains("--ui-testing"), !data.resources.contains(where: { $0.id == "ui-pdf" }) {
                 let renderer = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 612, height: 792))
                 let bytes = renderer.pdfData { context in context.beginPage(); ("PDF Garden Focus" as NSString).draw(at: CGPoint(x: 60, y: 120), withAttributes: [.font: UIFont.systemFont(ofSize: 26)]) }
@@ -49,7 +51,7 @@ import GardenCore
         } catch { self.error = "暂时无法读取资料，已停止保存以保护原数据。\n" + error.localizedDescription }
     }
     var lessons: [Lesson] { catalog?.books.flatMap { $0.units.flatMap(\.lessons) } ?? [] }
-    func remember(_ resource: StudyResource) { recentResourceID = resource.id; UserDefaults.standard.set(resource.id, forKey: "recent-resource") }
+    func remember(_ resource: StudyResource) { guard recentResourceID != resource.id else { return }; recentResourceID = resource.id; UserDefaults.standard.set(resource.id, forKey: "recent-resource") }
     func bookTitle(_ lessonID: String) -> String { catalog?.books.first { $0.units.contains { $0.lessons.contains { $0.id == lessonID } } }?.title ?? "" }
     func lesson(_ id: String) -> Lesson? { lessons.first { $0.id == id } }
     func resources(_ id: String) -> [StudyResource] { data.resources.filter { $0.lessonID == id }.sorted { !$0.isPaid && $1.isPaid } }
@@ -59,7 +61,9 @@ import GardenCore
         var copy = data; change(&copy)
         do {
             try disk.save(copy)
-            let changed = copy.slots != data.slots || copy.changes != data.changes || copy.termStart != data.termStart || copy.termEnd != data.termEnd || copy.reminderMinutes != data.reminderMinutes || copy.termConfirmed != data.termConfirmed
+            let scheduleChanged = copy.slots != data.slots || copy.changes != data.changes || copy.termStart != data.termStart || copy.termEnd != data.termEnd
+            let changed = scheduleChanged || copy.reminderMinutes != data.reminderMinutes || copy.termConfirmed != data.termConfirmed
+            if scheduleChanged { rebuildSchedule(copy) }
             data = copy
             if changed { BarkBridge.shared.changed(copy) }
             return true
@@ -93,9 +97,15 @@ import GardenCore
             let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
             guard size <= 90 * 1024 * 1024 else { throw GardenError.invalid("备份文件过大。") }
             data = try disk.mergeBackup(Data(contentsOf: url), into: data)
+            rebuildSchedule(data)
             BarkBridge.shared.changed(data)
             notice = "已合并资料和笔记。"
         } catch { self.error = error.localizedDescription }
     }
-    var occurrences: [Occurrence] { ScheduleEngine().occurrences(slots: data.slots, changes: data.changes, start: data.termStart, end: data.termEnd) }
+    var occurrences: [Occurrence] { cachedOccurrences }
+    func courses(on date: Date) -> [Occurrence] { occurrencesByDate[GardenDate.string(date)] ?? [] }
+    private func rebuildSchedule(_ snapshot: GardenSnapshot) {
+        cachedOccurrences = ScheduleEngine().occurrences(slots: snapshot.slots, changes: snapshot.changes, start: snapshot.termStart, end: snapshot.termEnd)
+        occurrencesByDate = Dictionary(grouping: cachedOccurrences, by: \.date)
+    }
 }

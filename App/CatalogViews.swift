@@ -4,16 +4,17 @@ import UniformTypeIdentifiers
 
 struct HomeView: View {
     @EnvironmentObject var store: AppStore
-    var today: [Occurrence] { store.occurrences.filter { $0.date == GardenDate.string(Date()) } }
+    @Binding var selectedTab: Int
+    var today: [Occurrence] { store.courses(on: Date()) }
     var body: some View {
         GardenPage {
             HStack { VStack(alignment: .leading, spacing: 5) { Text("欣语").font(.largeTitle.bold()); Text("备课，从这一课开始").foregroundColor(.secondary) }; Spacer(); Image(systemName: "book.closed.fill").font(.largeTitle).foregroundColor(GardenTheme.rose) }
-            Button { store.tab = 1 } label: { HStack { Image(systemName: "magnifyingglass"); Text("搜索课文、视频、试讲稿"); Spacer(); Image(systemName: "chevron.right") }.padding(16).background(GardenTheme.card).clipShape(RoundedRectangle(cornerRadius: 14)) }.accessibilityIdentifier("home-search")
+            Button { selectedTab = 1 } label: { HStack { Image(systemName: "magnifyingglass"); Text("搜索课文、视频、试讲稿"); Spacer(); Image(systemName: "chevron.right") }.padding(16).background(GardenTheme.card).clipShape(RoundedRectangle(cornerRadius: 14)) }.accessibilityIdentifier("home-search")
             if let resource = store.data.resources.first(where: { $0.id == store.recentResourceID }) {
                 Text("继续学习").font(.headline)
                 NavigationLink(destination: ReadingView(resource: resource)) { ResourceRow(resource: resource) }.buttonStyle(.plain)
             }
-            HStack { Text("今天的课").font(.headline); Spacer(); Button("查看课表") { store.tab = 3 } }
+            HStack { Text("今天的课").font(.headline); Spacer(); Button("查看课表") { selectedTab = 3 } }
             GardenCard {
                 if today.isEmpty { Label("今天没有课程安排", systemImage: "calendar").foregroundColor(.secondary) }
                 ForEach(today) { item in HStack { Text(TimeLabel.clock(item.startMinute)).font(.headline.monospacedDigit()).foregroundColor(GardenTheme.rose); Text("\(item.subject) · \(item.classNumber)班"); Spacer(); Text("第\(item.period)节").font(.caption).foregroundColor(.secondary) } }

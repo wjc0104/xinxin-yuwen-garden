@@ -14,6 +14,7 @@ struct ReadingView: View {
     @State private var player: AVPlayer?
     @State private var showDelete = false
     @StateObject private var web = WebStudyController()
+    @StateObject private var selection = TextSelectionController()
     @State private var textHeight: CGFloat = 400
     var marks: [StudyMark] { store.data.marks.filter { $0.resourceID == resource.id } }
     var localURL: URL? { guard !resource.localFile.isEmpty else { return nil }; return try? store.disk?.attachmentURL(resource.localFile) }
@@ -46,20 +47,31 @@ struct ReadingView: View {
                         if resource.isPaid { Text("可能需要积分或付费，请先看原页面说明。").font(.caption).foregroundColor(.orange) }
                         if !resource.url.isEmpty { Button { if let url = SearchEngine.validatedURL(resource.url) { browser = BrowserLink(url: url) } } label: { Label(resource.kind == .video ? "打开原平台视频" : "查看原资料", systemImage: "arrow.up.right.square") }; Caption(text: "外部视频在原平台播放；返回这里可手动记录时间点与重点。") }
                         if !resource.body.isEmpty {
-                            Text("长按选中文字 → 划重点").font(.caption).foregroundColor(GardenTheme.mint)
-                            HighlightText(text: resource.body, quotes: marks.map(\.quote), height: $textHeight) { draft = NoteDraft(quote: $0) }.frame(height: textHeight)
+                            Text("长按选中文字，再点下方“划重点”").font(.caption).foregroundColor(GardenTheme.mint)
+                            let highlighted = marks.filter { !$0.quote.isEmpty }
+                            if !highlighted.isEmpty { Text("已保存 \(highlighted.count) 处重点").font(.caption).foregroundColor(GardenTheme.mint) }
+                            HighlightText(text: resource.body, quotes: highlighted.map(\.quote), height: $textHeight, selection: selection) { quote in
+                                guard !marks.contains(where: { $0.quote == quote }) else { return }
+                                store.update { $0.marks.append(StudyMark(lessonID: resource.lessonID, resourceID: resource.id, quote: quote, note: "")) }
+                            }.frame(height: textHeight)
                         }
                         markList
                     }.padding(20)
                 }
             }
             Divider()
+            HStack(spacing: 0) {
+            if !resource.body.isEmpty && resource.kind != .pdf && resource.kind != .video && resource.kind != .localVideo {
+                Button { selection.mark() } label: { Label("划重点", systemImage: "highlighter").font(.headline).frame(maxWidth: .infinity).padding(15) }.disabled(!selection.hasSelection).accessibilityIdentifier("highlight-selection")
+                Divider().frame(height: 24)
+            }
             Button {
                 if resource.kind == .video { web.currentSeconds { seconds in draft = NoteDraft(seconds: seconds) }; return }
                 var seconds: Int?
                 if let time = player?.currentTime().seconds, time.isFinite, time >= 0, time <= 86400 { seconds = Int(time) }
                 draft = NoteDraft(seconds: seconds)
-            } label: { Label(resource.kind == .localVideo || resource.kind == .video ? "标记时间 · 写笔记" : "写笔记", systemImage: "highlighter").font(.headline).frame(maxWidth: .infinity).padding(15) }.background(GardenTheme.card).accessibilityIdentifier("study-note")
+            } label: { Label(resource.kind == .localVideo || resource.kind == .video ? "标记时间 · 写笔记" : "写笔记", systemImage: "square.and.pencil").font(.headline).frame(maxWidth: .infinity).padding(15) }.accessibilityIdentifier("study-note")
+            }.background(GardenTheme.card)
         }.background(GardenTheme.background).navigationTitle(resource.kind.label).navigationBarTitleDisplayMode(.inline)
         .toolbar { if !resource.id.hasPrefix("curated-") && resource.checkedAt == nil { Button { showDelete = true } label: { Image(systemName: "trash") }.accessibilityLabel("移除资料") } }
         .sheet(item: $draft) { value in NoteEditor(lessonID: resource.lessonID, resourceID: resource.id, regions: value.regions, quote: value.quote, timestamp: value.seconds.map(TimeLabel.video) ?? "") }
@@ -79,10 +91,34 @@ struct ReadingView: View {
     private func remove() { if store.update({ $0.resources.removeAll { $0.id == resource.id } }) { dismiss() } }
 }
 
+final class TextSelectionController: ObservableObject {
+    weak var textView: MarkableTextView?
+    @Published private(set) var hasSelection = false
+    func changed(_ view: MarkableTextView) {
+        DispatchQueue.main.async { [weak self, weak view] in
+            guard let self = self, let view = view, self.textView === view else { return }
+            let selected = view.selectedRange.length > 0
+            if self.hasSelection != selected { self.hasSelection = selected }
+        }
+    }
+    func mark() { textView?.markSelection() }
+}
 final class MarkableTextView: UITextView {
+    var renderedText: String?
+    var renderedQuotes: [String] = []
+    var renderedFont: UIFont?
+    private var measuredWidth: CGFloat = 0
+    var needsTextMeasurement = true
     var onHeight: ((CGFloat) -> Void)?
-    override func layoutSubviews() { super.layoutSubviews(); if bounds.width > 0 { onHeight?(sizeThatFits(CGSize(width: bounds.width, height: .greatestFiniteMagnitude)).height) } }
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        if bounds.width > 0 && (needsTextMeasurement || abs(bounds.width - measuredWidth) > 0.5) {
+            measuredWidth = bounds.width; needsTextMeasurement = false
+            onHeight?(sizeThatFits(CGSize(width: bounds.width, height: .greatestFiniteMagnitude)).height)
+        }
+    }
     var onMark: ((String) -> Void)?
+    override var canBecomeFirstResponder: Bool { true }
     override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool {
         if action == #selector(markSelection) { return selectedRange.length > 0 }
         return super.canPerformAction(action, withSender: sender)
@@ -93,21 +129,32 @@ final class MarkableTextView: UITextView {
     }
     @objc func markSelection() {
         guard selectedRange.length > 0, NSMaxRange(selectedRange) <= (text as NSString).length else { return }
-        onMark?((text as NSString).substring(with: selectedRange))
+        let quote = (text as NSString).substring(with: selectedRange)
+        guard !quote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        selectedRange = NSRange(location: selectedRange.location, length: 0)
+        resignFirstResponder()
+        UIMenuController.shared.hideMenu()
+        onMark?(quote)
     }
 }
 struct HighlightText: UIViewRepresentable {
-    let text: String; let quotes: [String]; @Binding var height: CGFloat; let onMark: (String) -> Void
+    let text: String; let quotes: [String]; @Binding var height: CGFloat; let selection: TextSelectionController; let onMark: (String) -> Void
+    func makeCoordinator() -> Coordinator { Coordinator(selection: selection) }
     func makeUIView(context: Context) -> MarkableTextView {
         let view = MarkableTextView(); view.isEditable = false; view.isSelectable = true; view.isScrollEnabled = false
         view.backgroundColor = .clear; view.textContainerInset = .zero; view.textContainer.lineFragmentPadding = 0
         view.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        view.accessibilityIdentifier = "study-text"
+        view.delegate = context.coordinator; selection.textView = view
         return view
     }
     func updateUIView(_ view: MarkableTextView, context: Context) {
         view.onMark = onMark
         view.onHeight = { value in if value.isFinite && abs(height - value) > 1 { DispatchQueue.main.async { height = max(120, value) } } }
-        let value = NSMutableAttributedString(string: text, attributes: [.font: UIFont.preferredFont(forTextStyle: .body), .foregroundColor: UIColor.label])
+        let font = UIFont.preferredFont(forTextStyle: .body)
+        guard view.renderedText != text || view.renderedQuotes != quotes || view.renderedFont != font else { return }
+        let range = view.selectedRange
+        let value = NSMutableAttributedString(string: text, attributes: [.font: font, .foregroundColor: UIColor.label])
         let source = text as NSString
         for quote in quotes where !quote.isEmpty {
             var range = NSRange(location: 0, length: source.length)
@@ -118,7 +165,15 @@ struct HighlightText: UIViewRepresentable {
                 range = NSRange(location: NSMaxRange(found), length: source.length - NSMaxRange(found))
             }
         }
-        if view.attributedText != value { view.attributedText = value }
+        view.renderedText = text; view.renderedQuotes = quotes; view.renderedFont = font
+        view.attributedText = value
+        if NSMaxRange(range) <= source.length { view.selectedRange = range }
+        view.needsTextMeasurement = true; view.setNeedsLayout()
+    }
+    final class Coordinator: NSObject, UITextViewDelegate {
+        let selection: TextSelectionController
+        init(selection: TextSelectionController) { self.selection = selection }
+        func textViewDidChangeSelection(_ textView: UITextView) { if let view = textView as? MarkableTextView { selection.changed(view) } }
     }
 }
 final class MarkablePDFView: PDFView {

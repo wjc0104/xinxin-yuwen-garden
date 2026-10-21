@@ -46,7 +46,7 @@ enum StudyVideoURL {
               let bvid = url.pathComponents.first(where: { $0.hasPrefix("BV") }), bvid.allSatisfy({ $0.isLetter || $0.isNumber }) else { return nil }
         let page = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "p" }?.value ?? "1"
         var parts = URLComponents(string: "https://player.bilibili.com/player.html")!
-        parts.queryItems = [URLQueryItem(name: "bvid", value: bvid), URLQueryItem(name: "page", value: page), URLQueryItem(name: "autoplay", value: "0"), URLQueryItem(name: "t", value: String(seconds ?? 0))]
+        parts.queryItems = [URLQueryItem(name: "bvid", value: bvid), URLQueryItem(name: "p", value: page), URLQueryItem(name: "autoplay", value: "0"), URLQueryItem(name: "t", value: String(seconds ?? 0))]
         return parts.url
     }
 }

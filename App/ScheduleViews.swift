@@ -12,7 +12,7 @@ struct ScheduleView: View {
         let monday = cal.date(byAdding: .day, value: -((weekday + 5) % 7), to: cal.startOfDay(for: date))!
         return (0..<7).compactMap { cal.date(byAdding: .day, value: $0, to: monday) }
     }
-    var courses: [Occurrence] { store.occurrences.filter { $0.date == GardenDate.string(date) } }
+    var courses: [Occurrence] { store.courses(on: date) }
     var body: some View {
         GardenPage {
             HStack {
