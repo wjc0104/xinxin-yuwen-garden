@@ -58,6 +58,14 @@ struct EmbeddedResource: UIViewRepresentable {
         'img { max-width: 100% !important; height: auto !important; }'
       ].join('');
       head.appendChild(style);
+      // The full text is already rendered into the document; "read more" only un-hides it. Trigger it
+      // directly instead of relying on a link click, which a in-app browser may refuse to follow.
+      var expand = function () {
+        var links = document.querySelectorAll('a[href^="javascript:shangxiShow"], a[href^="javascript:fanyiShow"]');
+        for (var i = 0; i < links.length; i++) { links[i].click(); }
+      };
+      setTimeout(expand, 300);
+      setTimeout(expand, 1200);
     })();
     """
     static func isPoetrySite(_ host: String) -> Bool {
