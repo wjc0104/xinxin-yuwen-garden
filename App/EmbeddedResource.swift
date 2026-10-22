@@ -17,9 +17,9 @@ final class WebStudyController: ObservableObject {
 struct EmbeddedResource: UIViewRepresentable {
     let url: URL
     @ObservedObject var controller: WebStudyController
-    /// Content sites place an app-install prompt and a QR code inside the article. Remove those entry
-    /// points so the article can be read directly, but leave "read more" alone: on the desktop page it
-    /// expands the text in place.
+    /// Content sites put an app-install prompt, a QR code and a "read more" entry inside the article.
+    /// That entry only leads to the site's app or to a login page, so it is a dead end here: remove it
+    /// and let the article that is already on the page be read directly.
     private static let cleanupScript = """
     (function () {
       var style = document.createElement('style');
@@ -29,67 +29,23 @@ struct EmbeddedResource: UIViewRepresentable {
       for (var i = 0; i < nodes.length; i++) {
         var node = nodes[i];
         if (node.children.length) { continue; }
-        if (/^\\s*(扫码下载APP|下载古文岛App|下载APP|打开APP|下载客户端)\\s*$/.test(node.textContent || '')) {
+        if (/^\\s*(展开阅读全文|阅读全文|扫码下载APP|下载古文岛App|下载APP|打开APP|下载客户端)\\s*$/.test(node.textContent || '')) {
           node.style.display = 'none';
         }
       }
     })();
     """
-    /// The poetry sites serve a fixed 860pt desktop page; the full text is already in the document and
-    /// "read more" only toggles it, so all this has to do is make that page fit a phone.
-    private static let fitScript = """
-    (function () {
-      var head = document.head || document.documentElement;
-      var viewport = document.querySelector('meta[name="viewport"]');
-      if (!viewport) {
-        viewport = document.createElement('meta');
-        viewport.setAttribute('name', 'viewport');
-        head.appendChild(viewport);
-      }
-      viewport.setAttribute('content', 'width=device-width, initial-scale=1');
-      var style = document.createElement('style');
-      style.textContent = [
-        'html { -webkit-text-size-adjust: 100% !important; }',
-        'body { min-width: 0 !important; }',
-        '.main3, .maintop, .cont, .left, .right, .sons, .contson { width: auto !important; min-width: 0 !important; max-width: 100% !important; float: none !important; margin-left: 0 !important; margin-right: 0 !important; }',
-        '.right { display: none !important; }',
-        '.contson { font-size: 17px !important; line-height: 1.9 !important; padding: 10px !important; }',
-        '[style*="width:860px"], [style*="width: 860px"] { max-width: 100% !important; }',
-        'img { max-width: 100% !important; height: auto !important; }'
-      ].join('');
-      head.appendChild(style);
-      // The full text is already rendered into the document; "read more" only un-hides it. Trigger it
-      // directly instead of relying on a link click, which a in-app browser may refuse to follow.
-      var expand = function () {
-        var links = document.querySelectorAll('a[href^="javascript:shangxiShow"], a[href^="javascript:fanyiShow"]');
-        for (var i = 0; i < links.length; i++) { links[i].click(); }
-      };
-      setTimeout(expand, 300);
-      setTimeout(expand, 1200);
-    })();
-    """
-    static func isPoetrySite(_ host: String) -> Bool {
-        let name = host.lowercased()
-        return name.contains("gushiwen.cn") || name.contains("guwendao.net")
-    }
-    private var desktop: Bool { EmbeddedResource.isPoetrySite(url.host ?? "") }
-    private var injection: String { desktop ? EmbeddedResource.cleanupScript + EmbeddedResource.fitScript : EmbeddedResource.cleanupScript }
-    func makeCoordinator() -> Coordinator { Coordinator(controller, desktop: desktop) }
+    func makeCoordinator() -> Coordinator { Coordinator(controller) }
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = .all
-        config.userContentController.addUserScript(WKUserScript(source: injection, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        config.userContentController.addUserScript(WKUserScript(source: EmbeddedResource.cleanupScript, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
         let web = WKWebView(frame: .zero, configuration: config)
-        if desktop {
-            // These sites only offer the full text to a desktop browser; their phone page links to the app.
-            web.customUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
-        } else {
-            // Present as Mobile Safari; several content sites wall off a bare in-app web view.
-            let system = UIDevice.current.systemVersion
-            let token = system.replacingOccurrences(of: ".", with: "_")
-            web.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS \(token) like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/\(system) Mobile/15E148 Safari/604.1"
-        }
+        // Present as Mobile Safari; several content sites wall off a bare in-app web view.
+        let system = UIDevice.current.systemVersion
+        let token = system.replacingOccurrences(of: ".", with: "_")
+        web.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS \(token) like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/\(system) Mobile/15E148 Safari/604.1"
         controller.webView = web
         web.navigationDelegate = context.coordinator
         web.scrollView.contentInsetAdjustmentBehavior = .never
@@ -100,14 +56,12 @@ struct EmbeddedResource: UIViewRepresentable {
     static func dismantleUIView(_ uiView: WKWebView, coordinator: Coordinator) { uiView.stopLoading(); uiView.loadHTMLString("", baseURL: nil) }
     final class Coordinator: NSObject, WKNavigationDelegate {
         let controller: WebStudyController
-        let desktop: Bool
-        init(_ controller: WebStudyController, desktop: Bool) { self.controller = controller; self.desktop = desktop }
-        var injection: String { desktop ? EmbeddedResource.cleanupScript + EmbeddedResource.fitScript : EmbeddedResource.cleanupScript }
+        init(_ controller: WebStudyController) { self.controller = controller }
         func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { controller.failed = true }
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) { controller.failed = true }
         func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) { controller.failed = false }
         // Run once more after load: some pages insert the prompt block from script.
-        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { webView.evaluateJavaScript(injection, completionHandler: nil) }
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { webView.evaluateJavaScript(EmbeddedResource.cleanupScript, completionHandler: nil) }
         func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
             guard let target = navigationAction.request.url else { decisionHandler(.cancel); return }
             let scheme = target.scheme?.lowercased() ?? ""
