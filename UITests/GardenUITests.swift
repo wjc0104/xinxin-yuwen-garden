@@ -237,6 +237,7 @@ final class GardenUITests: XCTestCase {
         let springCount = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label BEGINSWITH %@", "找到 1 篇课文 · "), object: count)
         wait(for: [springCount], timeout: 4)
         XCTAssertTrue(app.buttons["search-lesson-7u-01"].exists)
+        XCTAssertTrue(app.buttons["search-lesson-7u-01"].isHittable, "The identified result must remain an actionable lesson row")
         XCTAssertFalse(app.buttons["search-lesson-7d-extra3-4"].exists)
         app.buttons["清空搜索"].tap()
         search.tap(); search.typeText("毛泽东\n")
@@ -249,11 +250,12 @@ final class GardenUITests: XCTestCase {
     }
     private func openOutlineCategory(_ app: XCUIApplication) {
         let category = app.buttons["备课提纲"].firstMatch
-        if !category.isHittable {
-            let start = app.buttons["试讲稿"].firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 1, dy: 0.5))
-            let end = app.buttons["全部"].firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0.5))
-            start.press(forDuration: 0.1, thenDragTo: end)
-        }
+        // Scroll the actual horizontal picker before asking about its clipped offscreen last item.
+        // XCTest may fail the test while computing isHittable for a wholly clipped button.
+        let picker = app.scrollViews["lesson-category-picker"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 5))
+        picker.swipeLeft()
+        XCTAssertTrue(category.waitForExistence(timeout: 5))
         XCTAssertTrue(category.isHittable)
         category.tap()
     }

@@ -77,7 +77,11 @@ public enum LessonContent {
             if key.count > 2 { return normalized(title).contains(normalized(key)) }
             // A short work title must be a whole title/token plus author or teaching context.
             let escaped = NSRegularExpression.escapedPattern(for: key)
-            let whole = title.range(of: "(^|[^\\p{Han}A-Za-z])" + escaped + "($|[^\\p{Han}A-Za-z])", options: .regularExpression) != nil
+            let pattern = "(^|[^\\p{Han}A-Za-z])" + escaped + "($|[^\\p{Han}A-Za-z])"
+            // Darwin String.range(.regularExpression) can miss this Unicode boundary match.
+            // NSRegularExpression uses UTF-16 offsets, including supplementary characters.
+            let expression = try? NSRegularExpression(pattern: pattern)
+            let whole = expression?.firstMatch(in: title, range: NSRange(title.startIndex..<title.endIndex, in: title)) != nil
             let prefix = title.hasPrefix(key) && teaching.contains { title.dropFirst(key.count).hasPrefix($0) }
             let hasContext = teaching.contains { (title + context).contains($0) } || (!lesson.author.isEmpty && (title + context).contains(lesson.author))
             return (whole || prefix) && hasContext

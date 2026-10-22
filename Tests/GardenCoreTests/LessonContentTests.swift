@@ -28,22 +28,38 @@ final class LessonContentTests: XCTestCase {
         for title in ["朱自清《春》", "《春》初中语文试讲稿", "春教学设计"] { XCTAssertTrue(LessonContent.matches(title, lesson: spring), title) }
         XCTAssertTrue(LessonContent.matches("《说和做》语文试讲", lesson: Lesson(id: "7d-02", number: 2, title: "说和做——记闻一多先生言行片段")))
     }
+    func testShortWorkBoundaryPreservesRelevanceAcrossUTF16Offsets() {
+        for title in ["《春》语文", "朱自清《春》", "春教学设计"] {
+            XCTAssertTrue(LessonContent.matches(title, lesson: spring), title)
+        }
+        // Four supplementary scalars put the final work outside an incorrect Character-count NSRange.
+        XCTAssertTrue(LessonContent.matches("📚📚📚📚《春》", lesson: spring, context: "朱自清"))
+        for title in ["《春望》语文", "《晚春》语文", "青春语文", "📚📚📚📚《春望》语文", "《春》时尚穿搭"] {
+            XCTAssertFalse(LessonContent.matches(title, lesson: spring), title)
+        }
+    }
     func testSearchStripsEmAndValidatesMetadata() throws {
         let candidates = try LessonContent.videos(bytes(#"{"code":0,"data":{"result":[{"bvid":"BV137LizrE4S","title":"朱自清《<em class=\"keyword\">春</em>》语文试讲","author":"老师","pic":"//i0.hdslb.com/a.jpg","duration":"10:30"},{"bvid":"bad","title":"春","author":"x"}]}}"#))
         XCTAssertEqual(candidates.count, 1)
-        XCTAssertEqual(candidates[0].title, "朱自清《春》语文试讲")
-        XCTAssertEqual(candidates[0].duration, 630)
-        XCTAssertEqual(candidates[0].thumbnail, "https://i0.hdslb.com/a.jpg")
+        let candidate = try XCTUnwrap(candidates.first)
+        XCTAssertEqual(candidate.title, "朱自清《春》语文试讲")
+        XCTAssertEqual(candidate.duration, 630)
+        XCTAssertEqual(candidate.thumbnail, "https://i0.hdslb.com/a.jpg")
         XCTAssertNil(LessonContent.imageURL("https://evil.test/x"))
     }
     func testArticleKeepsOnlyDirectOriginalMetadataAndCategory() throws {
+        let rawTitle = "《<em>春</em>》语文试讲逐字稿"
+        let cleanedTitle = LessonContent.text(rawTitle)
+        XCTAssertEqual(cleanedTitle, "《春》语文试讲逐字稿", "Isolate the HTML cleanup boundary on Darwin/Foundation")
+        XCTAssertTrue(LessonContent.matches("《春》语文试讲逐字稿", lesson: spring, context: "老师"), "Isolate literal short-work relevance before article JSON parsing")
         let articles = try LessonContent.articles(bytes(#"{"code":0,"data":{"result":[{"id":11654040,"title":"《<em>春</em>》语文试讲逐字稿","author":"老师","desc":"FULL COPYRIGHTED TEXT","image_urls":[]}]}}"#), lesson: spring, checkedAt: "today")
         XCTAssertEqual(articles.count, 1)
-        XCTAssertEqual(articles[0].url, "https://www.bilibili.com/read/cv11654040")
-        XCTAssertEqual(articles[0].category, "试讲稿")
-        XCTAssertEqual(articles[0].kind, .script)
-        XCTAssertTrue(articles[0].body.isEmpty)
-        XCTAssertNil(articles[0].summary)
+        let article = try XCTUnwrap(articles.first, "A lesson-specific article must survive metadata parsing; stop safely if it does not")
+        XCTAssertEqual(article.url, "https://www.bilibili.com/read/cv11654040")
+        XCTAssertEqual(article.category, "试讲稿")
+        XCTAssertEqual(article.kind, .script)
+        XCTAssertTrue(article.body.isEmpty)
+        XCTAssertNil(article.summary)
         XCTAssertEqual(LessonContent.articleCategory("《春》教学设计"), "教学设计")
         XCTAssertEqual(LessonContent.articleCategory("《春》课文赏析"), "课文解读")
     }

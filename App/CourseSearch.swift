@@ -34,7 +34,10 @@ struct SearchView: View {
                 ForEach(Array(results.prefix(limit))) { result in
                     NavigationLink(destination: LazyDestination { LessonView(lesson: result.lesson) }) {
                         lessonCard(result.lesson, resources: result.resources)
-                    }.buttonStyle(.plain).accessibilityIdentifier("search-lesson-" + result.id)
+                    }.buttonStyle(.plain)
+                        .id("search-lesson-" + result.id)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityIdentifier("search-lesson-" + result.id)
                 }
                 if results.count > limit { Button("显示更多课文") { limit += 24 }.frame(maxWidth: .infinity).padding() }
                 if results.isEmpty { GardenEmpty(title: "没有匹配的课文", detail: "试试课文名、作者或教学重点，例如“济南的冬天”“老舍 温晴”。") }

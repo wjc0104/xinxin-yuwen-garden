@@ -99,7 +99,7 @@ struct LessonView: View {
             }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack { ForEach(["全部","视频","试讲稿","教学设计","课文解读","备课提纲"], id: \.self) { category in Button { filter = category } label: { Text(category).font(.subheadline).padding(.horizontal, 12).padding(.vertical, 8).background(filter == category ? GardenTheme.rose.opacity(0.15) : GardenTheme.card).cornerRadius(12) } } }
-            }
+            }.accessibilityIdentifier("lesson-category-picker")
             ForEach(resources) { resource in NavigationLink(destination: ReadingView(resource: resource)) { VStack(alignment: .leading, spacing: 4) { if refresh.newIDs.contains(resource.id) { Text("本次新增").font(.caption.bold()).foregroundColor(GardenTheme.mint) }; ResourceRow(resource: resource) } }.buttonStyle(.plain).accessibilityIdentifier("resource-" + resource.id) }
             if resources.isEmpty { GardenEmpty(title: "此分类暂未收录", detail: "可以切换“全部”查看这篇课文已有的学习资料。") }
             if !store.marks(lesson.id).isEmpty {
