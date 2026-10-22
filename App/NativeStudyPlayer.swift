@@ -13,21 +13,6 @@ private final class PlayerClock {
     deinit { player.removeTimeObserver(token) }
 }
 
-/// KVO may arrive off the main actor; newer play/pause events supersede queued rate corrections.
-private final class PlayerRateEvents {
-    private let lock = NSLock()
-    private var revision: UInt64 = 0
-    func record() -> UInt64 {
-        lock.lock(); defer { lock.unlock() }
-        revision &+= 1
-        return revision
-    }
-    func isLatest(_ event: UInt64) -> Bool {
-        lock.lock(); defer { lock.unlock() }
-        return event == revision
-    }
-}
-
 @MainActor final class NativeStudyPlayer: ObservableObject {
     @Published private(set) var player: AVPlayer?
     @Published private(set) var loading = false
@@ -38,7 +23,8 @@ private final class PlayerRateEvents {
     @Published private(set) var playing = false
     @Published private(set) var originalURL: URL?
     @Published private(set) var playbackRate: Float = 1
-    var traceTransport = false
+    var traceTransport = ProcessInfo.processInfo.arguments.contains("--trace-player-transport")
+    var useSystemDefaultRate = !ProcessInfo.processInfo.arguments.contains("--legacy-player-transport")
     static let playbackRates: [Float] = [0.5, 0.75, 1, 1.25, 1.5, 2]
     private var identity: String?
     private var generation = UUID()
@@ -46,7 +32,6 @@ private final class PlayerRateEvents {
     private var pendingSeek: UUID?
     private var statusObserver: NSKeyValueObservation?
     private var playbackObserver: NSKeyValueObservation?
-    private var rateObserver: NSKeyValueObservation?
     private var clock: PlayerClock?
     private var loadWatchdog: Task<Void, Never>?
     private let session: URLSession = {
@@ -92,7 +77,9 @@ private final class PlayerRateEvents {
             let asset = AVURLAsset(url: url, options: options)
             try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
             let item = AVPlayerItem(asset: asset)
-            let value = AVPlayer(playerItem: item)
+            let value = StudyAVPlayer(playerItem: item)
+            value.traceTransport = traceTransport
+            value.configureRate(playbackRate, useSystemDefaultRate: useSystemDefaultRate)
             value.automaticallyWaitsToMinimizeStalling = true
             player = value
             statusObserver = item.observe(\.status, options: [.initial,.new]) { [weak self] item, _ in
@@ -112,26 +99,8 @@ private final class PlayerRateEvents {
                     }
                 }
             }
-            let tracing = traceTransport
-            playbackObserver = value.observe(\.timeControlStatus, options: [.initial,.new]) { [weak self] value, change in
-                if tracing { print("NATIVE_TRANSPORT time=\(ProcessInfo.processInfo.systemUptime) control_event=\(change.newValue?.rawValue ?? -1) rate=\(value.rate) main=\(Thread.isMainThread)") }
+            playbackObserver = value.observe(\.timeControlStatus, options: [.initial,.new]) { [weak self] value, _ in
                 Task { @MainActor [weak self] in guard let self = self, self.generation == token else { return }; self.playing = value.timeControlStatus != .paused }
-            }
-            // iOS 15 system controls can resume using play(), which resets rate to 1.
-            // Retain event identity: an old positive event cannot override a newer pause.
-            let rateEvents = PlayerRateEvents()
-            rateObserver = value.observe(\.rate, options: [.new]) { [weak self] value, change in
-                let event = rateEvents.record()
-                if tracing { print("NATIVE_TRANSPORT time=\(ProcessInfo.processInfo.systemUptime) rate_event=\(event) new=\(change.newValue ?? -1) current=\(value.rate) control=\(value.timeControlStatus.rawValue) main=\(Thread.isMainThread)") }
-                guard let observedRate = change.newValue, observedRate > 0 else { return }
-                Task { @MainActor [weak self] in
-                    if tracing { print("NATIVE_TRANSPORT time=\(ProcessInfo.processInfo.systemUptime) rate_task=\(event) latest=\(rateEvents.isLatest(event)) observed=\(observedRate) current=\(value.rate) control=\(value.timeControlStatus.rawValue)") }
-                    guard let self = self, self.generation == token, self.player === value,
-                          rateEvents.isLatest(event), value.timeControlStatus != .paused,
-                          value.rate == observedRate, value.rate != self.playbackRate else { return }
-                    if tracing { print("NATIVE_TRANSPORT time=\(ProcessInfo.processInfo.systemUptime) correction=\(self.playbackRate) event=\(event)") }
-                    value.rate = self.playbackRate
-                }
             }
             loadWatchdog = Task { [weak self] in
                 do { try await Task.sleep(nanoseconds: 25_000_000_000) } catch { return }
@@ -170,14 +139,11 @@ private final class PlayerRateEvents {
         ready = false; loading = false; playing = false
         problem = "系统播放器暂时无法连接视频源，请重试。"
     }
-    func playPause() { guard ready, let player = player else { return }; if player.timeControlStatus != .paused { player.pause() } else { player.rate = playbackRate } }
+    func playPause() { guard ready, let player = player else { return }; if player.timeControlStatus != .paused { player.pause() } else { player.play() } }
     func setPlaybackRate(_ rate: Float) {
-        traceTransportState("setSpeed-before-\(rate)")
-        defer { traceTransportState("setSpeed-after-\(rate)") }
         guard Self.playbackRates.contains(rate) else { return }
         playbackRate = rate
-        // A speed selection is not a request to play. Preserve a paused player's zero rate.
-        if let player = player, player.timeControlStatus != .paused, player.rate > 0 { player.rate = rate }
+        (player as? StudyAVPlayer)?.configureRate(rate, useSystemDefaultRate: useSystemDefaultRate)
     }
     func traceTransportState(_ command: String) {
         if traceTransport { print("NATIVE_TRANSPORT time=\(ProcessInfo.processInfo.systemUptime) command=\(command) rate=\(player?.rate ?? -1) control=\(player?.timeControlStatus.rawValue ?? -1)") }
@@ -244,6 +210,6 @@ private final class PlayerRateEvents {
         loadWatchdog?.cancel(); loadWatchdog = nil
         player?.pause()
         pendingSeek = nil
-        clock = nil; statusObserver = nil; playbackObserver = nil; rateObserver = nil; player = nil; playing = false
+        clock = nil; statusObserver = nil; playbackObserver = nil; player = nil; playing = false
     }
 }

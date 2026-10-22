@@ -17,8 +17,9 @@ struct FullScreenStudyPlayer: View {
                 Spacer()
                 Text(video.seconds.map { String(format: "%02d:%02d", $0 / 60, $0 % 60) } ?? "--:--")
                     .font(.caption.monospacedDigit()).accessibilityIdentifier("fullscreen-video-position")
+                    .accessibilityValue(video.playing ? "播放中 · 实际倍速 " + NativeStudyPlayer.rateLabel(video.player?.rate ?? 0) : "已暂停")
                 PlaybackSpeedMenu(video: video, identifier: "fullscreen-video-speed")
-                    .padding(12).background(Color.black.opacity(0.75)).cornerRadius(12)
+                    .background(Color.black.opacity(0.75)).cornerRadius(12)
             }
             .foregroundColor(.white).padding(16)
         }.background(Color.black)
@@ -39,7 +40,11 @@ struct PlaybackSpeedMenu: View {
                     }
                 }.accessibilityIdentifier("video-speed-option-" + NativeStudyPlayer.rateLabel(rate))
             }
-        } label: { Text("倍速 " + video.playbackRateLabel + "×") }
+        } label: {
+            Text("倍速 " + video.playbackRateLabel + "×")
+                .padding(.horizontal, 12).frame(minHeight: 44).contentShape(Rectangle())
+        }
+        .accessibilityElement(children: .combine)
         .accessibilityIdentifier(identifier)
     }
 }

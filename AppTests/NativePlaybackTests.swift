@@ -14,6 +14,7 @@ import GardenCore
         resource.videoCID = 37155308866
         let video = NativeStudyPlayer()
         video.traceTransport = true
+        video.useSystemDefaultRate = false // Exercise the iOS15 public transport path even on a newer simulator.
         XCTAssertEqual(video.playbackRate, 1)
         XCTAssertEqual(NativeStudyPlayer.playbackRates, [0.5, 0.75, 1, 1.25, 1.5, 2])
         await video.load(resource)
@@ -29,6 +30,7 @@ import GardenCore
         let item = try XCTUnwrap(player.currentItem)
         video.setPlaybackRate(0.75)
         XCTAssertEqual(player.rate, 0, "Selecting speed while paused must not start playback")
+        if #available(iOS 16.0, *) { XCTAssertEqual(player.defaultRate, 1, "This regression must exercise transport without the iOS16 defaultRate API") }
         video.setPlaybackRate(3)
         XCTAssertEqual(video.playbackRate, 0.75, "Reject rates outside the explicit menu")
         XCTAssertFalse(item.asset.tracks(withMediaType: .audio).isEmpty, "The source must contain audio, not a silent DASH video track")

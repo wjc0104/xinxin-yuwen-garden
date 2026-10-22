@@ -68,7 +68,7 @@ final class GardenUITests: XCTestCase {
         continueAfterFailure = false
         XCUIDevice.shared.orientation = .portrait
         defer { XCUIDevice.shared.orientation = .portrait }
-        let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing", "--trace-player-transport", "--legacy-player-transport"]; app.launch()
         app.tabBars.buttons["课程"].tap()
         app.buttons["book-7u"].tap(); app.buttons["lesson-7u-02"].tap()
         app.buttons["resource-curated-7u-02-BV1eUAieoEZd-2"].tap()
@@ -100,6 +100,26 @@ final class GardenUITests: XCTestCase {
         let runningPosition = app.staticTexts["fullscreen-video-position"]
         wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
             (self.videoSeconds(runningPosition.label) ?? -1) >= entering + 2
+        }, object: nil)], timeout: 15)
+        XCTAssertEqual(app.buttons["fullscreen-video-speed"].label, "倍速 1.5×")
+        // Exercise the stock AVKit transport controls, not just the app's external play button.
+        let native = app.descendants(matching: .any)["fullscreen-native-player"].firstMatch
+        native.tap() // A video tap reveals AVKit's transport controls.
+        let nativePause = native.buttons.matching(NSPredicate(format: "label MATCHES[c] %@", "(暂停|Pause)(播放|视频| Video| Playback)?")).firstMatch
+        XCTAssertTrue(nativePause.waitForExistence(timeout: 5), "Stock AVKit pause control must be actionable")
+        nativePause.tap()
+        wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "已暂停"), object: runningPosition)], timeout: 5)
+        let stockPausedTime = try XCTUnwrap(videoSeconds(runningPosition.label))
+        app.buttons["fullscreen-video-speed"].tap()
+        app.buttons["video-speed-option-1.5"].tap()
+        XCTAssertEqual(runningPosition.value as? String, "已暂停", "Selecting speed after stock AVKit pause must remain paused")
+        let nativePlay = native.buttons.matching(NSPredicate(format: "label MATCHES[c] %@", "(播放|继续播放|Play|Resume)(视频| Video| Playback)?")).firstMatch
+        if !nativePlay.waitForExistence(timeout: 2) { native.tap() }
+        XCTAssertTrue(nativePlay.waitForExistence(timeout: 5), "Stock AVKit resume control must be actionable")
+        nativePlay.tap()
+        wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "播放中 · 实际倍速 1.5"), object: runningPosition)], timeout: 5)
+        wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            (self.videoSeconds(runningPosition.label) ?? -1) >= stockPausedTime + 2
         }, object: nil)], timeout: 15)
         XCTAssertEqual(app.buttons["fullscreen-video-speed"].label, "倍速 1.5×")
         let exiting = try XCTUnwrap(videoSeconds(runningPosition.label))
