@@ -1,30 +1,25 @@
 import Foundation
 
 public enum GardenDate {
-    public static var calendar: Calendar {
+    // Shared value type: no DateFormatter allocation on the schedule hot path.
+    public static let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "Asia/Shanghai")!
         calendar.firstWeekday = 2
         return calendar
-    }
+    }()
     public static func parse(_ text: String) -> Date? {
-        guard text.count == 10 else { return nil }
-        let formatter = DateFormatter()
-        formatter.calendar = calendar
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = calendar.timeZone
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.isLenient = false
-        guard let date = formatter.date(from: text), string(date) == text else { return nil }
+        let parts = text.split(separator: "-", omittingEmptySubsequences: false)
+        guard parts.count == 3, parts[0].count == 4, parts[1].count == 2, parts[2].count == 2,
+              let year = Int(parts[0]), let month = Int(parts[1]), let day = Int(parts[2]),
+              (1...12).contains(month), (1...31).contains(day),
+              let date = calendar.date(from: DateComponents(year: year, month: month, day: day)),
+              string(date) == text else { return nil }
         return date
     }
     public static func string(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = calendar
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = calendar.timeZone
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: date)
+        let parts = calendar.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
     }
     public static func at(_ date: String, minute: Int) -> Date? {
         guard let day = parse(date), (0..<1440).contains(minute) else { return nil }
@@ -38,12 +33,14 @@ public struct ScheduleEngine {
         let sorted = related.sorted { ($0.startMinute, $0.id) < ($1.startMinute, $1.id) }
         guard let anchor = sorted.firstIndex(where: { $0.id == occurrence.id }) else { throw GardenError.invalid("没有找到需要调整的课次。") }
         let duration = endMinute - startMinute
+        // One edit may produce several rows (a composition moves both periods); they undo together.
+        let batch = UUID().uuidString
         return try sorted.enumerated().map { index, item in
             // A grouped composition remains two independent lessons, with a 15-minute break even when duration changes.
             let shift = (index - anchor) * (duration + 15)
             let begin = startMinute + shift, finish = endMinute + shift
             guard cancelled || (begin >= 0 && finish < 1440 && begin < finish) else { throw GardenError.invalid("连堂课移动后超出当天，请重新设置时间。") }
-            return ScheduleChange(slotID: item.slotID, date: item.originalDate, scope: scope, cancelled: cancelled, targetDate: cancelled ? nil : targetDate, startMinute: cancelled ? nil : begin, endMinute: cancelled ? nil : finish)
+            return ScheduleChange(slotID: item.slotID, date: item.originalDate, scope: scope, cancelled: cancelled, targetDate: cancelled ? nil : targetDate, startMinute: cancelled ? nil : begin, endMinute: cancelled ? nil : finish, batch: batch)
         }
     }
     public func occurrences(slots: [TeachingSlot], changes: [ScheduleChange], start: String, end: String) -> [Occurrence] {

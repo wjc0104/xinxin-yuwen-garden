@@ -108,7 +108,11 @@ struct ChangesView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("\(slot?.subject ?? "课程") · \(slot?.classNumber ?? 0)班 · " + change.date)
                 Caption(text: (change.scope == .once ? "仅这一次" : "此后每周") + (change.cancelled ? " · 停课" : " → " + (change.targetDate ?? change.date)))
-                Button("撤销修改") { store.update { $0.changes.removeAll { $0.id == change.id } } }
+                Button("撤销修改") { store.update { data in
+                    // A composition edit writes one row per period; undo them as a group.
+                    if let batch = change.batch { data.changes.removeAll { $0.batch == batch } }
+                    else { data.changes.removeAll { $0.id == change.id } }
+                } }
             }
         } }.navigationTitle("调课记录")
     }

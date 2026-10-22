@@ -13,6 +13,11 @@ private struct BarkProfile: Codable {
 private final class NoRedirect: NSObject, URLSessionTaskDelegate {
     func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) { completionHandler(nil) }
 }
+/// Everything that changes the generated reminder plan, so an unchanged timetable is not re-uploaded.
+private struct PlanInputs: Equatable {
+    var slots: [TeachingSlot]; var changes: [ScheduleChange]; var termStart: String; var termEnd: String; var minutes: Int; var confirmed: Bool
+    init(_ snapshot: GardenSnapshot) { slots = snapshot.slots; changes = snapshot.changes; termStart = snapshot.termStart; termEnd = snapshot.termEnd; minutes = snapshot.reminderMinutes; confirmed = snapshot.termConfirmed }
+}
 @MainActor final class BarkBridge: ObservableObject {
     static let shared = BarkBridge()
     @Published private(set) var enabled = false
@@ -23,6 +28,7 @@ private final class NoRedirect: NSObject, URLSessionTaskDelegate {
     private var newestRequest: Int64 = 0
     private var activeRequests = 0
     private var stopping = false
+    private var lastUploaded: PlanInputs?
     private let serviceName = "com.wm0104.xinxingarden.bark"
     private let session = URLSession(configuration: .ephemeral, delegate: NoRedirect(), delegateQueue: nil)
     var address: String { profile.address }
@@ -74,10 +80,12 @@ private final class NoRedirect: NSObject, URLSessionTaskDelegate {
         let revision = nextRevision(); newestRequest = revision
         do { _ = try await request(serviceURL(), method: "DELETE", body: ["revision":revision], token: profile.token) }
         catch { status = "停用尚未确认，请联网后重试停用"; throw error }
-        var next = profile; next.enabled = false; next.stopPending = nil; try persist(next); status = "自动提醒已停用"
+        var next = profile; next.enabled = false; next.stopPending = nil; try persist(next); lastUploaded = nil; status = "自动提醒已停用"
     }
     func changed(_ snapshot: GardenSnapshot) {
         guard enabled, !stopping, profile.stopPending != true else { return }
+        // Entering the foreground again must not re-upload an unchanged timetable.
+        guard PlanInputs(snapshot) != lastUploaded else { return }
         pending?.cancel(); status = "课表有变化，正在更新提醒"
         pending = Task {
             do { try await Task.sleep(nanoseconds: 350_000_000); try Task.checkCancellation(); try await upload(snapshot) }
@@ -97,8 +105,8 @@ private final class NoRedirect: NSObject, URLSessionTaskDelegate {
         let encoded = try JSONSerialization.jsonObject(with: JSONEncoder().encode(jobs))
         activeRequests += 1; busy = true; defer { activeRequests -= 1; busy = activeRequests > 0 }
         do { _ = try await request(serviceURL(), method: "PUT", body: ["revision":revision,"deviceKey":parsed.key,"jobs":encoded], token: profile.token) }
-        catch { if revision == newestRequest { status = "自动提醒状态待确认，请联网更新或停用" }; throw error }
-        if revision == newestRequest { status = snapshot.termConfirmed ? "已安排 \(jobs.count) 次提醒 · 提前\(snapshot.reminderMinutes)分钟" : "学期未确认，在线提醒已暂停" }
+        catch { if revision == newestRequest { lastUploaded = nil; status = "自动提醒状态待确认，请联网更新或停用" }; throw error }
+        if revision == newestRequest { lastUploaded = PlanInputs(snapshot); status = snapshot.termConfirmed ? "已安排 \(jobs.count) 次提醒 · 提前\(snapshot.reminderMinutes)分钟" : "学期未确认，在线提醒已暂停" }
     }
     private func serviceURL() throws -> URL {
         guard let url = URL(string: profile.service + "/schedule"), url.scheme == "https", !profile.token.isEmpty else { throw GardenError.invalid("请先连接在线定时服务。") }

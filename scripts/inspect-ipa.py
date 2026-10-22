@@ -1,5 +1,5 @@
 """Read-only, cross-platform verification of the downloaded exact IPA bytes."""
-import argparse,hashlib,json,plistlib,struct,zipfile
+import argparse,hashlib,json,plistlib,re,struct,zipfile
 from pathlib import Path,PurePosixPath
 
 p=argparse.ArgumentParser();p.add_argument('ipa');p.add_argument('--report');a=p.parse_args()
@@ -10,7 +10,15 @@ with zipfile.ZipFile(path) as z:
     prefix='Payload/XinxinGarden.app/'
     info=plistlib.loads(z.read(prefix+'Info.plist'))
     assert info['CFBundleIdentifier']=='com.wm0104.xinxingarden'
-    assert info['CFBundleDisplayName']=='欣语' and info['CFBundleShortVersionString']=='0.0.3'
+    assert info['CFBundleDisplayName']=='欣语'
+    # Compare against the declared version instead of a literal, so a bump cannot drift unnoticed.
+    project=Path(__file__).resolve().parents[1]/'project.yml'
+    if project.exists():
+        declared=re.search(r"CFBundleShortVersionString:\s*'?([0-9][0-9.]*)'?",project.read_text(encoding='utf-8'))
+        assert declared,'project.yml is missing CFBundleShortVersionString'
+        assert info['CFBundleShortVersionString']==declared.group(1),f"IPA version {info['CFBundleShortVersionString']} != project.yml {declared.group(1)}"
+    else:
+        assert info['CFBundleShortVersionString']
     assert info['MinimumOSVersion']=='15.0'
     assert info['UIDeviceFamily']==[1],info.get('UIDeviceFamily')
     assert 'iPhoneOS' in info['CFBundleSupportedPlatforms']

@@ -13,6 +13,12 @@ import GardenCore
     let calendar = CalendarBridge()
     private var cachedOccurrences: [Occurrence] = []
     private var occurrencesByDate: [String: [Occurrence]] = [:]
+    private var allLessons: [Lesson] = []
+    private var lessonByID: [String: Lesson] = [:]
+    private var bookTitleByLessonID: [String: String] = [:]
+    private var resourcesByLesson: [String: [StudyResource]] = [:]
+    private var resourceByID: [String: StudyResource] = [:]
+    private var marksByLesson: [String: [StudyMark]] = [:]
 
     init() {
         do {
@@ -31,13 +37,17 @@ import GardenCore
                 let bundled = try JSONDecoder().decode([StudyResource].self, from: Data(contentsOf: url))
                 let retired: Set<String> = ["spring-video", "spring-plan", "pear-video", "yueyang-video"]
                 let annotated = Set(data.marks.compactMap(\.resourceID))
-                data.resources.removeAll { retired.contains($0.id) && !annotated.contains($0.id) }
-                data.resources = StudyLibrary.merge(bundled, into: data.resources)
-                if !UserDefaults.standard.bool(forKey: "reminder-v002") { data.reminderMinutes = 60 }
-                try store.save(data)
+                let previous = data.resources
+                let kept = previous.filter { !(retired.contains($0.id) && !annotated.contains($0.id)) }
+                data.resources = StudyLibrary.merge(bundled, into: kept, excluding: data.deletedIDs)
+                // Only rewrite the library file when an upgrade actually changed it.
+                var changed = data.resources != previous
+                if !UserDefaults.standard.bool(forKey: "reminder-v002") { data.reminderMinutes = 60; changed = true }
+                if changed { try store.save(data) }
                 UserDefaults.standard.set(true, forKey: "reminder-v002")
             }
             readable = true
+            reindex()
             rebuildSchedule(data)
             if ProcessInfo.processInfo.arguments.contains("--ui-testing"), !data.resources.contains(where: { $0.id == "ui-pdf" }) {
                 let renderer = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 612, height: 792))
@@ -46,16 +56,18 @@ import GardenCore
                 try bytes.write(to: temporary, options: .atomic)
                 let name = try store.importFile(temporary)
                 data.resources.append(StudyResource(id: "ui-pdf", lessonID: "7u-01", title: "原创测试 PDF", kind: .pdf, localFile: name))
+                reindex()
                 try store.save(data)
             }
         } catch { self.error = "暂时无法读取资料，已停止保存以保护原数据。\n" + error.localizedDescription }
     }
-    var lessons: [Lesson] { catalog?.books.flatMap { $0.units.flatMap(\.lessons) } ?? [] }
+    var lessons: [Lesson] { allLessons }
     func remember(_ resource: StudyResource) { guard recentResourceID != resource.id else { return }; recentResourceID = resource.id; UserDefaults.standard.set(resource.id, forKey: "recent-resource") }
-    func bookTitle(_ lessonID: String) -> String { catalog?.books.first { $0.units.contains { $0.lessons.contains { $0.id == lessonID } } }?.title ?? "" }
-    func lesson(_ id: String) -> Lesson? { lessons.first { $0.id == id } }
-    func resources(_ id: String) -> [StudyResource] { data.resources.filter { $0.lessonID == id }.sorted { !$0.isPaid && $1.isPaid } }
-    func marks(_ id: String) -> [StudyMark] { data.marks.filter { $0.lessonID == id }.sorted { $0.createdAt > $1.createdAt } }
+    func bookTitle(_ lessonID: String) -> String { bookTitleByLessonID[lessonID] ?? "" }
+    func lesson(_ id: String) -> Lesson? { lessonByID[id] }
+    func resource(_ id: String?) -> StudyResource? { guard let id = id else { return nil }; return resourceByID[id] }
+    func resources(_ id: String) -> [StudyResource] { resourcesByLesson[id] ?? [] }
+    func marks(_ id: String) -> [StudyMark] { marksByLesson[id] ?? [] }
     @discardableResult func update(_ change: (inout GardenSnapshot) -> Void) -> Bool {
         guard readable, let disk = disk else { error = "读取异常未解决，暂时不能修改资料。"; return false }
         var copy = data; change(&copy)
@@ -65,6 +77,7 @@ import GardenCore
             let changed = scheduleChanged || copy.reminderMinutes != data.reminderMinutes || copy.termConfirmed != data.termConfirmed
             if scheduleChanged { rebuildSchedule(copy) }
             data = copy
+            reindex()
             if changed { BarkBridge.shared.changed(copy) }
             return true
         } catch { self.error = error.localizedDescription; return false }
@@ -97,6 +110,7 @@ import GardenCore
             let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
             guard size <= 90 * 1024 * 1024 else { throw GardenError.invalid("备份文件过大。") }
             data = try disk.mergeBackup(Data(contentsOf: url), into: data)
+            reindex()
             rebuildSchedule(data)
             BarkBridge.shared.changed(data)
             notice = "已合并资料和笔记。"
@@ -104,6 +118,47 @@ import GardenCore
     }
     var occurrences: [Occurrence] { cachedOccurrences }
     func courses(on date: Date) -> [Occurrence] { occurrencesByDate[GardenDate.string(date)] ?? [] }
+    /// Rebuilt once per data change, so views never rescan the whole library per row.
+    private func reindex() {
+        if let books = catalog?.books {
+            var lessons: [Lesson] = []
+            var byID: [String: Lesson] = [:]
+            var titles: [String: String] = [:]
+            for book in books {
+                for unit in book.units {
+                    for lesson in unit.lessons {
+                        lessons.append(lesson)
+                        byID[lesson.id] = lesson
+                        titles[lesson.id] = book.title
+                    }
+                }
+            }
+            allLessons = lessons
+            lessonByID = byID
+            bookTitleByLessonID = titles
+        }
+        var grouped: [String: [StudyResource]] = [:]
+        var resourcesByID: [String: StudyResource] = [:]
+        for resource in data.resources {
+            grouped[resource.lessonID, default: []].append(resource)
+            resourcesByID[resource.id] = resource
+        }
+        for key in Array(grouped.keys) {
+            var list = grouped[key] ?? []
+            list.sort { !$0.isPaid && $1.isPaid }
+            grouped[key] = list
+        }
+        resourcesByLesson = grouped
+        resourceByID = resourcesByID
+        var notes: [String: [StudyMark]] = [:]
+        for mark in data.marks { notes[mark.lessonID, default: []].append(mark) }
+        for key in Array(notes.keys) {
+            var list = notes[key] ?? []
+            list.sort { $0.createdAt > $1.createdAt }
+            notes[key] = list
+        }
+        marksByLesson = notes
+    }
     private func rebuildSchedule(_ snapshot: GardenSnapshot) {
         cachedOccurrences = ScheduleEngine().occurrences(slots: snapshot.slots, changes: snapshot.changes, start: snapshot.termStart, end: snapshot.termEnd)
         occurrencesByDate = Dictionary(grouping: cachedOccurrences, by: \.date)

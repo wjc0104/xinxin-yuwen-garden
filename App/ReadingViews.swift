@@ -88,7 +88,13 @@ struct ReadingView: View {
             MarkCard(mark: mark)
         }
     }
-    private func remove() { if store.update({ $0.resources.removeAll { $0.id == resource.id } }) { dismiss() } }
+    private func remove() {
+        if store.update({ data in
+            data.resources.removeAll { $0.id == resource.id }
+            // Remember the removal so a content refresh cannot bring the entry back.
+            data.deletedIDs.insert(resource.id)
+        }) { dismiss() }
+    }
 }
 
 final class TextSelectionController: ObservableObject {

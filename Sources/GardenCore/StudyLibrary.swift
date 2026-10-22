@@ -2,9 +2,10 @@ import Foundation
 
 public enum StudyLibrary {
     /// Stable bundled IDs refresh while custom resources and all annotations survive upgrades.
-    public static func merge(_ bundled: [StudyResource], into saved: [StudyResource]) -> [StudyResource] {
+    /// Bundled entries the user removed are skipped, and their saved copy stays removed too.
+    public static func merge(_ bundled: [StudyResource], into saved: [StudyResource], excluding deleted: Set<String> = []) -> [StudyResource] {
         let ids = Set(bundled.map(\.id))
-        return bundled + saved.filter { !ids.contains($0.id) }
+        return bundled.filter { !deleted.contains($0.id) } + saved.filter { !ids.contains($0.id) && !deleted.contains($0.id) }
     }
     public static func search(_ query: String, resources: [StudyResource], lessons: [Lesson]) -> [StudyResource] {
         let terms = query.lowercased().split(whereSeparator: \.isWhitespace).map(String.init)

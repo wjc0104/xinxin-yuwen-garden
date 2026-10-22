@@ -23,7 +23,7 @@ public final class DiskStore {
     public func save(_ value: GardenSnapshot) throws {
         try validate(value)
         let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.outputFormatting = [.sortedKeys]
         try encoder.encode(value).write(to: stateURL, options: .atomic)
     }
     public func load() throws -> GardenSnapshot? {
@@ -82,6 +82,10 @@ public final class DiskStore {
         result.marks += incoming.marks.filter { value in !current.marks.contains { $0.id == value.id } }
         result.favorites.formUnion(incoming.favorites)
         result.changes += incoming.changes.filter { value in !current.changes.contains { $0.id == value.id } }
+        result.deletedIDs.formUnion(incoming.deletedIDs)
+        // A backup must not resurrect a resource this device removed on purpose.
+        let removedIDs = result.deletedIDs
+        result.resources.removeAll { removedIDs.contains($0.id) }
         // Term settings, current timetable and calendar bindings stay device-local/current.
         try validate(result)
         var written: [URL] = []

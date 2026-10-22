@@ -11,7 +11,7 @@ struct GardenCard<Content: View>: View {
 }
 struct GardenPage<Content: View>: View {
     @ViewBuilder var content: Content
-    var body: some View { ScrollView { VStack(alignment: .leading, spacing: 16) { content }.padding(20).padding(.bottom, 24) }.background(GardenTheme.background.ignoresSafeArea()) }
+    var body: some View { ScrollView { LazyVStack(alignment: .leading, spacing: 16) { content }.padding(20).padding(.bottom, 24) }.background(GardenTheme.background.ignoresSafeArea()) }
 }
 struct GardenEmpty: View {
     let title: String; let detail: String

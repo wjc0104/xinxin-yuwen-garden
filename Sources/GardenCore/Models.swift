@@ -45,8 +45,8 @@ public struct TeachingSlot: Codable, Identifiable, Equatable {
 }
 public enum ChangeScope: String, Codable { case once, fromDate }
 public struct ScheduleChange: Codable, Identifiable, Equatable {
-    public var id: String; public var slotID: String; public var date: String; public var scope: ChangeScope; public var cancelled: Bool; public var targetDate: String?; public var startMinute: Int?; public var endMinute: Int?
-    public init(id: String = UUID().uuidString, slotID: String, date: String, scope: ChangeScope = .once, cancelled: Bool = false, targetDate: String? = nil, startMinute: Int? = nil, endMinute: Int? = nil) { self.id = id; self.slotID = slotID; self.date = date; self.scope = scope; self.cancelled = cancelled; self.targetDate = targetDate; self.startMinute = startMinute; self.endMinute = endMinute }
+    public var id: String; public var slotID: String; public var date: String; public var scope: ChangeScope; public var cancelled: Bool; public var targetDate: String?; public var startMinute: Int?; public var endMinute: Int?; public var batch: String?
+    public init(id: String = UUID().uuidString, slotID: String, date: String, scope: ChangeScope = .once, cancelled: Bool = false, targetDate: String? = nil, startMinute: Int? = nil, endMinute: Int? = nil, batch: String? = nil) { self.id = id; self.slotID = slotID; self.date = date; self.scope = scope; self.cancelled = cancelled; self.targetDate = targetDate; self.startMinute = startMinute; self.endMinute = endMinute; self.batch = batch }
 }
 public struct Occurrence: Identifiable, Equatable { public var id: String; public var slotID: String; public var originalDate: String; public var date: String; public var period: Int; public var classNumber: Int; public var subject: String; public var startMinute: Int; public var endMinute: Int; public var group: String? }
 public struct GardenSnapshot: Codable, Equatable {
@@ -54,13 +54,31 @@ public struct GardenSnapshot: Codable, Equatable {
     public var resources: [StudyResource] = []
     public var marks: [StudyMark] = []
     public var favorites: Set<String> = []
+    /// Resources the user removed, so a content refresh cannot bring them back.
+    public var deletedIDs: Set<String> = []
     public var slots: [TeachingSlot] = TeachingSlot.seed
     public var changes: [ScheduleChange] = []
     public var termStart = "2026-10-19"
     public var termEnd = "2027-01-31"
     public var reminderMinutes = 60
     public var termConfirmed = false
+    enum CodingKeys: String, CodingKey { case schemaVersion, resources, marks, favorites, deletedIDs, slots, changes, termStart, termEnd, reminderMinutes, termConfirmed }
     public init() {}
+    // Tolerates files and backups written before later fields existed.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        schemaVersion = try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
+        resources = try container.decodeIfPresent([StudyResource].self, forKey: .resources) ?? []
+        marks = try container.decodeIfPresent([StudyMark].self, forKey: .marks) ?? []
+        favorites = try container.decodeIfPresent(Set<String>.self, forKey: .favorites) ?? []
+        deletedIDs = try container.decodeIfPresent(Set<String>.self, forKey: .deletedIDs) ?? []
+        slots = try container.decodeIfPresent([TeachingSlot].self, forKey: .slots) ?? TeachingSlot.seed
+        changes = try container.decodeIfPresent([ScheduleChange].self, forKey: .changes) ?? []
+        termStart = try container.decodeIfPresent(String.self, forKey: .termStart) ?? "2026-10-19"
+        termEnd = try container.decodeIfPresent(String.self, forKey: .termEnd) ?? "2027-01-31"
+        reminderMinutes = try container.decodeIfPresent(Int.self, forKey: .reminderMinutes) ?? 60
+        termConfirmed = try container.decodeIfPresent(Bool.self, forKey: .termConfirmed) ?? false
+    }
 }
 public enum SearchSource: String, CaseIterable, Identifiable { case bilibili, all, smartedu, resources
     public var id: String { rawValue }

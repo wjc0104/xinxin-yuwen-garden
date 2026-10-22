@@ -2,7 +2,9 @@ name: iOS Smoke Tests
 on:
   workflow_dispatch:
   push:
-    branches: ['feat/**']
+    branches: [main, 'feat/**']
+permissions:
+  contents: read
 concurrency:
   group: ios-v2-${{ github.ref }}
   cancel-in-progress: false

@@ -12,7 +12,8 @@ struct SearchView: View {
         }
     }
     var body: some View {
-        GardenPage {
+        let found = results
+        return GardenPage {
             HStack {
                 Image(systemName: "magnifyingglass").foregroundColor(.secondary)
                 TextField("搜索课文、作者或教学重点", text: $query).submitLabel(.search).accessibilityIdentifier("search-input")
@@ -27,12 +28,12 @@ struct SearchView: View {
                 }
             } else {
                 Picker("资料类型", selection: $filter) { ForEach(["全部","视频","教案与试讲"], id: \.self) { Text($0).tag($0) } }.pickerStyle(.segmented)
-                Text("找到 \(results.count) 份资料").font(.subheadline).foregroundColor(.secondary).accessibilityIdentifier("result-count")
-                ForEach(Array(results.prefix(limit))) { resource in
+                Text("找到 \(found.count) 份资料").font(.subheadline).foregroundColor(.secondary).accessibilityIdentifier("result-count")
+                ForEach(Array(found.prefix(limit))) { resource in
                     NavigationLink(destination: ReadingView(resource: resource)) { ResourceRow(resource: resource) }.buttonStyle(.plain).accessibilityIdentifier("search-" + resource.id)
                 }
-                if results.count > limit { Button("显示更多资料") { limit += 24 }.frame(maxWidth: .infinity).padding() }
-                if results.isEmpty { GardenEmpty(title: "没有匹配的资料", detail: "试试课文名或作者，例如“济南的冬天”“老舍”。") }
+                if found.count > limit { Button("显示更多资料") { limit += 24 }.frame(maxWidth: .infinity).padding() }
+                if found.isEmpty { GardenEmpty(title: "没有匹配的资料", detail: "试试课文名或作者，例如“济南的冬天”“老舍”。") }
             }
         }.navigationTitle("课程")
         .onChange(of: query) { _ in limit = 24 }
