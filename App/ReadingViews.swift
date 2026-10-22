@@ -28,8 +28,12 @@ struct ReadingView: View {
                 PDFReader(url: url, marks: marks) { text, regions in draft = NoteDraft(quote: text, regions: regions) }
             } else if resource.body.isEmpty, let url = SearchEngine.validatedURL(resource.url) {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(resource.source).font(.caption)
-                    Text(web.failed ? "原站加载失败，可稍后重试或写笔记。" : "原作者公开文字 · 若原站要求登录、限制阅读或选区，请遵循页面提示。").font(.caption).foregroundColor(.secondary)
+                    HStack(spacing: 8) {
+                        Text(resource.source).font(.caption).lineLimit(1)
+                        Spacer(minLength: 8)
+                        Button { browser = BrowserLink(url: url) } label: { Label("浏览器打开", systemImage: "safari").font(.caption) }.accessibilityIdentifier("open-in-browser").fixedSize()
+                    }
+                    Text(web.failed ? "原站加载失败，可稍后重试、用浏览器打开或写笔记。" : "原作者公开文字 · 若原站要求启动 App 或限制阅读，可点上方“浏览器打开”。").font(.caption).foregroundColor(.secondary)
                     if let message = webSelectionMessage { Text(message).font(.caption).foregroundColor(GardenTheme.mint) }
                 }.frame(maxWidth: .infinity, alignment: .leading).padding(12)
                 EmbeddedResource(url: url, controller: web)

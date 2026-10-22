@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import WebKit
 import GardenCore
 
@@ -22,6 +23,11 @@ struct EmbeddedResource: UIViewRepresentable {
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = .all
         let web = WKWebView(frame: .zero, configuration: config)
+        // Present as Mobile Safari. Several content sites replace the whole page with an "open our
+        // app" wall when the user agent looks like a bare in-app web view.
+        let system = UIDevice.current.systemVersion
+        let token = system.replacingOccurrences(of: ".", with: "_")
+        web.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS \(token) like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/\(system) Mobile/15E148 Safari/604.1"
         controller.webView = web
         web.navigationDelegate = context.coordinator
         web.scrollView.contentInsetAdjustmentBehavior = .never
