@@ -67,8 +67,18 @@ struct EmbeddedResource: UIViewRepresentable {
         // Run once more after load: some pages insert the prompt block from script.
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { webView.evaluateJavaScript(EmbeddedResource.cleanupScript, completionHandler: nil) }
         func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-            let scheme = navigationAction.request.url?.scheme?.lowercased() ?? ""
-            decisionHandler(["https","http","about"].contains(scheme) ? .allow : .cancel)
+            guard let target = navigationAction.request.url else { decisionHandler(.cancel); return }
+            let scheme = target.scheme?.lowercased() ?? ""
+            guard ["https", "http", "about"].contains(scheme) else { decisionHandler(.cancel); return }
+            // App-promotion pages replace the article with a download wall; keep the reader on the article.
+            if Coordinator.isAppPromotion(target) { decisionHandler(.cancel); return }
+            decisionHandler(.allow)
+        }
+        static func isAppPromotion(_ url: URL) -> Bool {
+            let text = url.absoluteString.lowercased()
+            if text.contains("itunes.apple.com") || text.contains("apps.apple.com") { return true }
+            let path = url.path.lowercased()
+            return path.contains("/app/") && (path.contains("default") || path.contains("appdown"))
         }
     }
 }
