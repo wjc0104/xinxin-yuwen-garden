@@ -13,6 +13,21 @@ private final class PlayerClock {
     deinit { player.removeTimeObserver(token) }
 }
 
+/// KVO may arrive off the main actor; newer play/pause events supersede queued rate corrections.
+private final class PlayerRateEvents {
+    private let lock = NSLock()
+    private var revision: UInt64 = 0
+    func record() -> UInt64 {
+        lock.lock(); defer { lock.unlock() }
+        revision &+= 1
+        return revision
+    }
+    func isLatest(_ event: UInt64) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        return event == revision
+    }
+}
+
 @MainActor final class NativeStudyPlayer: ObservableObject {
     @Published private(set) var player: AVPlayer?
     @Published private(set) var loading = false
@@ -100,11 +115,15 @@ private final class PlayerClock {
                 Task { @MainActor [weak self] in guard let self = self, self.generation == token else { return }; self.playing = value.timeControlStatus != .paused }
             }
             // iOS 15 system controls can resume using play(), which resets rate to 1.
-            // Read the current rate on the main actor so a queued resume event cannot undo a later pause.
-            rateObserver = value.observe(\.rate, options: [.new]) { [weak self] value, _ in
+            // Retain event identity: an old positive event cannot override a newer pause.
+            let rateEvents = PlayerRateEvents()
+            rateObserver = value.observe(\.rate, options: [.new]) { [weak self] value, change in
+                let event = rateEvents.record()
+                guard let observedRate = change.newValue, observedRate > 0 else { return }
                 Task { @MainActor [weak self] in
                     guard let self = self, self.generation == token, self.player === value,
-                          value.rate > 0, value.rate != self.playbackRate else { return }
+                          rateEvents.isLatest(event), value.timeControlStatus != .paused,
+                          value.rate == observedRate, value.rate != self.playbackRate else { return }
                     value.rate = self.playbackRate
                 }
             }
@@ -150,7 +169,7 @@ private final class PlayerClock {
         guard Self.playbackRates.contains(rate) else { return }
         playbackRate = rate
         // A speed selection is not a request to play. Preserve a paused player's zero rate.
-        if let player = player, player.rate > 0 { player.rate = rate }
+        if let player = player, player.timeControlStatus != .paused, player.rate > 0 { player.rate = rate }
     }
     func pause() { player?.pause() }
     func currentSeconds() -> Int? {

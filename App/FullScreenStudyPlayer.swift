@@ -23,7 +23,6 @@ struct FullScreenStudyPlayer: View {
             .foregroundColor(.white).padding(16)
         }.background(Color.black)
             .background(InterfaceOrientationObservation().allowsHitTesting(false))
-            .accessibilityIdentifier("fullscreen-video")
     }
 }
 

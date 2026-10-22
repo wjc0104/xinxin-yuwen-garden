@@ -50,9 +50,17 @@ import GardenCore
         player.play()
         await assertRate(player, equals: 1.25)
         // A queued rate correction must not undo a subsequent system pause.
-        player.play(); player.pause()
-        try await Task.sleep(nanoseconds: 150_000_000)
-        XCTAssertEqual(player.rate, 0)
+        for attempt in 0..<5 {
+            player.play(); player.pause()
+            XCTAssertEqual(player.rate, 0, "System pause must take effect immediately (attempt \(attempt))")
+            // Sample throughout the original150ms window; do not wait for a resumed player to settle.
+            for _ in 0..<3 {
+                try await Task.sleep(nanoseconds: 50_000_000)
+                XCTAssertEqual(player.rate, 0, "Queued rate correction must not resume a system pause (attempt \(attempt))")
+            }
+            video.setPlaybackRate(1.25)
+            XCTAssertEqual(player.rate, 0, "Changing selected speed after system pause must remain paused")
+        }
         player.play()
         await assertRate(player, equals: 1.25)
         let framePosition = expectation(description: "Inspect an informative lesson frame after the opening")
