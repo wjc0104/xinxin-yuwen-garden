@@ -45,7 +45,7 @@ struct VideoStudyView: View {
                             Text(video.qualityLabel).font(.caption).foregroundColor(GardenTheme.mint).accessibilityIdentifier("video-quality")
                             Spacer()
                             Text(video.currentSeconds().map(TimeLabel.video) ?? "--:--").font(.caption.monospacedDigit()).foregroundColor(.secondary).accessibilityIdentifier("video-position")
-                            PlaybackSpeedMenu(video: video, identifier: "video-speed").disabled(!video.ready)
+                            PlaybackSpeedSelector(video: video, identifier: "video-speed").disabled(!video.ready)
                             Button(video.playing ? "暂停" : "播放") { video.playPause() }.disabled(!video.ready).accessibilityIdentifier("video-play-pause")
                         }
                         if video.lowQuality { Text("原站当前只提供这一档画质，文字可能不清晰。可以换看本课其他视频。").font(.caption).foregroundColor(.orange) }
