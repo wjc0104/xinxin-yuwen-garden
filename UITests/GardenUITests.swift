@@ -130,6 +130,7 @@ final class GardenUITests: XCTestCase {
         XCTAssertTrue(exit.waitForExistence(timeout: 5))
         let fullscreenSpeed = app.buttons["fullscreen-video-speed"]
         XCTAssertEqual(fullscreenSpeed.label, "倍速 1.5×")
+        shot("17-全屏倍速菜单点击前")
         fullscreenSpeed.tap(); app.buttons["video-speed-option-2"].tap()
         XCTAssertEqual(fullscreenSpeed.label, "倍速 2×")
         XCUIDevice.shared.orientation = .landscapeLeft

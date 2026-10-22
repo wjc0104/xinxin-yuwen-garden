@@ -38,6 +38,7 @@ private final class PlayerRateEvents {
     @Published private(set) var playing = false
     @Published private(set) var originalURL: URL?
     @Published private(set) var playbackRate: Float = 1
+    var traceTransport = false
     static let playbackRates: [Float] = [0.5, 0.75, 1, 1.25, 1.5, 2]
     private var identity: String?
     private var generation = UUID()
@@ -111,7 +112,9 @@ private final class PlayerRateEvents {
                     }
                 }
             }
-            playbackObserver = value.observe(\.timeControlStatus, options: [.initial,.new]) { [weak self] value, _ in
+            let tracing = traceTransport
+            playbackObserver = value.observe(\.timeControlStatus, options: [.initial,.new]) { [weak self] value, change in
+                if tracing { print("NATIVE_TRANSPORT time=\(ProcessInfo.processInfo.systemUptime) control_event=\(change.newValue?.rawValue ?? -1) rate=\(value.rate) main=\(Thread.isMainThread)") }
                 Task { @MainActor [weak self] in guard let self = self, self.generation == token else { return }; self.playing = value.timeControlStatus != .paused }
             }
             // iOS 15 system controls can resume using play(), which resets rate to 1.
@@ -119,11 +122,14 @@ private final class PlayerRateEvents {
             let rateEvents = PlayerRateEvents()
             rateObserver = value.observe(\.rate, options: [.new]) { [weak self] value, change in
                 let event = rateEvents.record()
+                if tracing { print("NATIVE_TRANSPORT time=\(ProcessInfo.processInfo.systemUptime) rate_event=\(event) new=\(change.newValue ?? -1) current=\(value.rate) control=\(value.timeControlStatus.rawValue) main=\(Thread.isMainThread)") }
                 guard let observedRate = change.newValue, observedRate > 0 else { return }
                 Task { @MainActor [weak self] in
+                    if tracing { print("NATIVE_TRANSPORT time=\(ProcessInfo.processInfo.systemUptime) rate_task=\(event) latest=\(rateEvents.isLatest(event)) observed=\(observedRate) current=\(value.rate) control=\(value.timeControlStatus.rawValue)") }
                     guard let self = self, self.generation == token, self.player === value,
                           rateEvents.isLatest(event), value.timeControlStatus != .paused,
                           value.rate == observedRate, value.rate != self.playbackRate else { return }
+                    if tracing { print("NATIVE_TRANSPORT time=\(ProcessInfo.processInfo.systemUptime) correction=\(self.playbackRate) event=\(event)") }
                     value.rate = self.playbackRate
                 }
             }
@@ -166,10 +172,15 @@ private final class PlayerRateEvents {
     }
     func playPause() { guard ready, let player = player else { return }; if player.timeControlStatus != .paused { player.pause() } else { player.rate = playbackRate } }
     func setPlaybackRate(_ rate: Float) {
+        traceTransportState("setSpeed-before-\(rate)")
+        defer { traceTransportState("setSpeed-after-\(rate)") }
         guard Self.playbackRates.contains(rate) else { return }
         playbackRate = rate
         // A speed selection is not a request to play. Preserve a paused player's zero rate.
         if let player = player, player.timeControlStatus != .paused, player.rate > 0 { player.rate = rate }
+    }
+    func traceTransportState(_ command: String) {
+        if traceTransport { print("NATIVE_TRANSPORT time=\(ProcessInfo.processInfo.systemUptime) command=\(command) rate=\(player?.rate ?? -1) control=\(player?.timeControlStatus.rawValue ?? -1)") }
     }
     func pause() { player?.pause() }
     func currentSeconds() -> Int? {
@@ -219,6 +230,11 @@ private final class PlayerRateEvents {
         let code = (payload?["code"] as? NSNumber)?.stringValue ?? "missing"
         let quality = ((payload?["data"] as? [String: Any])?["quality"] as? NSNumber)?.stringValue ?? "none"
         print("NATIVE_SOURCE stage=\(stage) path=\(url.path) http=\(response.statusCode) code=\(code) quality=\(quality)")
+        if stage == "playurl", let body = payload?["data"] as? [String: Any] {
+            let segments = body["durl"] as? [[String: Any]]
+            let media = (segments?.first?["url"] as? String).flatMap { URL(string: $0) }
+            print("NATIVE_SOURCE_SHAPE mp4=\((body["format"] as? String)?.hasPrefix("mp4") == true) preview=\((body["is_preview"] as? Bool) == true) durl_count=\(segments?.count ?? -1) dash=\(body["dash"] != nil) scheme=\(media?.scheme ?? "none") host=\(media?.host ?? "none")")
+        }
         guard response.statusCode == 200 else {
             throw GardenError.invalid("原站请求失败（HTTP \(response.statusCode)），请稍后重试。")
         }

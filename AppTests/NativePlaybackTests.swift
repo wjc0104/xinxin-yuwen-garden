@@ -13,6 +13,7 @@ import GardenCore
         var resource = StudyResource(id: "native-network-sample", lessonID: "7u-02", title: "济南的冬天", kind: .video, url: "https://www.bilibili.com/video/BV1eUAieoEZd/?p=2")
         resource.videoCID = 37155308866
         let video = NativeStudyPlayer()
+        video.traceTransport = true
         XCTAssertEqual(video.playbackRate, 1)
         XCTAssertEqual(NativeStudyPlayer.playbackRates, [0.5, 0.75, 1, 1.25, 1.5, 2])
         await video.load(resource)
@@ -51,11 +52,16 @@ import GardenCore
         await assertRate(player, equals: 1.25)
         // A queued rate correction must not undo a subsequent system pause.
         for attempt in 0..<5 {
-            player.play(); player.pause()
+            video.traceTransportState("rapid-\(attempt)-before-play")
+            player.play()
+            video.traceTransportState("rapid-\(attempt)-after-play")
+            player.pause()
+            video.traceTransportState("rapid-\(attempt)-after-pause")
             XCTAssertEqual(player.rate, 0, "System pause must take effect immediately (attempt \(attempt))")
             // Sample throughout the original150ms window; do not wait for a resumed player to settle.
             for _ in 0..<3 {
                 try await Task.sleep(nanoseconds: 50_000_000)
+                video.traceTransportState("rapid-\(attempt)-sample")
                 XCTAssertEqual(player.rate, 0, "Queued rate correction must not resume a system pause (attempt \(attempt))")
             }
             video.setPlaybackRate(1.25)
@@ -114,6 +120,7 @@ import GardenCore
         XCTAssertNotNil(video.problem)
         XCTAssertEqual(Double(try XCTUnwrap(video.currentSeconds())), 205, accuracy: 2, "A failed retry must retain the same resource's position")
         await video.load(resource, force: true)
+        guard video.problem == nil else { XCTFail("Retry source failed: " + (video.problem ?? "unknown")); return }
         XCTAssertEqual(Double(try XCTUnwrap(video.currentSeconds())), 205, accuracy: 2, "Replacement loading/initial seek cannot overwrite the retained position with zero")
         let retried = expectation(description: "Retry restores the last position on the replacement item")
         let retryClock = video.$seconds.compactMap { $0 }.filter { $0 >= 204 }.prefix(1).sink { _ in retried.fulfill() }
