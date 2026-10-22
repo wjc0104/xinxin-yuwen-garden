@@ -12,8 +12,7 @@ struct SearchView: View {
         }
     }
     var body: some View {
-        let found = results
-        return GardenPage {
+        GardenPage {
             HStack {
                 Image(systemName: "magnifyingglass").foregroundColor(.secondary)
                 TextField("搜索课文、作者或教学重点", text: $query).submitLabel(.search).accessibilityIdentifier("search-input")
@@ -27,6 +26,7 @@ struct SearchView: View {
                     NavigationLink(destination: LessonView(lesson: lesson)) { GardenCard { HStack { VStack(alignment: .leading, spacing: 4) { Text(lesson.title).font(.headline); Caption(text: store.bookTitle(lesson.id)) }; Spacer(); Image(systemName: "chevron.right") } } }.buttonStyle(.plain)
                 }
             } else {
+                let found = results
                 Picker("资料类型", selection: $filter) { ForEach(["全部","视频","教案与试讲"], id: \.self) { Text($0).tag($0) } }.pickerStyle(.segmented)
                 Text("找到 \(found.count) 份资料").font(.subheadline).foregroundColor(.secondary).accessibilityIdentifier("result-count")
                 ForEach(Array(found.prefix(limit))) { resource in
