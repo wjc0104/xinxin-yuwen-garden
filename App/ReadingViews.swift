@@ -34,6 +34,16 @@ struct ReadingView: View {
                         Button { browser = BrowserLink(url: url) } label: { Label("浏览器打开", systemImage: "safari").font(.caption) }.accessibilityIdentifier("open-in-browser").fixedSize()
                     }
                     Text(web.failed ? "原站加载失败，可稍后重试、用浏览器打开或写笔记。" : "原作者公开文字 · 若原站要求启动 App 或限制阅读，可点上方“浏览器打开”。").font(.caption).foregroundColor(.secondary)
+                    if EmbeddedResource.isPoetrySite(url.host ?? "") {
+                        HStack(spacing: 16) {
+                            Button { web.openLogin() } label: { Label("原站登录", systemImage: "person.crop.circle") }
+                                .accessibilityIdentifier("poetry-site-login")
+                            Button { web.returnToOriginal() } label: { Label("返回原文", systemImage: "arrow.uturn.backward") }
+                                .disabled(!web.canReturnToOriginal).accessibilityIdentifier("poetry-return-original")
+                        }.font(.subheadline)
+                        Text(web.canReturnToOriginal ? "请在下方原站页面自行登录；完成后点“返回原文”。登录结果及可读内容由原站决定。" : "需登录时请使用本页“原站登录”。外部浏览器的登录状态不代表本页已登录，阅读范围以原站为准。")
+                            .font(.caption).foregroundColor(.secondary).accessibilityIdentifier("poetry-login-guidance")
+                    }
                     if let message = webSelectionMessage { Text(message).font(.caption).foregroundColor(GardenTheme.mint) }
                 }.frame(maxWidth: .infinity, alignment: .leading).padding(12)
                 EmbeddedResource(url: url, controller: web)

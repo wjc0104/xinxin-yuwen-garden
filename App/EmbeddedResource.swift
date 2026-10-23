@@ -5,7 +5,13 @@ import GardenCore
 
 final class WebStudyController: ObservableObject {
     @Published var failed = false
-    weak var webView: WKWebView?
+    @Published private(set) var canReturnToOriginal = false
+    private(set) weak var webView: WKWebView?
+    private(set) var originalURL: URL?
+    func attach(_ webView: WKWebView, originalURL: URL) {
+        self.webView = webView
+        self.originalURL = originalURL
+    }
     func selectedText(_ completion: @escaping (String) -> Void) {
         // Read only the user's current selection; respect original site's selection restrictions.
         guard let webView = webView else { completion(""); return }
@@ -13,10 +19,19 @@ final class WebStudyController: ObservableObject {
             completion(String((value as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines).prefix(4000)))
         }
     }
-    /// The poetry sites only offer a web login on their desktop pages; the phone pages redirect to the app.
+    /// User-driven navigation only. Login and the original resource share this WKWebView's cookies.
     func openLogin() {
-        guard let webView = webView, let url = URL(string: "https://www.guwendao.net/user/wode.aspx") else { return }
+        guard let originalURL = originalURL,
+              SearchEngine.validatedURL(originalURL.absoluteString) != nil,
+              EmbeddedResource.isPoetrySite(originalURL.host ?? ""),
+              let webView = webView, let url = URL(string: "https://www.guwendao.net/user/wode.aspx") else { return }
+        canReturnToOriginal = true
         webView.load(URLRequest(url: url))
+    }
+    func returnToOriginal() {
+        guard canReturnToOriginal, let originalURL = originalURL, let webView = webView else { return }
+        webView.load(URLRequest(url: originalURL))
+        canReturnToOriginal = false
     }
 }
 struct EmbeddedResource: UIViewRepresentable {
@@ -67,7 +82,7 @@ struct EmbeddedResource: UIViewRepresentable {
     """
     static func isPoetrySite(_ host: String) -> Bool {
         let name = host.lowercased()
-        return name.contains("gushiwen.cn") || name.contains("guwendao.net")
+        return ["gushiwen.cn", "guwendao.net"].contains { name == $0 || name.hasSuffix("." + $0) }
     }
     private var desktop: Bool { EmbeddedResource.isPoetrySite(url.host ?? "") }
     private var injection: String { desktop ? EmbeddedResource.cleanupScript + EmbeddedResource.fitScript : EmbeddedResource.cleanupScript }
@@ -88,7 +103,7 @@ struct EmbeddedResource: UIViewRepresentable {
             let token = system.replacingOccurrences(of: ".", with: "_")
             web.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS \(token) like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/\(system) Mobile/15E148 Safari/604.1"
         }
-        controller.webView = web
+        controller.attach(web, originalURL: url)
         web.navigationDelegate = context.coordinator
         web.scrollView.contentInsetAdjustmentBehavior = .never
         web.load(URLRequest(url: url))
@@ -107,6 +122,10 @@ struct EmbeddedResource: UIViewRepresentable {
         // Run once more after load: some pages insert the prompt block from script.
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { webView.evaluateJavaScript(injection, completionHandler: nil) }
         func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+            #if DEBUG
+            // Exercise reader actions in UI tests without contacting an original site's login service.
+            if ProcessInfo.processInfo.arguments.contains("--ui-testing-offline-reader") { decisionHandler(.cancel); return }
+            #endif
             guard let target = navigationAction.request.url else { decisionHandler(.cancel); return }
             let scheme = target.scheme?.lowercased() ?? ""
             guard ["https", "http", "about"].contains(scheme) else { decisionHandler(.cancel); return }

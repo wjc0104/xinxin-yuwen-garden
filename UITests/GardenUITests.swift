@@ -1,6 +1,53 @@
 import XCTest
 
 final class GardenUITests: XCTestCase {
+    func testPoetryLoginAndReturnKeepReaderActionsAndNotesWithoutRemoteLogin() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--ui-testing-offline-reader"]
+        app.launch()
+        app.tabBars.buttons["课程"].tap()
+        app.buttons["book-7u"].tap(); app.buttons["lesson-7u-04"].tap()
+        let picker = app.scrollViews["lesson-category-picker"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 5)); picker.swipeLeft()
+        app.buttons["课文解读"].firstMatch.tap()
+        let original = app.buttons["resource-curated-text-7u-04-7dbbc1cc5964f7a5"]
+        XCTAssertTrue(original.waitForExistence(timeout: 5)); original.tap()
+
+        let login = app.buttons["poetry-site-login"]
+        let restore = app.buttons["poetry-return-original"]
+        let guidance = app.staticTexts["poetry-login-guidance"]
+        XCTAssertTrue(login.waitForExistence(timeout: 5))
+        XCTAssertEqual(login.label, "原站登录")
+        XCTAssertFalse(restore.isEnabled)
+        XCTAssertTrue(guidance.label.contains("外部浏览器的登录状态不代表本页已登录"))
+        XCTAssertTrue(app.staticTexts["古文岛 · 原文署名见页面"].exists)
+        XCTAssertTrue(app.buttons["open-in-browser"].exists)
+        XCTAssertTrue(app.buttons["web-quote-selection"].exists)
+        login.tap()
+        XCTAssertTrue(restore.isEnabled, "The actual reader action must call the attached controller even when network navigation is cancelled")
+        XCTAssertTrue(guidance.label.contains("登录结果及可读内容由原站决定"))
+        shot("17-诗词原站登录与返回入口")
+
+        // The note sheet remains the existing reader's sheet while login navigation is pending.
+        app.buttons["study-note"].tap()
+        let note = app.textViews["note-input"]
+        XCTAssertTrue(note.waitForExistence(timeout: 4)); note.tap(); note.typeText("poetry reader draft")
+        XCUIDevice.shared.press(.home); app.activate()
+        XCTAssertEqual(note.value as? String, "poetry reader draft")
+        app.buttons["save-note"].tap()
+        XCTAssertTrue(restore.waitForExistence(timeout: 4)); XCTAssertTrue(restore.isEnabled)
+        restore.tap()
+        XCTAssertFalse(restore.isEnabled)
+        XCTAssertTrue(login.isEnabled)
+        XCTAssertTrue(app.buttons["web-quote-selection"].exists)
+        XCTAssertTrue(app.buttons["open-in-browser"].exists)
+        shot("18-诗词返回原文保留阅读操作")
+        app.tabBars.buttons["我的"].tap()
+        app.buttons["我的笔记与收藏"].tap()
+        XCTAssertTrue(app.staticTexts["poetry reader draft"].firstMatch.waitForExistence(timeout: 5))
+    }
+
     func testTextSelectionHighlightsAndSurvivesRelaunch() throws {
         continueAfterFailure = false
         let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()
