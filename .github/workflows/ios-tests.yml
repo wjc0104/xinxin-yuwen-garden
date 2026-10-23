@@ -9,7 +9,9 @@ on:
         type: choice
         options: [macos-15, macos-15-intel]
   push:
-    branches: ['feat/**']
+    branches: [main, 'feat/**']
+permissions:
+  contents: read
 concurrency:
   group: ios-v3-${{ github.ref }}
   cancel-in-progress: false

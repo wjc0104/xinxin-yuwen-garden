@@ -109,4 +109,14 @@ import GardenCore
         XCTAssertTrue(store.update { $0.changes = [] })
         XCTAssertEqual(store.occurrences.first { $0.id == id }?.date, "2026-10-19")
     }
+    func testRepeatedLessonLookupsUseTheIndex() {
+        let store = AppStore()
+        let begin = Date()
+        var count = 0
+        for _ in 0..<1000 { count += store.resources("8u-14").count }
+        let elapsed = Date().timeIntervalSince(begin)
+        print("APP_INDEXED_LOOKUP_1000_MS=\(elapsed*1000)")
+        XCTAssertGreaterThan(count, 0)
+        XCTAssertLessThan(elapsed, 0.05, "Lesson lookups must not rescan the whole library")
+    }
 }

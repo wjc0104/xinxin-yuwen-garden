@@ -2,6 +2,11 @@
 set -euo pipefail
 APP="build/device/Build/Products/Release-iphoneos/XinxinGarden.app"
 test -d "$APP"
+VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist")
+IPA="build/Xinyu-v$VERSION.ipa"
+# Start from an empty staging tree so a rebuild cannot keep files the build no longer produces.
+rm -rf build/package
+rm -f "$IPA"
 mkdir -p build/package/Payload
 cp -R "$APP" build/package/Payload/
 APP="build/package/Payload/XinxinGarden.app"
@@ -20,12 +25,13 @@ assert p['application-identifier']=='TROLLTROLL.com.wm0104.xinxingarden'
 assert p['keychain-access-groups']==['TROLLTROLL.com.wm0104.xinxingarden']
 assert not p.get('get-task-allow') and not p.get('com.apple.private.security.no-sandbox')
 PY
+ROOT=$(pwd)
 (
   cd build/package
-  /usr/bin/zip -qry ../Xinyu-v0.0.5.ipa Payload
+  /usr/bin/zip -qry "$ROOT/$IPA" Payload
 )
-shasum -a 256 build/Xinyu-v0.0.5.ipa > build/SHA256SUMS.txt
-python3 scripts/inspect-ipa.py build/Xinyu-v0.0.5.ipa --report build/ipa-inspection.json
+shasum -a 256 "$IPA" > build/SHA256SUMS.txt
+python3 scripts/inspect-ipa.py "$IPA" --report build/ipa-inspection.json
 python3 - <<'PY'
 import json,plistlib,os
 with open('build/package/Payload/XinxinGarden.app/Info.plist','rb') as f:p=plistlib.load(f)

@@ -17,7 +17,7 @@ struct NoteEditor: View {
             Form {
                 Section(header: Text("摘录")) { TextEditor(text: $quote).frame(minHeight: 85).accessibilityIdentifier("quote-input") }
                 Section(header: Text("我的笔记")) { TextEditor(text: $note).frame(minHeight: 180).accessibilityIdentifier("note-input") }
-                if let resourceID = resourceID, let resource = store.data.resources.first(where: { $0.id == resourceID }), resource.kind == .video || resource.kind == .localVideo {
+                if let resourceID = resourceID, let resource = store.resource(resourceID), resource.kind == .video || resource.kind == .localVideo {
                 Section(header: Text("视频时间点（可选）"), footer: Text("可自动读取的播放器会带入时间；没有带入时，填写播放器上的时间，例如 03:25。")) {
                     TextField("分:秒 或 时:分:秒", text: $timestamp).keyboardType(.numbersAndPunctuation)
                 }
@@ -49,7 +49,7 @@ struct MarkCard: View {
             if !mark.note.isEmpty { Text(mark.note).font(.body) }
             HStack {
                 Button("编辑") { edit = true }
-                if let id = mark.resourceID, let resource = store.data.resources.first(where: { $0.id == id }) { NavigationLink("回到资料", destination: ReadingView(resource: resource, initialSeconds: mark.seconds)) }
+                if let id = mark.resourceID, let resource = store.resource(id) { NavigationLink("回到资料", destination: ReadingView(resource: resource, initialSeconds: mark.seconds)) }
                 if let lesson = store.lesson(mark.lessonID) { NavigationLink("回到课文", destination: LessonView(lesson: lesson)) }
                 Spacer(); Button { remove = true } label: { Image(systemName: "trash") }.foregroundColor(.secondary).accessibilityLabel("删除重点")
             }.font(.caption)

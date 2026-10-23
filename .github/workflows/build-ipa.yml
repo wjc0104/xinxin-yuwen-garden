@@ -29,6 +29,11 @@ jobs:
         run: xcodebuild build -project XinxinGarden.xcodeproj -scheme XinxinGarden -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/device ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO
       - name: Ad-hoc sign and package for TrollStore
         run: bash scripts/package-ipa.sh
+      - name: Verify packaged IPA contents
+        run: |
+          for ipa in build/*.ipa; do
+            python3 scripts/inspect-ipa.py "$ipa" --report build/ipa-report.json
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: XinxinGarden-TrollStore
@@ -37,6 +42,7 @@ jobs:
             build/SHA256SUMS.txt
             build/package-verification.json
             build/ipa-inspection.json
+            build/ipa-report.json
             build/device-load-commands.txt
             build/entitlements.plist
           retention-days: 14

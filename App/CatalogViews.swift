@@ -10,7 +10,7 @@ struct HomeView: View {
         GardenPage {
             HStack { VStack(alignment: .leading, spacing: 5) { Text("欣语").font(.largeTitle.bold()); Text("备课，从这一课开始").foregroundColor(.secondary) }; Spacer(); Image(systemName: "book.closed.fill").font(.largeTitle).foregroundColor(GardenTheme.rose) }
             Button { selectedTab = 1 } label: { HStack { Image(systemName: "magnifyingglass"); Text("搜索课文、视频、试讲稿"); Spacer(); Image(systemName: "chevron.right") }.padding(16).background(GardenTheme.card).clipShape(RoundedRectangle(cornerRadius: 14)) }.accessibilityIdentifier("home-search")
-            if let resource = store.data.resources.first(where: { $0.id == store.recentResourceID }) {
+            if let resource = store.resource(store.recentResourceID) {
                 Text("继续学习").font(.headline)
                 NavigationLink(destination: ReadingView(resource: resource)) { ResourceRow(resource: resource) }.buttonStyle(.plain)
             }
@@ -55,10 +55,12 @@ struct BookView: View {
                 Text(unit.title).font(.headline).padding(.top, 4)
                 GardenCard {
                     ForEach(unit.lessons) { lesson in
+                        let items = store.resources(lesson.id)
+                        let videos = items.filter { $0.kind == .video }.count
                         NavigationLink(destination: LessonView(lesson: lesson)) {
                             HStack(spacing: 12) {
                                 Text(lesson.number == 0 ? "诗" : String(lesson.number)).font(.caption.bold()).foregroundColor(GardenTheme.rose).frame(width: 28, height: 28).background(GardenTheme.rose.opacity(0.08)).clipShape(Circle())
-                                VStack(alignment: .leading, spacing: 4) { Text(lesson.title).foregroundColor(.primary); Text("\(store.resources(lesson.id).filter { $0.kind == .video }.count) 个视频 · \(store.resources(lesson.id).filter { $0.kind != .video }.count) 份资料").font(.caption).foregroundColor(.secondary) }
+                                VStack(alignment: .leading, spacing: 4) { Text(lesson.title).foregroundColor(.primary); Text("\(videos) 个视频 · \(items.count - videos) 份资料").font(.caption).foregroundColor(.secondary) }
                                 Spacer(minLength: 0); Image(systemName: "chevron.right").font(.caption).foregroundColor(.secondary)
                             }.padding(.vertical, 5)
                         }.accessibilityIdentifier("lesson-" + lesson.id)
@@ -102,9 +104,10 @@ struct LessonView: View {
             }.accessibilityIdentifier("lesson-category-picker")
             ForEach(resources) { resource in NavigationLink(destination: ReadingView(resource: resource)) { VStack(alignment: .leading, spacing: 4) { if refresh.newIDs.contains(resource.id) { Text("本次新增").font(.caption.bold()).foregroundColor(GardenTheme.mint) }; ResourceRow(resource: resource) } }.buttonStyle(.plain).accessibilityIdentifier("resource-" + resource.id) }
             if resources.isEmpty { GardenEmpty(title: "此分类暂未收录", detail: "可以切换“全部”查看这篇课文已有的学习资料。") }
-            if !store.marks(lesson.id).isEmpty {
+            let notes = store.marks(lesson.id)
+            if !notes.isEmpty {
                 Text("学习笔记").font(.headline)
-                ForEach(store.marks(lesson.id)) { mark in MarkCard(mark: mark) }
+                ForEach(notes) { mark in MarkCard(mark: mark) }
             }
         }.refreshable { await refresh.refresh(lesson, store: store) }.navigationTitle(lesson.title).navigationBarTitleDisplayMode(.inline)
         .toolbar { Menu { Button("添加自己的资料") { addResource = true }; Button("导入文件") { importFile = true }; Button("写课文笔记") { addNote = true } } label: { Image(systemName: "ellipsis.circle") }.accessibilityLabel("更多") }
