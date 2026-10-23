@@ -95,7 +95,8 @@ final class LessonContentService {
         do {
             let result = try await service.refresh(lesson)
             try Task.checkCancellation()
-            let merged = LessonContent.merge(result.resources, into: store.data.resources)
+            let candidates = result.resources.filter { !store.data.deletedIDs.contains($0.id) }
+            let merged = LessonContent.merge(candidates, into: store.data.resources)
             if merged.resources != store.data.resources {
                 guard store.update({ $0.resources = merged.resources }) else { message = "保存失败，原有资料和笔记已保留。"; hasFailure = true; return }
             }

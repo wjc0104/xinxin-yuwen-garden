@@ -97,6 +97,30 @@ private final class LessonMetadataProtocol: URLProtocol {
         XCTAssertTrue(failed.message?.contains("刷新失败") == true)
         XCTAssertTrue(failed.newIDs.isEmpty)
     }
+    func testLiveRefreshHonorsDeletedStableIDsAndPreservesNotes() async {
+        let store = AppStore()
+        let saved = store.data
+        defer { store.update { $0 = saved }; LessonMetadataProtocol.handler = nil }
+        let lesson = Lesson(id: "7u-01", number: 1, title: "春", author: "朱自清")
+        let deletedID = "live-7u-01-cv123"
+        XCTAssertTrue(store.update {
+            $0.resources.removeAll { $0.id == deletedID }
+            $0.deletedIDs.insert(deletedID)
+            $0.marks.append(StudyMark(lessonID: lesson.id, resourceID: deletedID, quote: "原摘录", note: "移除后保留"))
+        })
+        let baseline = store.data
+        LessonMetadataProtocol.handler = { request in
+            if request.url!.query?.contains("search_type=article") == true {
+                return (200, #"{"code":0,"data":{"result":[{"id":123,"title":"《春》语文教学设计","author":"老师"}]}}"#)
+            }
+            return (200, #"{"code":0,"data":{"result":[]}}"#)
+        }
+        let refresh = LessonRefresh(service: service())
+        await refresh.refresh(lesson, store: store)
+        XCTAssertEqual(store.data, baseline)
+        XCTAssertTrue(refresh.newIDs.isEmpty)
+        XCTAssertFalse(refresh.hasFailure)
+    }
     func testAtMostEightCandidatePartRequests() async throws {
         var count = 0
         LessonMetadataProtocol.handler = { request in
