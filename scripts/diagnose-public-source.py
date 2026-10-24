@@ -1,6 +1,6 @@
 """Single-attempt playback gate and search diagnostics; search outages are warnings.
 
-Log only safe numeric metadata, never media URLs. No retry or access bypass.
+Log only safe numeric/boolean metadata, never media URLs. No retry or access bypass.
 """
 import argparse
 import json
@@ -59,6 +59,34 @@ def complete_source(data):
         return False
 
 
+def source_shape(data):
+    shape = {"data_object": isinstance(data, dict), "mp4_format": False, "is_preview": False,
+             "segments_list": False, "segment_count": 0, "single_segment_object": False,
+             "url_string": False, "url_parse_valid": False, "https": False, "allowed_host": False, "has_credentials": False}
+    if not shape["data_object"]:
+        return shape
+    shape["mp4_format"] = str(data.get("format", "")).startswith("mp4")
+    shape["is_preview"] = data.get("is_preview") is True
+    segments = data.get("durl")
+    shape["segments_list"] = isinstance(segments, list)
+    shape["segment_count"] = len(segments) if shape["segments_list"] else 0
+    shape["single_segment_object"] = shape["segment_count"] == 1 and isinstance(segments[0], dict)
+    if shape["single_segment_object"]:
+        url = segments[0].get("url", "")
+        shape["url_string"] = isinstance(url, str)
+        if not shape["url_string"]:
+            return shape
+        try:
+            media = urlparse(url)
+            shape["https"] = media.scheme == "https"
+            shape["allowed_host"] = media.hostname == "bilivideo.com" or (media.hostname or "").endswith(".bilivideo.com")
+            shape["has_credentials"] = bool(media.username or media.password)
+            shape["url_parse_valid"] = True
+        except (TypeError, ValueError, AttributeError):
+            pass
+    return shape
+
+
 def diagnose():
     records = []
     parts = request("parts", "/x/player/pagelist", {"bvid": BVID}, records)
@@ -67,6 +95,7 @@ def diagnose():
         records[-1].update(ok=False, reason="expected_cid_missing")
     if part:
         data = request("playurl", "/x/player/playurl", {"bvid": BVID, "cid": CID, "qn": 80, "fnval": 1, "fnver": 0, "fourk": 0}, records)
+        records[-1]["source_shape"] = source_shape(data)
         if records[-1]["ok"]:
             records[-1]["ok"] = complete_source(data)
             if not records[-1]["ok"]:

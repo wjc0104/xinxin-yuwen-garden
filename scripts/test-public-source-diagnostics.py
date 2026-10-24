@@ -59,6 +59,13 @@ class DiagnosticTests(unittest.TestCase):
             self.assertFalse(result["all_stages_ok"])
             self.assertTrue(result["playback_ok"])
             self.assertFalse(result["search_ok"])
+            playurl = result["stages"][1]
+            self.assertEqual(playurl["quality"], 64)
+            self.assertEqual(playurl["source_shape"], {
+                "data_object": True, "mp4_format": True, "is_preview": False,
+                "segments_list": True, "segment_count": 1, "single_segment_object": True,
+                "url_string": True, "url_parse_valid": True, "https": True, "allowed_host": True, "has_credentials": False,
+            })
             self.assertIn("playback_ok=true", github.read_text())
             self.assertIn("PUBLIC_SEARCH_WARNING", stdout.getvalue())
             self.assertEqual(call.call_count, 4)
@@ -75,6 +82,50 @@ class DiagnosticTests(unittest.TestCase):
         for data in (None, {}, {"format": "dash"}, {"format": "mp4", "durl": 3}, {"format": "mp4", "durl": [{"url": 3}]}, {"format": "mp4", "durl": [{"url": "https://[invalid"}]}, {"format": "mp4", "is_preview": True, "durl": [{"url": "https://example.bilivideo.com/a"}]}):
             with self.subTest(data=data):
                 self.assertFalse(diagnostic.complete_source(data))
+
+
+    def test_rejected_shape_metadata_preserves_gate_and_redacts_payloads(self):
+        media = "https://example.bilivideo.com/private-path.mp4?token=secret-token"
+        cases = [
+            (None, {"data_object": False}),
+            ({}, {"mp4_format": False, "segments_list": False}),
+            ({"format": "secret-format", "durl": [{"url": media}]}, {"mp4_format": False, "https": True}),
+            ({"format": "mp4", "is_preview": True, "durl": [{"url": media}]}, {"is_preview": True}),
+            ({"format": "mp4", "durl": "secret-body"}, {"segments_list": False, "segment_count": 0}),
+            ({"format": "mp4", "durl": []}, {"segments_list": True, "segment_count": 0}),
+            ({"format": "mp4", "durl": [{"url": media}, {"url": media}]}, {"segment_count": 2, "single_segment_object": False}),
+            ({"format": "mp4", "durl": [3]}, {"segment_count": 1, "single_segment_object": False}),
+            ({"format": "mp4", "durl": [{"url": media.replace("https:", "http:")}]}, {"https": False, "allowed_host": True}),
+            ({"format": "mp4", "durl": [{"url": "https://secret-host.invalid/private-path?token=secret-token"}]}, {"https": True, "allowed_host": False}),
+            ({"format": "mp4", "durl": [{"url": media.replace("https://", "https://secret-user:secret-password@")}]}, {"https": True, "allowed_host": True, "has_credentials": True}),
+        ]
+        for url in (None, 3, [], {}, "https://[invalid"):
+            cases.append(({"format": "mp4", "durl": [{"url": url}]}, {"url_parse_valid": False}))
+        for data, expected in cases:
+            with self.subTest(expected=expected, data_type=type(data).__name__):
+                payloads = [
+                    Response({"code": 0, "data": [{"cid": diagnostic.CID}]}),
+                    Response({"code": 0, "data": data}),
+                    Response({"code": 0, "data": {"result": []}}),
+                    Response({"code": 0, "data": {"result": []}}),
+                ]
+                with tempfile.TemporaryDirectory() as folder:
+                    output = Path(folder) / "result.json"
+                    stdout = io.StringIO()
+                    with patch.object(diagnostic, "urlopen", side_effect=payloads) as call, patch.object(sys, "argv", ["probe", "--output", str(output)]), redirect_stdout(stdout):
+                        self.assertEqual(diagnostic.main(), 1)
+                    result = json.loads(output.read_text())
+                    playurl = result["stages"][1]
+                    self.assertFalse(result["playback_ok"])
+                    self.assertFalse(diagnostic.complete_source(data))
+                    self.assertEqual(playurl["reason"], "no_complete_direct_source")
+                    self.assertEqual(call.call_count, 4, "Each API is attempted once even when the media shape is rejected")
+                    for key, value in expected.items():
+                        self.assertEqual(playurl["source_shape"][key], value)
+                    self.assertTrue(all(type(value) in (bool, int) for value in playurl["source_shape"].values()))
+                    logged = stdout.getvalue() + output.read_text()
+                    for secret in ("secret-", "private-path", "bilivideo.com", "token=", "[invalid"):
+                        self.assertNotIn(secret, logged)
 
 
 if __name__ == "__main__":
