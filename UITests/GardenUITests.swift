@@ -151,14 +151,14 @@ final class GardenUITests: XCTestCase {
         XCTAssertEqual(app.buttons["fullscreen-video-speed"].label, "倍速 1.5×")
         // Exercise the stock AVKit transport controls, not just the app's external play button.
         let native = app.descendants(matching: .any)["fullscreen-native-player"].firstMatch
-        let nativePause = nativeTransportButton(native, expecting: "(暂停|Pause)(播放|视频| Video| Playback)?")
+        let nativePause = nativeTransportButtonCoordinate(native, expecting: "(暂停|Pause)(播放|视频| Video| Playback)?")
         nativePause.tap()
         wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "已暂停"), object: runningPosition)], timeout: 5)
         let stockPausedTime = try XCTUnwrap(videoSeconds(runningPosition.label))
         app.buttons["fullscreen-video-speed"].tap()
         app.buttons["video-speed-option-1.5"].tap()
         XCTAssertEqual(runningPosition.value as? String, "已暂停", "Selecting speed after stock AVKit pause must remain paused")
-        let nativePlay = nativeTransportButton(native, expecting: "(播放|继续播放|Play|Resume)(视频| Video| Playback)?")
+        let nativePlay = nativeTransportButtonCoordinate(native, expecting: "(播放|继续播放|Play|Resume)(视频| Video| Playback)?")
         nativePlay.tap()
         wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "播放中 · 实际倍速 1.5"), object: runningPosition)], timeout: 5)
         wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
@@ -312,7 +312,7 @@ final class GardenUITests: XCTestCase {
         }
         XCTAssertTrue(app.segmentedControls.buttons["文字资料"].exists)
     }
-    private func nativeTransportButton(_ native: XCUIElement, expecting labelPattern: String) -> XCUIElement {
+    private func nativeTransportButtonCoordinate(_ native: XCUIElement, expecting labelPattern: String) -> XCUICoordinate {
         let button = native.buttons["Play/Pause"] // Actual stock AVKit identifier, scoped to its controller.
         let hasVisibleFrame = button.exists && !button.frame.isEmpty && native.frame.contains(button.frame)
         if !hasVisibleFrame || !button.isHittable {
@@ -327,7 +327,13 @@ final class GardenUITests: XCTestCase {
         XCTAssertTrue(button.waitForExistence(timeout: 5), "Stock AVKit transport control must exist")
         XCTAssertTrue(button.isHittable, "Stock AVKit transport control must be actionable")
         wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "label MATCHES[c] %@", labelPattern), object: button)], timeout: 5)
-        return button
+        let nativeFrame = native.frame
+        let buttonFrame = button.frame
+        XCTAssertFalse(buttonFrame.isEmpty, "Stock AVKit transport control must have a visible frame")
+        XCTAssertTrue(nativeFrame.contains(buttonFrame), "Stock AVKit transport control must be inside its native player")
+        // The verified button can auto-hide during tap's scroll-to-visible; anchor its hit point to the stable player.
+        return native.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0)).withOffset(
+            CGVector(dx: buttonFrame.midX - nativeFrame.minX, dy: buttonFrame.midY - nativeFrame.minY))
     }
     private func openOutlineCategory(_ app: XCUIApplication) {
         let category = app.buttons["备课提纲"].firstMatch
