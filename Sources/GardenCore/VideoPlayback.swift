@@ -70,7 +70,7 @@ public enum BilibiliPlayback {
         let envelope = try JSONDecoder().decode(Envelope<Playback>.self, from: data)
         guard envelope.code == 0, let value = envelope.data, value.is_preview != true, value.format?.hasPrefix("mp4") == true,
               let segments = value.durl, segments.count == 1, let url = URL(string: segments[0].url), url.scheme == "https", url.user == nil, url.password == nil,
-              let host = url.host, host == "bilivideo.com" || host.hasSuffix(".bilivideo.com") else { throw GardenError.invalid("未取得可直接播放的完整视频。可以重试，或打开原视频核对。") }
+              let host = url.host, host == "bilivideo.com" || host.hasSuffix(".bilivideo.com") || host == "upos-hz-mirrorakam.akamaized.net" else { throw GardenError.invalid("未取得可直接播放的完整视频。可以重试，或打开原视频核对。") }
         let heights = [16:360,32:480,64:720,74:720,80:1080,112:1080,116:1080,120:2160]
         return VideoPlaybackSource(url: url, offeredHeight: value.quality.flatMap { heights[$0] }, duration: value.timelength.map { $0 / 1000 })
     }

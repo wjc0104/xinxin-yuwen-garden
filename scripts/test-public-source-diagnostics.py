@@ -40,11 +40,12 @@ class DiagnosticTests(unittest.TestCase):
         self.assertEqual(records[0]["http"], 412)
         self.assertEqual(records[0]["reason"], "http_rejected")
         self.assertNotIn("redacted", json.dumps(records))
+        call.side_effect.close()
 
     def test_partial_search_warning_preserves_strict_playback_gate_and_redacts_urls(self):
         payloads = [
             Response({"code": 0, "data": [{"cid": diagnostic.CID, "page": 2}]}),
-            Response({"code": 0, "data": {"quality": 64, "format": "mp4", "durl": [{"url": "https://example.bilivideo.com/video.mp4?token=never-print-this"}]}}),
+            Response({"code": 0, "data": {"quality": 64, "format": "mp4", "durl": [{"url": "https://upos-hz-mirrorakam.akamaized.net/video.mp4?token=never-print-this"}]}}),
             Response({"code": 0, "data": {"result": [{"title": "sample", "bvid": diagnostic.BVID}]}}),
             HTTPError("https://redacted.invalid/", 412, "denied", {}, None),
         ]
@@ -71,6 +72,27 @@ class DiagnosticTests(unittest.TestCase):
             self.assertEqual(call.call_count, 4)
             self.assertNotIn("never-print-this", stdout.getvalue() + output.read_text())
             self.assertNotIn("bilivideo.com", stdout.getvalue() + output.read_text())
+            self.assertNotIn("akamaized.net", stdout.getvalue() + output.read_text())
+        payloads[-1].close()
+
+    def test_gate_and_shape_share_exact_observed_cdn_policy(self):
+        hosts = {
+            "bilivideo.com": True,
+            "example.bilivideo.com": True,
+            "upos-hz-mirrorakam.akamaized.net": True,
+            "bilivideo.com.evil": False,
+            "evilbilivideo.com": False,
+            "upos-hz-mirrorakam.akamaized.net.evil": False,
+            "evilupos-hz-mirrorakam.akamaized.net": False,
+            "sub.upos-hz-mirrorakam.akamaized.net": False,
+            "other.akamaized.net": False,
+            "akamaized.net": False,
+        }
+        for host, allowed in hosts.items():
+            with self.subTest(host=host):
+                data = {"quality": 64, "format": "mp4720", "timelength": 654106, "durl": [{"url": "https://" + host + "/video.mp4"}]}
+                self.assertEqual(diagnostic.complete_source(data), allowed)
+                self.assertEqual(diagnostic.source_shape(data)["allowed_host"], allowed)
 
     def test_playback_denial_blocks_without_attempting_a_different_part(self):
         payloads = [Response({"code": -400}), Response({"code": 0, "data": {"result": []}}), Response({"code": 0, "data": {"result": []}})]
@@ -101,6 +123,15 @@ class DiagnosticTests(unittest.TestCase):
         ]
         for url in (None, 3, [], {}, "https://[invalid"):
             cases.append(({"format": "mp4", "durl": [{"url": url}]}, {"url_parse_valid": False}))
+        observed_media = media.replace("example.bilivideo.com", "upos-hz-mirrorakam.akamaized.net")
+        cases.extend([
+            ({"format": "mp4", "is_preview": True, "durl": [{"url": observed_media}]}, {"is_preview": True, "allowed_host": True}),
+            ({"format": "mp4", "durl": [{"url": observed_media}, {"url": observed_media}]}, {"segment_count": 2, "single_segment_object": False}),
+            ({"format": "mp4", "durl": [{"url": observed_media.replace("https:", "http:")}]}, {"https": False, "allowed_host": True}),
+            ({"format": "mp4", "durl": [{"url": observed_media.replace("https://", "https://secret-user:secret-password@")}]}, {"allowed_host": True, "has_credentials": True}),
+            ({"format": "mp4", "durl": [{"url": observed_media.replace("https://", "https://@")}]}, {"allowed_host": True, "has_credentials": True}),
+            ({"format": "mp4", "durl": [{"url": observed_media.replace("https://", "https://:@")}]}, {"allowed_host": True, "has_credentials": True}),
+        ])
         for data, expected in cases:
             with self.subTest(expected=expected, data_type=type(data).__name__):
                 payloads = [
@@ -124,7 +155,7 @@ class DiagnosticTests(unittest.TestCase):
                         self.assertEqual(playurl["source_shape"][key], value)
                     self.assertTrue(all(type(value) in (bool, int) for value in playurl["source_shape"].values()))
                     logged = stdout.getvalue() + output.read_text()
-                    for secret in ("secret-", "private-path", "bilivideo.com", "token=", "[invalid"):
+                    for secret in ("secret-", "private-path", "bilivideo.com", "akamaized.net", "token=", "[invalid"):
                         self.assertNotIn(secret, logged)
 
 

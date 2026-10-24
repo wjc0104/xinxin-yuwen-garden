@@ -46,6 +46,10 @@ def request(stage, path, parameters, records):
     return None
 
 
+def allowed_media_host(host):
+    return host in ("bilivideo.com", "upos-hz-mirrorakam.akamaized.net") or (host or "").endswith(".bilivideo.com")
+
+
 def complete_source(data):
     if not isinstance(data, dict) or data.get("is_preview") is True or not str(data.get("format", "")).startswith("mp4"):
         return False
@@ -54,7 +58,7 @@ def complete_source(data):
         return False
     try:
         media = urlparse(segments[0].get("url", ""))
-        return bool(media.scheme == "https" and not media.username and not media.password and (media.hostname == "bilivideo.com" or (media.hostname or "").endswith(".bilivideo.com")))
+        return bool(media.scheme == "https" and media.username is None and media.password is None and allowed_media_host(media.hostname))
     except (TypeError, ValueError, AttributeError):
         return False
 
@@ -79,8 +83,8 @@ def source_shape(data):
         try:
             media = urlparse(url)
             shape["https"] = media.scheme == "https"
-            shape["allowed_host"] = media.hostname == "bilivideo.com" or (media.hostname or "").endswith(".bilivideo.com")
-            shape["has_credentials"] = bool(media.username or media.password)
+            shape["allowed_host"] = allowed_media_host(media.hostname)
+            shape["has_credentials"] = media.username is not None or media.password is not None
             shape["url_parse_valid"] = True
         except (TypeError, ValueError, AttributeError):
             pass
