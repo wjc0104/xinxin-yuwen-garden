@@ -103,7 +103,8 @@ class TransportDiagnosticChecks(unittest.TestCase):
         self.assertIn('seek(to: position, preservingPausedBinding: true)', binding)
         for command in ['.pause()', '.play()', '.rate =', 'Int(position']:
             self.assertNotIn(command, binding)
-        self.assertIn('player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero)', owner)
+        self.assertIn('player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero, completionHandler: completion)', owner)
+        self.assertIn('super.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero, completionHandler: completionHandler)', player)
         self.assertIn('player?.currentItem === item, self.pendingSeek == seekToken', owner)
         paused = player.split('var isExplicitlyPaused: Bool {', 1)[1].split('func configureRate(', 1)[0]
         self.assertIn('transportLock.lock()', paused)
@@ -115,6 +116,32 @@ class TransportDiagnosticChecks(unittest.TestCase):
                          'XCTAssertTrue(player.currentItem === item)', 'XCTAssertEqual(player.rate, selectedRate)']:
             self.assertIn(evidence, native)
         self.assertIn('Double(before), accuracy: 1)', ui)
+
+    def test_native_intent_supersedes_only_obsolete_binding_completion(self):
+        owner = (ROOT / "App/NativeStudyPlayer.swift").read_text(encoding="utf-8")
+        player = (ROOT / "App/StudyAVPlayer.swift").read_text(encoding="utf-8")
+        native = (ROOT / "AppTests/NativePlaybackTests.swift").read_text(encoding="utf-8")
+        self.assertIn('let item = StudyAVPlayerItem(asset: asset)', owner)
+        self.assertIn('item.studyPlayer = value', owner)
+        self.assertIn('let nativeRevision = (player as? StudyAVPlayer)?.intentRevision', owner)
+        self.assertIn('guard (player as? StudyAVPlayer)?.intentRevision == nativeRevision,', owner)
+        self.assertIn('player.seekPreservingPausedBinding(to: target, completionHandler: completion)', owner)
+        self.assertIn('if !preservingBindingSeek { commandRevision = UUID() }', player)
+        self.assertEqual(player.count('override func seek('), 9, "All six player and three item public seek overloads participate")
+        self.assertIn('override func cancelPendingSeeks()', player)
+        self.assertIn('weak var studyPlayer: StudyAVPlayer?', player)
+        for entry in ['override func play()', 'override func pause()', 'override var rate:', 'override func playImmediately(', 'override func setRate(']:
+            command = player.split(entry, 1)[1].split('\n    }', 1)[0]
+            self.assertIn('commandRevision = UUID()', command)
+        failure = owner.split('if success {', 1)[1].split('private func data(', 1)[0]
+        self.assertIn('self.ready = false; player?.pause(); self.playing = false', failure)
+        race = native.split('private func assertNativeCommandsSupersedeBinding(', 1)[1].split('private func waitForPresentation(', 1)[0]
+        overlap = race.split('video.bindFullScreenPlayer(to: controller)', 1)[1].split('let newerRevision = native.intentRevision', 1)[0]
+        self.assertNotIn('await ', overlap)
+        for evidence in ['XCTAssertNotNil(video.pendingSeek', 'player.seek(to: target', 'item.seek(to: target', 'player.play(); player.pause()']:
+            self.assertIn(evidence, overlap)
+        self.assertIn('XCTAssertEqual(native.intentRevision, newerRevision', race)
+        self.assertIn('XCTAssertFalse(published.contains', race)
 
 
 if __name__ == "__main__":

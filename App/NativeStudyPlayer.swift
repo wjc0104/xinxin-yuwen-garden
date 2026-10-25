@@ -30,7 +30,7 @@ private final class PlayerClock {
     private var identity: String?
     private var generation = UUID()
     private var lastPosition: Int?
-    private var pendingSeek: UUID?
+    private(set) var pendingSeek: UUID?
     private var statusObserver: NSKeyValueObservation?
     private var playbackObserver: NSKeyValueObservation?
     private var clock: PlayerClock?
@@ -77,8 +77,9 @@ private final class PlayerClock {
             guard generation == token, !Task.isCancelled else { return }
             let asset = AVURLAsset(url: url, options: options)
             try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
-            let item = AVPlayerItem(asset: asset)
+            let item = StudyAVPlayerItem(asset: asset)
             let value = StudyAVPlayer(playerItem: item)
+            item.studyPlayer = value
             value.traceTransport = traceTransport
             value.configureRate(playbackRate, useSystemDefaultRate: useSystemDefaultRate)
             value.automaticallyWaitsToMinimizeStalling = true
@@ -186,17 +187,19 @@ private final class PlayerClock {
     private func seek(to target: CMTime, preservingPausedBinding: Bool = false) {
         guard ready, let player = player, let item = player.currentItem else { return }
         let token = generation, seekToken = UUID()
+        let nativeRevision = (player as? StudyAVPlayer)?.intentRevision
         pendingSeek = seekToken
         if preservingPausedBinding { (player as? StudyAVPlayer)?.trace(.fullscreenRestoreBefore, pendingSeek: true, targetSeconds: target.seconds) }
-        player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self, weak player, weak item] success in
+        let completion: (Bool) -> Void = { [weak self, weak player, weak item] success in
             Task { @MainActor [weak self] in
                 guard let self = self, self.generation == token, self.player === player,
                       let item = item, player?.currentItem === item, self.pendingSeek == seekToken else { return }
                 self.pendingSeek = nil
                 if preservingPausedBinding {
                     (player as? StudyAVPlayer)?.trace(.fullscreenRestoreCompleted, pendingSeek: false, targetSeconds: target.seconds, seekSucceeded: success)
-                    // A subsequent native play command wins, including over a failed restoration.
-                    guard (player as? StudyAVPlayer)?.isExplicitlyPaused == true else { return }
+                    // Later native seeks/transport win even if they end paused again before this callback.
+                    guard (player as? StudyAVPlayer)?.intentRevision == nativeRevision,
+                          (player as? StudyAVPlayer)?.isExplicitlyPaused == true else { return }
                 }
                 if success {
                     self.lastPosition = Int(target.seconds); self.seconds = Int(target.seconds)
@@ -206,6 +209,11 @@ private final class PlayerClock {
                     self.problem = "没有恢复到上次时间点，请重试。"
                 }
             }
+        }
+        if preservingPausedBinding, let player = player as? StudyAVPlayer {
+            player.seekPreservingPausedBinding(to: target, completionHandler: completion)
+        } else {
+            player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero, completionHandler: completion)
         }
     }
     private func data(_ url: URL) async throws -> Data {

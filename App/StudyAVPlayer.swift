@@ -8,6 +8,8 @@ final class StudyAVPlayer: AVPlayer {
     private var wantsPlayback = false
     private var selectedRate: Float = 1
     private var applyingCommand = false
+    private var commandRevision = UUID()
+    private var preservingBindingSeek = false
     private var rateObservation: NSKeyValueObservation?
     private var controlObservation: NSKeyValueObservation?
     var traceTransport = false
@@ -18,6 +20,40 @@ final class StudyAVPlayer: AVPlayer {
     var isExplicitlyPaused: Bool {
         transportLock.lock(); defer { transportLock.unlock() }
         return !wantsPlayback && super.rate == 0 && timeControlStatus == .paused
+    }
+    var intentRevision: UUID {
+        transportLock.lock(); defer { transportLock.unlock() }
+        return commandRevision
+    }
+    func nativeSeekWillStart() {
+        transportLock.lock(); defer { transportLock.unlock() }
+        if !preservingBindingSeek { commandRevision = UUID() }
+    }
+    func seekPreservingPausedBinding(to time: CMTime, completionHandler: @escaping (Bool) -> Void) {
+        transportLock.lock(); defer { transportLock.unlock() }
+        let previous = preservingBindingSeek
+        preservingBindingSeek = true
+        defer { preservingBindingSeek = previous }
+        // Exclude this owner seek and synchronous item forwarding from later native user intent.
+        super.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero, completionHandler: completionHandler)
+    }
+    override func seek(to time: CMTime) {
+        nativeSeekWillStart(); super.seek(to: time)
+    }
+    override func seek(to time: CMTime, completionHandler: @escaping (Bool) -> Void) {
+        nativeSeekWillStart(); super.seek(to: time, completionHandler: completionHandler)
+    }
+    override func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime) {
+        nativeSeekWillStart(); super.seek(to: time, toleranceBefore: toleranceBefore, toleranceAfter: toleranceAfter)
+    }
+    override func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime, completionHandler: @escaping (Bool) -> Void) {
+        nativeSeekWillStart(); super.seek(to: time, toleranceBefore: toleranceBefore, toleranceAfter: toleranceAfter, completionHandler: completionHandler)
+    }
+    override func seek(to date: Date) {
+        nativeSeekWillStart(); super.seek(to: date)
+    }
+    override func seek(to date: Date, completionHandler: @escaping (Bool) -> Void) {
+        nativeSeekWillStart(); super.seek(to: date, completionHandler: completionHandler)
     }
 
     func configureRate(_ rate: Float, useSystemDefaultRate: Bool = true) {
@@ -37,6 +73,7 @@ final class StudyAVPlayer: AVPlayer {
     override func play() {
         transportLock.lock(); defer { transportLock.unlock() }
         if applyingCommand { super.play(); return }
+        commandRevision = UUID()
         trace(.playBefore)
         wantsPlayback = true
         applyRate(selectedRate)
@@ -45,6 +82,7 @@ final class StudyAVPlayer: AVPlayer {
     override func pause() {
         transportLock.lock(); defer { transportLock.unlock() }
         if applyingCommand { super.pause(); return }
+        commandRevision = UUID()
         trace(.pauseBefore)
         wantsPlayback = false
         applyRate(0)
@@ -55,6 +93,7 @@ final class StudyAVPlayer: AVPlayer {
         set {
             transportLock.lock(); defer { transportLock.unlock() }
             if applyingCommand { super.rate = newValue; return }
+            commandRevision = UUID()
             trace(.setRateBefore, requestedRate: newValue)
             wantsPlayback = newValue > 0
             applyRate(wantsPlayback ? selectedRate : 0)
@@ -64,10 +103,16 @@ final class StudyAVPlayer: AVPlayer {
     override func playImmediately(atRate rate: Float) {
         transportLock.lock(); defer { transportLock.unlock() }
         if applyingCommand { super.playImmediately(atRate: rate); return }
+        commandRevision = UUID()
         trace(.playImmediatelyBefore, requestedRate: rate)
         wantsPlayback = rate > 0
         applyRate(wantsPlayback ? selectedRate : 0)
         trace(.playImmediatelyAfter, requestedRate: rate)
+    }
+    override func setRate(_ rate: Float, time itemTime: CMTime, atHostTime hostClockTime: CMTime) {
+        transportLock.lock(); defer { transportLock.unlock() }
+        if !applyingCommand { commandRevision = UUID() }
+        super.setRate(rate, time: itemTime, atHostTime: hostClockTime)
     }
     private func applyRate(_ rate: Float) {
         let previous = applyingCommand
@@ -112,5 +157,26 @@ final class StudyAVPlayer: AVPlayer {
         if let targetSeconds = targetSeconds { state["targetSeconds"] = targetSeconds.isFinite ? targetSeconds : -1 }
         if let seekSucceeded = seekSucceeded { state["seekSucceeded"] = seekSucceeded }
         PlayerTransportTrace.shared.record(event, state: state)
+    }
+}
+
+/// Stock controls can seek the current item directly instead of calling AVPlayer.seek.
+final class StudyAVPlayerItem: AVPlayerItem {
+    weak var studyPlayer: StudyAVPlayer?
+    override func seek(to time: CMTime, completionHandler: ((Bool) -> Void)? = nil) {
+        studyPlayer?.nativeSeekWillStart()
+        super.seek(to: time, completionHandler: completionHandler)
+    }
+    override func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime, completionHandler: ((Bool) -> Void)? = nil) {
+        studyPlayer?.nativeSeekWillStart()
+        super.seek(to: time, toleranceBefore: toleranceBefore, toleranceAfter: toleranceAfter, completionHandler: completionHandler)
+    }
+    override func seek(to date: Date, completionHandler: ((Bool) -> Void)? = nil) -> Bool {
+        studyPlayer?.nativeSeekWillStart()
+        return super.seek(to: date, completionHandler: completionHandler)
+    }
+    override func cancelPendingSeeks() {
+        studyPlayer?.nativeSeekWillStart()
+        super.cancelPendingSeeks()
     }
 }

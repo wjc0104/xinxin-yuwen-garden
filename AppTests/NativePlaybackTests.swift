@@ -201,6 +201,8 @@ import GardenCore
             XCTAssertEqual(presentation.draft, "原始学习笔记草稿")
             XCTAssertEqual(video.currentSeconds(), noteAnchor)
         }
+        presentation.focused = false
+        try await assertNativeCommandsSupersedeBinding(video, player: player, item: item)
         // The identical production binding must leave running transport and its forward clock alone.
         player.play()
         await assertRate(player, equals: selectedRate)
@@ -216,6 +218,59 @@ import GardenCore
         presentation.fullScreen = false
         await waitForPresentation { !presentation.appeared && inline.presentedViewController == nil }
         video.pause()
+    }
+    private func assertNativeCommandsSupersedeBinding(_ video: NativeStudyPlayer, player: AVPlayer, item: AVPlayerItem) async throws {
+        let native = try XCTUnwrap(player as? StudyAVPlayer)
+        XCTAssertTrue(item is StudyAVPlayerItem, "Direct item seeks must share the native intent signal")
+        for command in 0..<3 {
+            let positioned = expectation(description: "Prepare a real fractional paused binding race \(command)")
+            player.seek(to: CMTime(seconds: 21.625, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero) { success in
+                XCTAssertTrue(success); positioned.fulfill()
+            }
+            await fulfillment(of: [positioned], timeout: 15)
+            let before = player.currentTime()
+            await waitForPresentation { video.seconds == Int(before.seconds) && video.pendingSeek == nil }
+            var published: [Int?] = []
+            let observation = video.$seconds.dropFirst().sink { published.append($0) }
+            defer { observation.cancel() }
+            let controller = AVPlayerViewController()
+            video.bindFullScreenPlayer(to: controller)
+            // No suspension between the real production bind and the superseding native commands.
+            XCTAssertNotNil(video.pendingSeek, "This regression must overlap a real binding restoration, not a settled seek")
+            let bindingRevision = native.intentRevision
+            let target = CMTime(seconds: 73.375 + Double(command) * 18, preferredTimescale: 600)
+            let sought = expectation(description: "Later native command wins \(command)")
+            if command == 0 {
+                player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero) { success in
+                    XCTAssertTrue(success); sought.fulfill()
+                }
+            } else if command == 1 {
+                item.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero) { success in
+                    XCTAssertTrue(success); sought.fulfill()
+                }
+            } else {
+                player.play(); player.pause() // End paused again before the old MainActor callback can run.
+                sought.fulfill()
+            }
+            let newerRevision = native.intentRevision
+            XCTAssertNotEqual(newerRevision, bindingRevision)
+            await fulfillment(of: [sought], timeout: 15)
+            await waitForPresentation { video.pendingSeek == nil }
+            let expected = command < 2 ? target.seconds : before.seconds
+            for sample in 0..<10 {
+                XCTAssertTrue(video.ready, "A cancelled preservation seek is obsolete after native intent \(command)")
+                XCTAssertNil(video.problem)
+                XCTAssertTrue(video.player === player && player.currentItem === item)
+                XCTAssertEqual(player.rate, 0)
+                XCTAssertTrue(native.isExplicitlyPaused)
+                XCTAssertEqual(player.currentTime().seconds, expected, accuracy: 0.05)
+                XCTAssertEqual(native.intentRevision, newerRevision, "Old completion must not issue a stale pause (sample \(sample))")
+                XCTAssertFalse(published.contains { $0 == Int(before.seconds) }, "Old completion must not publish its captured timestamp")
+                try await Task.sleep(nanoseconds: 50_000_000)
+            }
+            let result = XCTAttachment(string: "command=\(command) original=\(before.seconds) latest=\(player.currentTime().seconds) ready=\(video.ready) problem=\(video.problem != nil) paused=\(native.isExplicitlyPaused) pending=\(video.pendingSeek != nil)")
+            result.name = "Overlapping native binding intent \(command)"; result.lifetime = .keepAlways; add(result)
+        }
     }
     private func waitForPresentation(_ condition: () -> Bool) async {
         for _ in 0..<200 {
