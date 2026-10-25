@@ -312,13 +312,17 @@ import GardenCore
     }
     private func assertRate(_ player: AVPlayer, equals expected: Float) async {
         let settled = expectation(description: "Native player retains selected \(expected)x speed")
-        let observer = player.observe(\.rate, options: [.initial, .new]) { player, _ in
-            if player.rate == expected { settled.fulfill() }
-        }
         settled.assertForOverFulfill = false
+        let checkReadiness = {
+            let rate = player.rate, status = player.timeControlStatus
+            if rate == expected && status == .playing { settled.fulfill() }
+        }
+        let observer = player.observe(\.rate, options: [.initial, .new]) { _, _ in checkReadiness() }
+        let controlObserver = player.observe(\.timeControlStatus, options: [.initial, .new]) { _, _ in checkReadiness() }
         await fulfillment(of: [settled], timeout: 3)
-        withExtendedLifetime(observer) {}
+        withExtendedLifetime((observer, controlObserver)) {}
         XCTAssertEqual(player.rate, expected)
+        XCTAssertEqual(player.timeControlStatus, .playing)
     }
     private func hasSpatialDetail(_ buffer: CVPixelBuffer) -> Bool {
         guard CVPixelBufferLockBaseAddress(buffer, .readOnly) == kCVReturnSuccess else { return false }
