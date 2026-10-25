@@ -76,10 +76,10 @@ private final class PoetryFixtureNavigation: NSObject, WKNavigationDelegate {
 
     private func callAsync(_ script: String, arguments: [String: Any], in webView: WKWebView) async throws -> Any? {
         return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Any?, Error>) in
-            webView.callAsyncJavaScript(script, arguments: arguments, in: nil, contentWorld: .page) { result, error in
+            webView.__callAsyncJavaScript(script, arguments: arguments, inFrame: nil, in: .page, completionHandler: { result, error in
                 if let error { continuation.resume(throwing: error) }
                 else { continuation.resume(returning: result) }
-            }
+            })
         }
     }
 
