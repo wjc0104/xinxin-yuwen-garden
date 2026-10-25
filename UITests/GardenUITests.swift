@@ -21,13 +21,14 @@ final class GardenUITests: XCTestCase {
         XCTAssertTrue(login.waitForExistence(timeout: 5))
         XCTAssertEqual(login.label, "原站登录")
         XCTAssertFalse(restore.isEnabled)
-        XCTAssertTrue(guidance.label.contains("外部浏览器的登录状态不代表本页已登录"))
+        XCTAssertTrue(guidance.label.contains("原站已公开提供的全文会直接显示"))
+        XCTAssertTrue(guidance.label.contains("账号功能可选"))
         XCTAssertTrue(app.staticTexts["古文岛 · 原文署名见页面"].exists)
         XCTAssertTrue(app.buttons["open-in-browser"].exists)
         XCTAssertTrue(app.buttons["web-quote-selection"].exists)
         login.tap()
         XCTAssertTrue(restore.isEnabled, "The actual reader action must call the attached controller even when network navigation is cancelled")
-        XCTAssertTrue(guidance.label.contains("登录结果及可读内容由原站决定"))
+        XCTAssertTrue(guidance.label.contains("账号功能及登录结果由原站决定"))
         shot("17-诗词原站登录与返回入口")
 
         // The note sheet remains the existing reader's sheet while login navigation is pending.

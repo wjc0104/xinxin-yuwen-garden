@@ -37,9 +37,7 @@ final class WebStudyController: ObservableObject {
 struct EmbeddedResource: UIViewRepresentable {
     let url: URL
     @ObservedObject var controller: WebStudyController
-    /// Content sites place an app-install prompt and a QR code inside the article. Remove those entry
-    /// points so the article can be read directly, but leave "read more" alone: after signing in it
-    /// expands the rest of the commentary in place.
+    /// These presentation changes only run on the supported poetry sites (including after navigation).
     private static let cleanupScript = """
     (function () {
       var style = document.createElement('style');
@@ -55,8 +53,7 @@ struct EmbeddedResource: UIViewRepresentable {
       }
     })();
     """
-    /// The poetry sites serve a fixed 860pt desktop page. The full text is already in the document and
-    /// "read more" only un-hides it once the reader is signed in, so this just has to fit a phone.
+    /// Fit the poetry sites' fixed-width desktop layout to a phone.
     private static let fitScript = """
     (function () {
       var head = document.head || document.documentElement;
@@ -80,12 +77,80 @@ struct EmbeddedResource: UIViewRepresentable {
       head.appendChild(style);
     })();
     """
+    /// Reveal only article text already delivered in the public document. Some full containers are
+    /// empty placeholders; keep their original previews and controls until actual paragraphs arrive.
+    private static let publicTextScript = """
+    (function () {
+      if (window.__gardenPublicPoetry) { return; }
+      window.__gardenPublicPoetry = true;
+      var selector = '[id^="fanyiquan"], [id^="shangxiquan"]';
+      function show(full) {
+        var match = /^(fanyi|shangxi)quan([0-9]+)$/.exec(full.id);
+        if (!match) { return; }
+        var paragraphs = full.querySelectorAll('.contyishang p');
+        var hasText = Array.prototype.some.call(paragraphs, function (p) {
+          return (p.textContent || '').trim().length > 0;
+        });
+        if (!hasText) { return; }
+        function set(node, property, value) {
+          if (node.style.getPropertyValue(property) !== value || node.style.getPropertyPriority(property) !== 'important') {
+            node.style.setProperty(property, value, 'important');
+          }
+        }
+        function reveal(node) {
+          if (node.hidden) { node.hidden = false; }
+          set(node, 'display', 'block');
+          set(node, 'height', 'auto');
+          set(node, 'max-height', 'none');
+          set(node, 'overflow', 'visible');
+        }
+        reveal(full);
+        Array.prototype.forEach.call(full.querySelectorAll('.contyishang'), reveal);
+        var preview = document.getElementById(match[1] + match[2]);
+        if (preview) { set(preview, 'display', 'none'); }
+      }
+      function related(node) {
+        var element = node.nodeType === 1 ? node : node.parentElement;
+        var pair = element && element.closest('[id^="fanyi"], [id^="shangxi"]');
+        var match = pair && /^(fanyi|shangxi)(?:quan)?([0-9]+)$/.exec(pair.id);
+        var full = match && document.getElementById(match[1] + 'quan' + match[2]);
+        if (full) { show(full); }
+      }
+      function added(node) {
+        related(node);
+        if (!node.querySelectorAll) { return; }
+        Array.prototype.forEach.call(node.querySelectorAll(selector), show);
+      }
+      added(document.documentElement);
+      // Observe only changed pairs/subtrees, never rescan the whole page on every mutation.
+      var observer = new MutationObserver(function (records) {
+        records.forEach(function (record) {
+          related(record.target);
+          Array.prototype.forEach.call(record.addedNodes || [], added);
+        });
+      });
+      observer.observe(document.documentElement, {
+        childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['style', 'hidden']
+      });
+      var timeout = setTimeout(function () { observer.disconnect(); }, 15000);
+      window.addEventListener('pagehide', function () { observer.disconnect(); clearTimeout(timeout); }, { once: true });
+    })();
+    """
+    // Check the current document as well as the resource URL: manual links/login can navigate away.
+    static let poetryScript = """
+    (function () {
+      var host = location.hostname.toLowerCase();
+      if (!['gushiwen.cn', 'guwendao.net'].some(function (domain) {
+        return host === domain || host.endsWith('.' + domain);
+      })) { return; }
+      if (window.__gardenPublicPoetry) { return; }
+    """ + cleanupScript + fitScript + publicTextScript + "\n})();"
     static func isPoetrySite(_ host: String) -> Bool {
         let name = host.lowercased()
         return ["gushiwen.cn", "guwendao.net"].contains { name == $0 || name.hasSuffix("." + $0) }
     }
     private var desktop: Bool { EmbeddedResource.isPoetrySite(url.host ?? "") }
-    private var injection: String { desktop ? EmbeddedResource.cleanupScript + EmbeddedResource.fitScript : EmbeddedResource.cleanupScript }
+    private var injection: String { desktop ? EmbeddedResource.poetryScript : "" }
     func makeCoordinator() -> Coordinator { Coordinator(controller, desktop: desktop) }
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
@@ -94,8 +159,7 @@ struct EmbeddedResource: UIViewRepresentable {
         config.userContentController.addUserScript(WKUserScript(source: injection, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
         let web = WKWebView(frame: .zero, configuration: config)
         if desktop {
-            // Their phone pages replace the article with an app wall, and only the desktop page offers
-            // a web login, so ask for the desktop page and fit it to the phone.
+            // Request the desktop document, which delivers public text and optional web account access.
             web.customUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
         } else {
             // Present as Mobile Safari; several content sites wall off a bare in-app web view.
@@ -115,7 +179,7 @@ struct EmbeddedResource: UIViewRepresentable {
         let controller: WebStudyController
         let desktop: Bool
         init(_ controller: WebStudyController, desktop: Bool) { self.controller = controller; self.desktop = desktop }
-        var injection: String { desktop ? EmbeddedResource.cleanupScript + EmbeddedResource.fitScript : EmbeddedResource.cleanupScript }
+        var injection: String { desktop ? EmbeddedResource.poetryScript : "" }
         func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { controller.failed = true }
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) { controller.failed = true }
         func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) { controller.failed = false }

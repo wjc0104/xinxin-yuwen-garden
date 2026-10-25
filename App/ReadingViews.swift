@@ -41,7 +41,7 @@ struct ReadingView: View {
                             Button { web.returnToOriginal() } label: { Label("返回原文", systemImage: "arrow.uturn.backward") }
                                 .disabled(!web.canReturnToOriginal).accessibilityIdentifier("poetry-return-original")
                         }.font(.subheadline)
-                        Text(web.canReturnToOriginal ? "请在下方原站页面自行登录；完成后点“返回原文”。登录结果及可读内容由原站决定。" : "需登录时请使用本页“原站登录”。外部浏览器的登录状态不代表本页已登录，阅读范围以原站为准。")
+                        Text(web.canReturnToOriginal ? "可在下方原站页面自行登录；完成后点“返回原文”。账号功能及登录结果由原站决定。" : "原站已公开提供的全文会直接显示；收藏等账号功能可选“原站登录”。未提供的内容仍以原站为准。")
                             .font(.caption).foregroundColor(.secondary).accessibilityIdentifier("poetry-login-guidance")
                     }
                     if let message = webSelectionMessage { Text(message).font(.caption).foregroundColor(GardenTheme.mint) }
