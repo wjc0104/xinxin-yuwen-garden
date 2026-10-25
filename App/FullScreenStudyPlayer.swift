@@ -88,11 +88,43 @@ private struct NativeFullScreenPlayer: UIViewControllerRepresentable {
         video.bindFullScreenPlayer(to: controller)
         controller.showsPlaybackControls = true
         controller.view.accessibilityIdentifier = "fullscreen-native-player"
+        let status = PlayerRenderStatusView(frame: CGRect(x: 0, y: 0, width: 1, height: 1))
+        status.video = video; status.controller = controller
+        status.backgroundColor = .clear; status.isUserInteractionEnabled = false
+        status.isAccessibilityElement = true
+        status.accessibilityIdentifier = "fullscreen-video-render-status"
+        status.accessibilityLabel = "播放画面状态"
+        controller.view.addSubview(status)
         return controller
     }
     func updateUIViewController(_ controller: AVPlayerViewController, context: Context) {}
     static func dismantleUIViewController(_ controller: AVPlayerViewController, coordinator: ()) {
         (controller.player as? StudyAVPlayer)?.trace(.fullscreenDetached)
+    }
+}
+
+// The accessible status reads the actual controller/owner at query time: no cached completion flag.
+// Keep AVPlayerViewController itself stock and retain its existing accessible transport children.
+private final class PlayerRenderStatusView: UIView {
+    weak var video: NativeStudyPlayer?
+    weak var controller: AVPlayerViewController?
+    override var accessibilityValue: String? {
+        get {
+            guard let video = video, let controller = controller, controller.player === video.player,
+                  let item = controller.player?.currentItem, video.ready, video.problem == nil,
+                  item.status == .readyToPlay else { return "画面尚未就绪" }
+            if video.pendingSeek != nil { return "正在定位播放时间" }
+            guard window != nil, controller.isReadyForDisplay else { return "正在显示画面" }
+            var ancestor: UIViewController? = controller
+            while let current = ancestor {
+                if current.isBeingPresented || current.isBeingDismissed || current.transitionCoordinator != nil {
+                    return "正在调整画面"
+                }
+                ancestor = current.parent
+            }
+            return video.playing || controller.player?.timeControlStatus != .paused ? "画面已就绪 · 播放中" : "画面已就绪 · 已暂停"
+        }
+        set { } // Status is derived from the real owner/controller, never assigned by callers.
     }
 }
 

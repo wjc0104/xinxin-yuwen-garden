@@ -115,6 +115,7 @@ final class GardenUITests: XCTestCase {
     }
     func testVideoPlaybackFullScreenLandscape() throws {
         continueAfterFailure = false
+        try checkRenderedVideoImageCoordinates()
         XCUIDevice.shared.orientation = .portrait
         defer { XCUIDevice.shared.orientation = .portrait }
         let app = XCUIApplication(); app.launchArguments = ["--ui-testing", "--trace-player-transport", "--legacy-player-transport"]; app.launch()
@@ -367,53 +368,75 @@ final class GardenUITests: XCTestCase {
     private func assertRenderedVideo(_ app: XCUIApplication, playerID: String, phase: String) throws {
         let player = app.descendants(matching: .any)[playerID].firstMatch
         XCTAssertTrue(player.waitForExistence(timeout: 5), phase)
-        let frame = player.frame
+        if playerID == "fullscreen-native-player" {
+            let status = player.descendants(matching: .any)["fullscreen-video-render-status"].firstMatch
+            XCTAssertTrue(status.waitForExistence(timeout: 5), phase)
+            wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "画面已就绪 · 已暂停"), object: status)], timeout: 8)
+        }
+        // A single AX snapshot supplies player geometry and all masks before the screenshot.
+        func flattened(_ node: XCUIElementSnapshot) -> [XCUIElementSnapshot] {
+            [node] + node.children.flatMap { flattened($0) }
+        }
+        let before = try app.snapshot()
+        let nodes = flattened(before)
+        let native = try XCTUnwrap(nodes.first { $0.identifier == playerID }, phase)
+        let frame = native.frame, bounds = before.frame
+        if playerID == "fullscreen-native-player" {
+            XCTAssertEqual(nodes.first { $0.identifier == "fullscreen-video-render-status" }?.value as? String,
+                           "画面已就绪 · 已暂停", phase)
+        }
+        let overlays = nodes.filter { [XCUIElement.ElementType.button, .slider, .staticText].contains($0.elementType) }
+            .map { $0.frame.insetBy(dx: -4, dy: -4) }
         let screenshot = XCUIScreen.main.screenshot()
         let full = XCTAttachment(screenshot: screenshot)
-        full.name = "rendered-video-" + phase; full.lifetime = .keepAlways; add(full)
-        let image = screenshot.image
-        XCTAssertEqual(image.imageOrientation, .up, phase + ": screenshot coordinates must be upright")
+        full.name = "rendered-video-raw-" + phase; full.lifetime = .keepAlways; add(full)
+        let raw = screenshot.image
+        let image = try uprightVideoImage(raw)
         let source = try XCTUnwrap(image.cgImage, phase)
-        XCTAssertTrue(frame.width.isFinite && frame.height.isFinite && frame.width > 0 && frame.height > 0, phase)
         let width = min(frame.width, frame.height * 16 / 9)
         let height = width * 9 / 16
         let video = CGRect(x: frame.midX - width / 2, y: frame.midY - height / 2, width: width, height: height)
         let region = video.insetBy(dx: width * 0.10, dy: height * 0.10)
-        let screen = CGRect(origin: .zero, size: image.size)
-        XCTAssertTrue(screen.contains(region) && !region.isEmpty, phase + ": video crop must be on screen")
-        let scaleX = CGFloat(source.width) / image.size.width
-        let scaleY = CGFloat(source.height) / image.size.height
-        // Round inward so no pixel outside the actual video region enters the sample.
-        let pixels = CGRect(x: ceil(region.minX * scaleX), y: ceil(region.minY * scaleY),
-                            width: floor(region.maxX * scaleX) - ceil(region.minX * scaleX),
-                            height: floor(region.maxY * scaleY) - ceil(region.minY * scaleY))
+        let scaleX = CGFloat(source.width) / bounds.width
+        let scaleY = CGFloat(source.height) / bounds.height
+        let pixels = videoPixelRect(region, bounds: bounds, image: source)
+        let diagnostic = XCTAttachment(string: """
+        phase=\(phase) deviceOrientation=\(XCUIDevice.shared.orientation.rawValue)
+        rawUIImageOrientation=\(raw.imageOrientation.rawValue) rawUIImageSize=\(raw.size) rawScale=\(raw.scale)
+        rawCGImage=\(raw.cgImage?.width ?? -1)x\(raw.cgImage?.height ?? -1)
+        uprightCGImage=\(source.width)x\(source.height) appFrame=\(bounds) playerFrame=\(frame)
+        renderStatus=\(nodes.first { $0.identifier == "fullscreen-video-render-status" }?.value ?? "inline") video=\(video) regionAX=\(region) regionPixels=\(pixels)
+        scaleX=\(scaleX) scaleY=\(scaleY) masksAX=\(overlays)
+        """)
+        diagnostic.name = "rendered-video-coordinates-" + phase; diagnostic.lifetime = .keepAlways; add(diagnostic)
+        XCTAssertTrue(frame.width.isFinite && frame.height.isFinite && frame.width > 0 && frame.height > 0, phase)
+        XCTAssertEqual(bounds.origin, .zero, phase + ": main-screen screenshot requires a fullscreen app")
+        XCTAssertEqual(scaleX / scaleY, 1, accuracy: 0.01, phase + ": upright screenshot axes must match AX screen axes")
+        XCTAssertTrue(bounds.contains(region) && !region.isEmpty, phase + ": video crop must be on screen")
         XCTAssertTrue(CGRect(x: 0, y: 0, width: source.width, height: source.height).contains(pixels), phase)
+        let after = try app.snapshot()
+        let afterNodes = flattened(after)
+        XCTAssertEqual(after.frame, bounds, phase + ": screen geometry changed during capture")
+        let afterNative = try XCTUnwrap(afterNodes.first { $0.identifier == playerID }, phase)
+        XCTAssertEqual(afterNative.frame, frame, phase + ": player moved during capture")
+        XCTAssertEqual(afterNative.value as? String, native.value as? String, phase + ": player state changed during capture")
+        if playerID == "fullscreen-native-player" {
+            XCTAssertEqual(afterNodes.first { $0.identifier == "fullscreen-video-render-status" }?.value as? String,
+                           "画面已就绪 · 已暂停", phase + ": restoration/presentation changed during capture")
+        }
+        XCTAssertEqual(afterNodes.filter { [XCUIElement.ElementType.button, .slider, .staticText].contains($0.elementType) }
+            .map { $0.frame.insetBy(dx: -4, dy: -4) }, overlays, phase + ": overlay geometry changed during capture")
         let crop = try XCTUnwrap(source.cropping(to: pixels), phase)
         let cropped = XCTAttachment(image: UIImage(cgImage: crop))
         cropped.name = "rendered-video-region-" + phase; cropped.lifetime = .keepAlways; add(cropped)
-        let overlays = (app.buttons.allElementsBoundByIndex + app.sliders.allElementsBoundByIndex
-                        + app.staticTexts.allElementsBoundByIndex).filter { $0.exists }.map {
-            $0.frame.insetBy(dx: -4, dy: -4)
-        }.filter { $0.intersects(region) }
         let sampleWidth = 64, sampleHeight = 36, bytesPerRow = sampleWidth * 4
-        var rgba = [UInt8](repeating: 0, count: bytesPerRow * sampleHeight)
-        let rendered = rgba.withUnsafeMutableBytes { buffer -> Bool in
-            guard let context = CGContext(data: buffer.baseAddress, width: sampleWidth, height: sampleHeight,
-                                          bitsPerComponent: 8, bytesPerRow: bytesPerRow,
-                                          space: CGColorSpaceCreateDeviceRGB(),
-                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue) else { return false }
-            // Align buffer row zero with screenshot top for overlay masking below.
-            context.translateBy(x: 0, y: CGFloat(sampleHeight)); context.scaleBy(x: 1, y: -1)
-            context.draw(crop, in: CGRect(x: 0, y: 0, width: sampleWidth, height: sampleHeight))
-            return true
-        }
-        XCTAssertTrue(rendered, phase)
+        let rgba = try videoRGBA(crop, width: sampleWidth, height: sampleHeight)
         var colors: [Int: Int] = [:]
         var samples = 0
         for y in 0..<sampleHeight {
             for x in 0..<sampleWidth {
-                let point = CGPoint(x: (pixels.minX + (CGFloat(x) + 0.5) * pixels.width / CGFloat(sampleWidth)) / scaleX,
-                                    y: (pixels.minY + (CGFloat(y) + 0.5) * pixels.height / CGFloat(sampleHeight)) / scaleY)
+                let point = videoSamplePoint(x: x, y: y, width: sampleWidth, height: sampleHeight,
+                                             pixels: pixels, bounds: bounds, image: source)
                 if overlays.contains(where: { $0.contains(point) }) { continue }
                 let offset = y * bytesPerRow + x * 4
                 // Explicit RGBA context owns exactly width * height * 4 bytes.
@@ -423,8 +446,85 @@ final class GardenUITests: XCTestCase {
         }
         XCTAssertGreaterThan(samples, sampleWidth * sampleHeight / 4, phase + ": overlays obscure the video sample")
         let populatedColors = colors.values.filter { $0 >= 4 }.count
+        let statistics = XCTAttachment(string: "samples=\(samples) populatedColors=\(populatedColors) largestBucket=\(colors.values.max() ?? 0) bufferBytes=\(rgba.count)")
+        statistics.name = "rendered-video-statistics-" + phase; statistics.lifetime = .keepAlways; add(statistics)
         XCTAssertGreaterThanOrEqual(populatedColors, 16, phase + ": rendered lesson must vary; uniform green/black is a failure (colors=\(populatedColors), samples=\(samples))")
         XCTAssertLessThan(colors.values.max() ?? samples, samples * 9 / 10, phase + ": nearly uniform rendered video")
+    }
+    // UIImage.draw applies EXIF/UIImage orientation, including mirroring. The output owns upright pixels.
+    private func uprightVideoImage(_ image: UIImage) throws -> UIImage {
+        let raw = try XCTUnwrap(image.cgImage)
+        let swapsAxes = [UIImage.Orientation.left, .right, .leftMirrored, .rightMirrored].contains(image.imageOrientation)
+        let size = CGSize(width: swapsAxes ? raw.height : raw.width, height: swapsAxes ? raw.width : raw.height)
+        let format = UIGraphicsImageRendererFormat(); format.scale = 1; format.opaque = true
+        return UIGraphicsImageRenderer(size: size, format: format).image { _ in
+            image.draw(in: CGRect(origin: .zero, size: size))
+        }
+    }
+    private func videoPixelRect(_ region: CGRect, bounds: CGRect, image: CGImage) -> CGRect {
+        let sx = CGFloat(image.width) / bounds.width, sy = CGFloat(image.height) / bounds.height
+        let left = ceil((region.minX - bounds.minX) * sx), top = ceil((region.minY - bounds.minY) * sy)
+        return CGRect(x: left, y: top, width: floor((region.maxX - bounds.minX) * sx) - left,
+                      height: floor((region.maxY - bounds.minY) * sy) - top)
+    }
+    private func videoSamplePoint(x: Int, y: Int, width: Int, height: Int,
+                                  pixels: CGRect, bounds: CGRect, image: CGImage) -> CGPoint {
+        CGPoint(x: bounds.minX + (pixels.minX + (CGFloat(x) + 0.5) * pixels.width / CGFloat(width)) * bounds.width / CGFloat(image.width),
+                y: bounds.minY + (pixels.minY + (CGFloat(y) + 0.5) * pixels.height / CGFloat(height)) * bounds.height / CGFloat(image.height))
+    }
+    private func videoRGBA(_ image: CGImage, width: Int, height: Int) throws -> [UInt8] {
+        var rgba = [UInt8](repeating: 0, count: width * height * 4)
+        let rendered = rgba.withUnsafeMutableBytes { buffer -> Bool in
+            guard let context = CGContext(data: buffer.baseAddress, width: width, height: height,
+                                          bitsPerComponent: 8, bytesPerRow: width * 4,
+                                          space: CGColorSpaceCreateDeviceRGB(),
+                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue) else { return false }
+            context.interpolationQuality = .none
+            // CGImage raster row order is retained; the synthetic color-label check below verifies it.
+            context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+            return true
+        }
+        XCTAssertTrue(rendered)
+        return rgba
+    }
+    // Executed at the start of the real playback test, even when CI selects only that method.
+    // This labeled fixture verifies coordinate machinery only; it never supplies video acceptance pixels.
+    private func checkRenderedVideoImageCoordinates() throws {
+        let colors: [[UInt8]] = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255], [255, 255, 0, 255]]
+        var bytes: [UInt8] = []
+        for y in 0..<12 { for x in 0..<8 { bytes += colors[(y < 6 ? 0 : 2) + (x < 4 ? 0 : 1)] } }
+        let provider = try XCTUnwrap(CGDataProvider(data: Data(bytes) as CFData))
+        let raw = try XCTUnwrap(CGImage(width: 8, height: 12, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: 32,
+                                       space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue),
+                                       provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent))
+        // Independently specified display corner labels: TL, TR, BL, BR for UIImage's EXIF orientations.
+        let cases: [(UIImage.Orientation, [Int])] = [(.up, [0, 1, 2, 3]), (.left, [1, 3, 0, 2]),
+            (.right, [2, 0, 3, 1]), (.down, [3, 2, 1, 0]), (.upMirrored, [1, 0, 3, 2]),
+            (.downMirrored, [2, 3, 0, 1]), (.leftMirrored, [0, 2, 1, 3]), (.rightMirrored, [3, 1, 2, 0])]
+        for (orientation, expected) in cases {
+            let normalized = try uprightVideoImage(UIImage(cgImage: raw, scale: 1, orientation: orientation))
+            let image = try XCTUnwrap(normalized.cgImage)
+            XCTAssertEqual(normalized.imageOrientation, .up)
+            let rotated = [UIImage.Orientation.left, .right, .leftMirrored, .rightMirrored].contains(orientation)
+            XCTAssertEqual(image.width, rotated ? 12 : 8); XCTAssertEqual(image.height, rotated ? 8 : 12)
+            let rgba = try videoRGBA(image, width: 8, height: 8)
+            for (corner, pixel) in [(0, 2 * 8 + 2), (1, 2 * 8 + 6), (2, 6 * 8 + 2), (3, 6 * 8 + 6)] {
+                XCTAssertEqual(Array(rgba[(pixel * 4)..<(pixel * 4 + 4)]), colors[expected[corner]], "orientation \(orientation.rawValue), corner \(corner)")
+            }
+            // A nonzero AX origin and explicit top-left quadrant establish crop AND mask alignment.
+            let bounds = CGRect(x: 10, y: 20, width: image.width * 10, height: image.height * 10)
+            let mask = CGRect(x: bounds.minX, y: bounds.minY, width: bounds.width / 2, height: bounds.height / 2)
+            let crop = try XCTUnwrap(image.cropping(to: videoPixelRect(mask, bounds: bounds, image: image)))
+            XCTAssertEqual(Array(try videoRGBA(crop, width: 1, height: 1).prefix(4)), colors[expected[0]], "top-left crop \(orientation.rawValue)")
+            var masked: [Int] = []
+            let allPixels = CGRect(x: 0, y: 0, width: image.width, height: image.height)
+            for y in 0..<8 { for x in 0..<8 {
+                if mask.contains(videoSamplePoint(x: x, y: y, width: 8, height: 8, pixels: allPixels, bounds: bounds, image: image)) {
+                    masked.append(y * 8 + x)
+                }
+            } }
+            XCTAssertEqual(masked, [0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27], "top-left mask \(orientation.rawValue)")
+        }
     }
     private func shot(_ name: String) {
         let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())

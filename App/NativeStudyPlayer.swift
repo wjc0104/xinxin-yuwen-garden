@@ -30,7 +30,7 @@ private final class PlayerClock {
     private var identity: String?
     private var generation = UUID()
     private var lastPosition: Int?
-    private(set) var pendingSeek: UUID?
+    @Published private(set) var pendingSeek: UUID?
     private var statusObserver: NSKeyValueObservation?
     private var playbackObserver: NSKeyValueObservation?
     private var clock: PlayerClock?
