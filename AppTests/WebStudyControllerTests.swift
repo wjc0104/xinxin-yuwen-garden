@@ -65,18 +65,36 @@ private final class PoetryFixtureNavigation: NSObject, WKNavigationDelegate {
         return webView
     }
 
+    private func evaluate(_ script: String, in webView: WKWebView) async throws -> Any? {
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Any?, Error>) in
+            webView.evaluateJavaScript(script) { result, error in
+                if let error { continuation.resume(throwing: error) }
+                else { continuation.resume(returning: result) }
+            }
+        }
+    }
+
+    private func callAsync(_ script: String, arguments: [String: Any], in webView: WKWebView) async throws -> Any? {
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Any?, Error>) in
+            webView.callAsyncJavaScript(script, arguments: arguments, in: nil, contentWorld: .page) { result, error in
+                if let error { continuation.resume(throwing: error) }
+                else { continuation.resume(returning: result) }
+            }
+        }
+    }
+
     /// Wait one rendering turn and one task so MutationObserver changes are reflected in layout.
     private func rendered(_ webView: WKWebView) async throws {
-        _ = try await webView.callAsyncJavaScript("await new Promise(resolve => setTimeout(resolve, 0)); return true;", arguments: [:], in: nil, contentWorld: .page)
+        _ = try await callAsync("await new Promise(resolve => setTimeout(resolve, 0)); return true;", arguments: [:], in: webView)
     }
 
     func testPublicPoetryPairsRevealDeliveredTextAndKeepSelectionAndCredits() async throws {
         for host in ["gushiwen.cn", "www.gushiwen.cn", "m.guwendao.net", "guwendao.net"] {
             let web = try await fixture(host: host, body: pair("fanyi", 17, text: "完整译文甲。完整译文乙。") + pair("shangxi", 83, text: String(repeating: "公开赏析的后续段落。", count: 40)) + pair("fanyi", 291, text: "第二篇资料的注释。"))
             // Production also invokes the same script at didFinish; repeated execution must be harmless.
-            _ = try await web.evaluateJavaScript(EmbeddedResource.poetryScript + "\ntrue;")
+            _ = try await evaluate(EmbeddedResource.poetryScript + "\ntrue;", in: web)
             try await rendered(web)
-            let result = try await web.evaluateJavaScript("""
+            let result = try await evaluate("""
             ['fanyiquan17', 'shangxiquan83', 'fanyiquan291'].every(function(id) {
               var full = document.getElementById(id), content = full.querySelector('.contyishang');
               var preview = document.getElementById(id.replace('quan', ''));
@@ -85,9 +103,9 @@ private final class PoetryFixtureNavigation: NSObject, WKNavigationDelegate {
                 getComputedStyle(preview).display === 'none' && full.querySelector('h2').textContent === '测试标题' &&
                 full.querySelector('.credit a').getAttribute('href') === '/author';
             }) && document.querySelectorAll('style').length === 2 && !window.fixtureReadMore
-            """)
+            """, in: web)
             XCTAssertEqual(result as? Bool, true, host)
-            _ = try await web.evaluateJavaScript("var range = document.createRange(); range.selectNodeContents(document.querySelector('#fanyiquan17 p')); window.getSelection().removeAllRanges(); window.getSelection().addRange(range); true;")
+            _ = try await evaluate("var range = document.createRange(); range.selectNodeContents(document.querySelector('#fanyiquan17 p')); window.getSelection().removeAllRanges(); window.getSelection().addRange(range); true;", in: web)
             let controller = WebStudyController()
             controller.attach(web, originalURL: try XCTUnwrap(URL(string: "https://\(host)/article")))
             let selected = expectation(description: "Expanded public text can still be selected for a note")
@@ -100,19 +118,19 @@ private final class PoetryFixtureNavigation: NSObject, WKNavigationDelegate {
 
     func testDynamicPublicPairsAndEmptyPlaceholders() async throws {
         let web = try await fixture(host: "www.guwendao.net", body: pair("fanyi", 17, text: " \n ") + pair("shangxi", 83, text: ""))
-        let empty = try await web.evaluateJavaScript("getComputedStyle(document.getElementById('fanyi17')).display !== 'none' && document.getElementById('fanyiquan17').hidden && getComputedStyle(document.getElementById('shangxi83')).display !== 'none'")
+        let empty = try await evaluate("getComputedStyle(document.getElementById('fanyi17')).display !== 'none' && document.getElementById('fanyiquan17').hidden && getComputedStyle(document.getElementById('shangxi83')).display !== 'none'", in: web)
         XCTAssertEqual(empty as? Bool, true, "A heading, credit and controls alone do not establish complete public article content")
         // Populate a placeholder's text node and insert an entirely new pair after document-end.
-        _ = try await web.callAsyncJavaScript("""
+        _ = try await callAsync("""
         document.querySelector('#fanyiquan17 p').firstChild.textContent = '稍后送达的公开译文。';
         document.body.insertAdjacentHTML('beforeend', newPair);
         return true;
-        """, arguments: ["newPair": pair("shangxi", 902, text: "动态插入的公开赏析。")], in: nil, contentWorld: .page)
+        """, arguments: ["newPair": pair("shangxi", 902, text: "动态插入的公开赏析。")], in: web)
         try await rendered(web)
         // Site scripts may reapply clipping during initial load; the bounded observer remains idempotent.
-        _ = try await web.evaluateJavaScript("document.getElementById('shangxiquan902').style.setProperty('display', 'none', 'important'); true;")
+        _ = try await evaluate("document.getElementById('shangxiquan902').style.setProperty('display', 'none', 'important'); true;", in: web)
         try await rendered(web)
-        let dynamic = try await web.evaluateJavaScript("getComputedStyle(document.getElementById('fanyi17')).display === 'none' && getComputedStyle(document.getElementById('fanyiquan17')).display !== 'none' && getComputedStyle(document.getElementById('shangxi902')).display === 'none' && getComputedStyle(document.getElementById('shangxiquan902')).display !== 'none' && getComputedStyle(document.getElementById('shangxi83')).display !== 'none' && document.getElementById('shangxiquan83').hidden")
+        let dynamic = try await evaluate("getComputedStyle(document.getElementById('fanyi17')).display === 'none' && getComputedStyle(document.getElementById('fanyiquan17')).display !== 'none' && getComputedStyle(document.getElementById('shangxi902')).display === 'none' && getComputedStyle(document.getElementById('shangxiquan902')).display !== 'none' && getComputedStyle(document.getElementById('shangxi83')).display !== 'none' && document.getElementById('shangxiquan83').hidden", in: web)
         XCTAssertEqual(dynamic as? Bool, true)
     }
 
@@ -120,7 +138,7 @@ private final class PoetryFixtureNavigation: NSObject, WKNavigationDelegate {
         for host in ["example.com", "notguwendao.net", "gushiwen.cn.evil.test", "www.guwendao.net.evil.test"] {
             // Deliberately inject the production script even here, as happens after manual navigation.
             let web = try await fixture(host: host, body: pair("fanyi", 17, text: "域外测试文字。") + "<a id='install' href='/app/Default'>下载APP</a>")
-            let untouched = try await web.evaluateJavaScript("document.getElementById('fanyiquan17').hidden && getComputedStyle(document.getElementById('fanyi17')).display !== 'none' && getComputedStyle(document.getElementById('install')).display !== 'none' && document.querySelectorAll('style').length === 0 && !window.__gardenPublicPoetry")
+            let untouched = try await evaluate("document.getElementById('fanyiquan17').hidden && getComputedStyle(document.getElementById('fanyi17')).display !== 'none' && getComputedStyle(document.getElementById('install')).display !== 'none' && document.querySelectorAll('style').length === 0 && !window.__gardenPublicPoetry", in: web)
             XCTAssertEqual(untouched as? Bool, true, host)
         }
     }
