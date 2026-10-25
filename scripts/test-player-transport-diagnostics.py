@@ -136,7 +136,8 @@ class TransportDiagnosticChecks(unittest.TestCase):
         failure = owner.split('if success {', 1)[1].split('private func data(', 1)[0]
         self.assertIn('self.ready = false; player?.pause(); self.playing = false', failure)
         race = native.split('private func assertNativeCommandsSupersedeBinding(', 1)[1].split('private func waitForPresentation(', 1)[0]
-        overlap = race.split('video.bindFullScreenPlayer(to: controller)', 1)[1].split('let newerRevision = native.intentRevision', 1)[0]
+        self.assertIn('func seek(to target: CMTime, preservingPausedBinding: Bool = false)', owner)
+        overlap = race.split('video.seek(to: before, preservingPausedBinding: true)', 1)[1].split('let newerRevision = native.intentRevision', 1)[0]
         self.assertNotIn('await ', overlap)
         for evidence in ['XCTAssertNotNil(video.pendingSeek', 'player.seek(to: target', 'item.seek(to: target', 'player.play(); player.pause()']:
             self.assertIn(evidence, overlap)

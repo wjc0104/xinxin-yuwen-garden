@@ -184,7 +184,7 @@ private final class PlayerClock {
         let target = duration.isFinite ? min(Double(seconds), max(0, duration - 0.1)) : Double(seconds)
         seek(to: CMTime(seconds: target, preferredTimescale: 600))
     }
-    private func seek(to target: CMTime, preservingPausedBinding: Bool = false) {
+    func seek(to target: CMTime, preservingPausedBinding: Bool = false) {
         guard ready, let player = player, let item = player.currentItem else { return }
         let token = generation, seekToken = UUID()
         let nativeRevision = (player as? StudyAVPlayer)?.intentRevision

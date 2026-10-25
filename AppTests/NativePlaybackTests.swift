@@ -233,9 +233,9 @@ import GardenCore
             var published: [Int?] = []
             let observation = video.$seconds.dropFirst().sink { published.append($0) }
             defer { observation.cancel() }
-            let controller = AVPlayerViewController()
-            video.bindFullScreenPlayer(to: controller)
-            // No suspension between the real production bind and the superseding native commands.
+            // An unchanged AVKit binding needs no restore; start the same production seek explicitly.
+            video.seek(to: before, preservingPausedBinding: true)
+            // No suspension between the real preservation seek and the superseding native commands.
             XCTAssertNotNil(video.pendingSeek, "This regression must overlap a real binding restoration, not a settled seek")
             let bindingRevision = native.intentRevision
             let target = CMTime(seconds: 73.375 + Double(command) * 18, preferredTimescale: 600)
