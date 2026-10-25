@@ -86,6 +86,36 @@ class TransportDiagnosticChecks(unittest.TestCase):
         self.assertIn('build/player-transport.jsonl', workflow)
         self.assertIn('python3 scripts/test-player-transport-diagnostics.py', workflow)
 
+    def test_fractional_binding_uses_shared_owner_seek_and_real_native_regression(self):
+        owner = (ROOT / "App/NativeStudyPlayer.swift").read_text(encoding="utf-8")
+        fullscreen = (ROOT / "App/FullScreenStudyPlayer.swift").read_text(encoding="utf-8")
+        player = (ROOT / "App/StudyAVPlayer.swift").read_text(encoding="utf-8")
+        native = (ROOT / "AppTests/NativePlaybackTests.swift").read_text(encoding="utf-8")
+        ui = (ROOT / "UITests/GardenUITests.swift").read_text(encoding="utf-8")
+        binding = owner.split('func bindFullScreenPlayer(', 1)[1].split('func seek(_ seconds:', 1)[0]
+        self.assertIn('video.bindFullScreenPlayer(to: controller)', fullscreen)
+        self.assertNotIn('controller.player = player', fullscreen)
+        self.assertLess(binding.index('let item = player.currentItem, position = player.currentTime()'), binding.index('controller.player = player'))
+        for guard in ['pendingSeek == nil', 'item?.status == .readyToPlay', 'isExplicitlyPaused == true',
+                      'generation == token', 'self.player === player', 'player.currentItem === item',
+                      'position.isValid', 'position.seconds.isFinite', 'CMTimeCompare(player.currentTime(), position) != 0']:
+            self.assertIn(guard, binding)
+        self.assertIn('seek(to: position, preservingPausedBinding: true)', binding)
+        for command in ['.pause()', '.play()', '.rate =', 'Int(position']:
+            self.assertNotIn(command, binding)
+        self.assertIn('player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero)', owner)
+        self.assertIn('player?.currentItem === item, self.pendingSeek == seekToken', owner)
+        paused = player.split('var isExplicitlyPaused: Bool {', 1)[1].split('func configureRate(', 1)[0]
+        self.assertIn('transportLock.lock()', paused)
+        self.assertIn('!wantsPlayback && super.rate == 0 && timeControlStatus == .paused', paused)
+        for evidence in ['try await assertFractionalFullScreenBinding(video, player: player, item: item)',
+                         'CMTime(seconds: 21.625, preferredTimescale: 600)', 'let before = player.currentTime()',
+                         'FullScreenStudyPlayer(video: video)', 'VideoPlayer(player: video.player)',
+                         'UIWindow(windowScene: scene)', 'accuracy: 0.005', 'for sample in 0..<20',
+                         'XCTAssertTrue(player.currentItem === item)', 'XCTAssertEqual(player.rate, selectedRate)']:
+            self.assertIn(evidence, native)
+        self.assertIn('Double(before), accuracy: 1)', ui)
+
 
 if __name__ == "__main__":
     unittest.main()

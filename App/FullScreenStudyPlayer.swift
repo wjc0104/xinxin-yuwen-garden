@@ -8,7 +8,7 @@ struct FullScreenStudyPlayer: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            if let player = video.player { NativeFullScreenPlayer(player: player).ignoresSafeArea() }
+            if video.player != nil { NativeFullScreenPlayer(video: video).ignoresSafeArea() }
             HStack {
                 Button(action: { video.traceTransportState(.fullscreenExit); exit() }) {
                     Label("退出全屏", systemImage: "arrow.down.right.and.arrow.up.left")
@@ -81,13 +81,11 @@ private struct PlaybackSpeedSheet: View {
 }
 
 private struct NativeFullScreenPlayer: UIViewControllerRepresentable {
-    let player: AVPlayer
+    let video: NativeStudyPlayer
     func makeUIViewController(context: Context) -> AVPlayerViewController {
         // Rotation follows the app's portrait/both-landscape declarations.
         let controller = AVPlayerViewController()
-        (player as? StudyAVPlayer)?.trace(.fullscreenAttachedBefore)
-        controller.player = player
-        (player as? StudyAVPlayer)?.trace(.fullscreenAttachedAfter)
+        video.bindFullScreenPlayer(to: controller)
         controller.showsPlaybackControls = true
         controller.view.accessibilityIdentifier = "fullscreen-native-player"
         return controller

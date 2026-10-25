@@ -15,6 +15,11 @@ final class StudyAVPlayer: AVPlayer {
     private weak var traceItem: AVPlayerItem?
     private var traceItemVersion = 0
 
+    var isExplicitlyPaused: Bool {
+        transportLock.lock(); defer { transportLock.unlock() }
+        return !wantsPlayback && super.rate == 0 && timeControlStatus == .paused
+    }
+
     func configureRate(_ rate: Float, useSystemDefaultRate: Bool = true) {
         transportLock.lock(); defer { transportLock.unlock() }
         trace(.configureBefore, requestedRate: rate)
@@ -84,7 +89,7 @@ final class StudyAVPlayer: AVPlayer {
             applyRate(selectedRate)
         }
     }
-    func trace(_ event: PlayerTransportEvent, requestedRate: Float? = nil, publishedSeconds: Int? = nil, publishedPlaying: Bool? = nil, ready: Bool? = nil, pendingSeek: Bool? = nil) {
+    func trace(_ event: PlayerTransportEvent, requestedRate: Float? = nil, publishedSeconds: Int? = nil, publishedPlaying: Bool? = nil, ready: Bool? = nil, pendingSeek: Bool? = nil, targetSeconds: Double? = nil, seekSucceeded: Bool? = nil) {
         guard traceTransport else { return }
         transportLock.lock(); defer { transportLock.unlock() }
         if event != .clockSample {
@@ -104,6 +109,8 @@ final class StudyAVPlayer: AVPlayer {
         if let publishedPlaying = publishedPlaying { state["publishedPlaying"] = publishedPlaying }
         if let ready = ready { state["ready"] = ready }
         if let pendingSeek = pendingSeek { state["pendingSeek"] = pendingSeek }
+        if let targetSeconds = targetSeconds { state["targetSeconds"] = targetSeconds.isFinite ? targetSeconds : -1 }
+        if let seekSucceeded = seekSucceeded { state["seekSucceeded"] = seekSucceeded }
         PlayerTransportTrace.shared.record(event, state: state)
     }
 }

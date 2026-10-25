@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import AVFoundation
+import AVKit
 import GardenCore
 
 private final class PlayerClock {
@@ -160,19 +161,45 @@ private final class PlayerClock {
         }
         return lastPosition
     }
+    func bindFullScreenPlayer(to controller: AVPlayerViewController) {
+        guard let player = player else { return }
+        let item = player.currentItem, position = player.currentTime(), token = generation
+        let paused = ready && pendingSeek == nil && item?.status == .readyToPlay &&
+            (player as? StudyAVPlayer)?.isExplicitlyPaused == true &&
+            position.isValid && position.seconds.isFinite && (0...86400).contains(position.seconds)
+        (player as? StudyAVPlayer)?.trace(.fullscreenAttachedBefore)
+        controller.player = player
+        (player as? StudyAVPlayer)?.trace(.fullscreenAttachedAfter)
+        // AVKit can retime a paused item during this assignment; preserve its exact fractional position.
+        guard paused, generation == token, self.player === player, player.currentItem === item,
+              ready, pendingSeek == nil, item?.status == .readyToPlay,
+              (player as? StudyAVPlayer)?.isExplicitlyPaused == true,
+              CMTimeCompare(player.currentTime(), position) != 0 else { return }
+        seek(to: position, preservingPausedBinding: true)
+    }
     func seek(_ seconds: Int) {
         guard ready, let player = player, seconds >= 0 else { return }
         let duration = player.currentItem?.duration.seconds ?? .nan
         let target = duration.isFinite ? min(Double(seconds), max(0, duration - 0.1)) : Double(seconds)
+        seek(to: CMTime(seconds: target, preferredTimescale: 600))
+    }
+    private func seek(to target: CMTime, preservingPausedBinding: Bool = false) {
+        guard ready, let player = player, let item = player.currentItem else { return }
         let token = generation, seekToken = UUID()
         pendingSeek = seekToken
-        player.seek(to: CMTime(seconds: target, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero) { [weak self, weak player] success in
+        if preservingPausedBinding { (player as? StudyAVPlayer)?.trace(.fullscreenRestoreBefore, pendingSeek: true, targetSeconds: target.seconds) }
+        player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self, weak player, weak item] success in
             Task { @MainActor [weak self] in
                 guard let self = self, self.generation == token, self.player === player,
-                      self.pendingSeek == seekToken else { return }
+                      let item = item, player?.currentItem === item, self.pendingSeek == seekToken else { return }
                 self.pendingSeek = nil
+                if preservingPausedBinding {
+                    (player as? StudyAVPlayer)?.trace(.fullscreenRestoreCompleted, pendingSeek: false, targetSeconds: target.seconds, seekSucceeded: success)
+                    // A subsequent native play command wins, including over a failed restoration.
+                    guard (player as? StudyAVPlayer)?.isExplicitlyPaused == true else { return }
+                }
                 if success {
-                    self.lastPosition = Int(target); self.seconds = Int(target)
+                    self.lastPosition = Int(target.seconds); self.seconds = Int(target.seconds)
                 } else {
                     // A failed restoration must not silently replace the saved position with zero.
                     self.ready = false; player?.pause(); self.playing = false

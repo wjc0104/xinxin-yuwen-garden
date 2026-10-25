@@ -5,6 +5,8 @@ import UIKit
 import CoreImage
 import QuartzCore
 import CoreVideo
+import SwiftUI
+import AVKit
 @testable import XinxinGarden
 import GardenCore
 
@@ -95,6 +97,7 @@ import GardenCore
         attachment.name = "14-实际AVPlayer输出720P视频帧"; attachment.lifetime = .keepAlways; add(attachment)
         XCTAssertTrue(hasSpatialDetail(buffer), "A uniform green/black output is not evidence of the lesson picture; inspect the retained frame")
         video.pause()
+        try await assertFractionalFullScreenBinding(video, player: player, item: item)
         video.setPlaybackRate(2)
         XCTAssertEqual(player.rate, 0)
         let seek = expectation(description: "Native player seeks to a note timestamp")
@@ -145,6 +148,112 @@ import GardenCore
         XCTAssertNil(video.currentSeconds(), "The old resource's position must not leak into another video")
         video.playbackFailed(item)
         XCTAssertNil(video.currentSeconds())
+    }
+    private func assertFractionalFullScreenBinding(_ video: NativeStudyPlayer, player: AVPlayer, item: AVPlayerItem) async throws {
+        let presentation = FullScreenPresentation()
+        let inline = UIHostingController(rootView: FullScreenBindingHarness(video: video, presentation: presentation))
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        let previousWindow = scene.windows.first { $0.isKeyWindow }
+        let window = UIWindow(windowScene: scene)
+        window.rootViewController = inline
+        window.makeKeyAndVisible()
+        defer { inline.dismiss(animated: false); window.isHidden = true; previousWindow?.makeKey() }
+        presentation.focused = true
+        await waitForPresentation { presentation.editorFocused }
+        XCTAssertTrue(player is StudyAVPlayer)
+        XCTAssertEqual(item.status, .readyToPlay)
+        XCTAssertTrue((player as? StudyAVPlayer)?.isExplicitlyPaused == true)
+        let seek = expectation(description: "Seek real paused item to a fractional non-keyframe position before mounting")
+        player.seek(to: CMTime(seconds: 21.625, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero) { success in
+            XCTAssertTrue(success)
+            seek.fulfill()
+        }
+        await fulfillment(of: [seek], timeout: 15)
+        let before = player.currentTime()
+        XCTAssertEqual(before.seconds, 21.625, accuracy: 0.05, "Capture actual native seek result before AVKit binding")
+        let noteAnchor = try XCTUnwrap(video.currentSeconds())
+        let selectedRate = video.playbackRate
+        for attempt in 1...2 {
+            video.traceTransportState(.fullscreenBegin)
+            presentation.focused = false // Same inline VideoPlayer height/focus transition as VideoStudyView.
+            presentation.fullScreen = true
+            await waitForPresentation { presentation.appeared && self.nativeController(inline)?.player === player }
+            let controller = try XCTUnwrap(nativeController(inline), "Mount the production FullScreenStudyPlayer stock controller")
+            XCTAssertTrue(controller.player === player)
+            await waitForPresentation { abs(player.currentTime().seconds - before.seconds) <= 0.005 || video.problem != nil }
+            for sample in 0..<20 {
+                XCTAssertNil(video.problem)
+                XCTAssertTrue(video.player === player)
+                XCTAssertTrue(player.currentItem === item)
+                XCTAssertEqual(player.rate, 0)
+                XCTAssertEqual(player.timeControlStatus, .paused)
+                XCTAssertTrue((player as? StudyAVPlayer)?.isExplicitlyPaused == true)
+                XCTAssertEqual(player.currentTime().seconds, before.seconds, accuracy: 0.005, "Fractional native position after mount \(attempt), sample \(sample)")
+                XCTAssertEqual(video.playbackRate, selectedRate)
+                XCTAssertEqual(video.currentSeconds(), noteAnchor, "Binding must retain the original note anchor")
+                try await Task.sleep(nanoseconds: 50_000_000) // Sample throughout settling, including after seek completion.
+            }
+            let result = XCTAttachment(string: "attempt=\(attempt) before=\(before.value)/\(before.timescale) after=\(player.currentTime().value)/\(player.currentTime().timescale) rate=\(player.rate) samePlayer=\(video.player === player) sameItem=\(player.currentItem === item)")
+            result.name = "Paused fractional production fullscreen binding \(attempt)"; result.lifetime = .keepAlways; add(result)
+            presentation.fullScreen = false
+            await waitForPresentation { !presentation.appeared && inline.presentedViewController == nil }
+            XCTAssertEqual(player.currentTime().seconds, before.seconds, accuracy: 0.005, "Dismissal must preserve the same fractional position")
+            XCTAssertEqual(presentation.draft, "原始学习笔记草稿")
+            XCTAssertEqual(video.currentSeconds(), noteAnchor)
+        }
+        // The identical production binding must leave running transport and its forward clock alone.
+        player.play()
+        await assertRate(player, equals: selectedRate)
+        let runningBefore = player.currentTime().seconds
+        presentation.focused = false; presentation.fullScreen = true
+        await waitForPresentation { presentation.appeared && self.nativeController(inline)?.player === player }
+        XCTAssertTrue(player.currentItem === item)
+        XCTAssertEqual(player.rate, selectedRate)
+        XCTAssertGreaterThanOrEqual(player.currentTime().seconds, runningBefore - 0.05)
+        let mounted = player.currentTime().seconds
+        await waitForPresentation { player.currentTime().seconds > mounted + 0.3 }
+        XCTAssertEqual(player.rate, selectedRate)
+        presentation.fullScreen = false
+        await waitForPresentation { !presentation.appeared && inline.presentedViewController == nil }
+        video.pause()
+    }
+    private func waitForPresentation(_ condition: () -> Bool) async {
+        for _ in 0..<200 {
+            if condition() { return }
+            try? await Task.sleep(nanoseconds: 50_000_000)
+        }
+        XCTAssertTrue(condition(), "Production fullscreen presentation/native position did not settle")
+    }
+    private func nativeController(_ controller: UIViewController) -> AVPlayerViewController? {
+        if let native = controller as? AVPlayerViewController, native.view.accessibilityIdentifier == "fullscreen-native-player" { return native }
+        if let presented = controller.presentedViewController, let native = nativeController(presented) { return native }
+        return controller.children.compactMap { nativeController($0) }.first
+    }
+    private final class FullScreenPresentation: ObservableObject {
+        @Published var focused = false
+        @Published var fullScreen = false
+        @Published var draft = "原始学习笔记草稿"
+        var appeared = false
+        var editorFocused = false
+    }
+    private struct FullScreenBindingHarness: View {
+        @ObservedObject var video: NativeStudyPlayer
+        @ObservedObject var presentation: FullScreenPresentation
+        @FocusState private var focused: Bool
+        var body: some View {
+            VStack {
+                VideoPlayer(player: video.player).frame(height: presentation.focused ? 160 : 230)
+                TextEditor(text: $presentation.draft).focused($focused)
+            }
+            .onAppear { focused = presentation.focused }
+            .onChange(of: presentation.focused) { focused = $0 }
+            .onChange(of: focused) { presentation.editorFocused = $0 }
+            .fullScreenCover(isPresented: $presentation.fullScreen, onDismiss: { presentation.focused = true }) {
+                FullScreenStudyPlayer(video: video) { presentation.fullScreen = false }
+                    .onAppear { presentation.appeared = true }
+                    .onDisappear { presentation.appeared = false }
+            }
+        }
     }
     private func assertRate(_ player: AVPlayer, equals expected: Float) async {
         let settled = expectation(description: "Native player retains selected \(expected)x speed")

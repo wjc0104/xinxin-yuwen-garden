@@ -7,6 +7,7 @@ enum PlayerTransportEvent: String {
     case applyBefore, applyAfter, observedState, repairPaused, repairRate, clockSample
     case appToggle, noteCaptureBefore, noteCaptureAfter, focusOn, focusOff
     case fullscreenBegin, fullscreenAppeared, fullscreenAttachedBefore, fullscreenAttachedAfter
+    case fullscreenRestoreBefore, fullscreenRestoreCompleted
     case fullscreenExit, fullscreenDisappeared, fullscreenDismissed, fullscreenDetached
     case inlineAppeared, inlineDisappeared
 }
