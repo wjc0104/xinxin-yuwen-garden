@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 
 final class GardenUITests: XCTestCase {
     func testPoetryLoginAndReturnKeepReaderActionsAndNotesWithoutRemoteLogin() throws {
@@ -186,11 +187,14 @@ final class GardenUITests: XCTestCase {
         if let old = note.value as? String, !old.isEmpty { note.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: old.count)) }
         note.typeText("fullscreen draft")
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        try assertRenderedVideo(app, playerID: "native-video-player", phase: "paused-inline-before-entry")
         app.buttons["video-fullscreen"].tap()
         let exit = app.buttons["video-exit-fullscreen"]
         XCTAssertTrue(exit.waitForExistence(timeout: 5))
         let fullscreenSpeed = app.buttons["fullscreen-video-speed"]
         XCTAssertEqual(fullscreenSpeed.label, "倍速 1.5×")
+        wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "已暂停"), object: runningPosition)], timeout: 5)
+        try assertRenderedVideo(app, playerID: "fullscreen-native-player", phase: "paused-fullscreen-before-2x")
         shot("17-全屏倍速菜单点击前")
         fullscreenSpeed.tap(); app.buttons["video-speed-option-2"].tap()
         XCTAssertEqual(fullscreenSpeed.label, "倍速 2×")
@@ -203,6 +207,7 @@ final class GardenUITests: XCTestCase {
         let nativeFrame = app.descendants(matching: .any)["fullscreen-native-player"].firstMatch.frame
         XCTAssertGreaterThan(nativeFrame.width, nativeFrame.height, "The native video controller itself must occupy landscape")
         XCTAssertGreaterThan(nativeFrame.width, app.frame.width * 0.9)
+        try assertRenderedVideo(app, playerID: "fullscreen-native-player", phase: "paused-landscape-right")
         shot("15-原生视频横屏全屏")
         XCUIDevice.shared.orientation = .landscapeRight
         wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "landscapeLeft"), object: orientation)], timeout: 8)
@@ -210,6 +215,7 @@ final class GardenUITests: XCTestCase {
         let secondNativeFrame = app.descendants(matching: .any)["fullscreen-native-player"].firstMatch.frame
         XCTAssertGreaterThan(secondNativeFrame.width, secondNativeFrame.height)
         XCTAssertGreaterThan(secondNativeFrame.width, app.frame.width * 0.9)
+        try assertRenderedVideo(app, playerID: "fullscreen-native-player", phase: "paused-landscape-left")
         exit.tap()
         XCTAssertTrue(app.buttons["video-fullscreen"].waitForExistence(timeout: 5))
         XCTAssertEqual(play.label, "播放", "Exiting must respect the user's paused state")
@@ -221,6 +227,7 @@ final class GardenUITests: XCTestCase {
         let portrait = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in app.frame.height > app.frame.width }, object: nil)
         wait(for: [portrait], timeout: 8)
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5), "The note editor's focus returns after fullscreen")
+        try assertRenderedVideo(app, playerID: "native-video-player", phase: "paused-inline-after-dismissal")
         shot("16-退出全屏保留草稿与键盘")
     }
     func testSearchStudyNotesAndChineseSchedule() throws {
@@ -353,6 +360,70 @@ final class GardenUITests: XCTestCase {
         XCTAssertTrue(category.waitForExistence(timeout: 5))
         XCTAssertTrue(category.isHittable)
         category.tap()
+    }
+    // This lesson's actual decoded image is 1280x720. AVKit uses aspect-fit in both containers.
+    // Sample only its inset image, never letterboxing, app chrome or accessible transport overlays.
+    private func assertRenderedVideo(_ app: XCUIApplication, playerID: String, phase: String) throws {
+        let player = app.descendants(matching: .any)[playerID].firstMatch
+        XCTAssertTrue(player.waitForExistence(timeout: 5), phase)
+        let frame = player.frame
+        let screenshot = XCUIScreen.main.screenshot()
+        let full = XCTAttachment(screenshot: screenshot)
+        full.name = "rendered-video-" + phase; full.lifetime = .keepAlways; add(full)
+        let image = screenshot.image
+        XCTAssertEqual(image.imageOrientation, .up, phase + ": screenshot coordinates must be upright")
+        let source = try XCTUnwrap(image.cgImage, phase)
+        XCTAssertTrue(frame.width.isFinite && frame.height.isFinite && frame.width > 0 && frame.height > 0, phase)
+        let width = min(frame.width, frame.height * 16 / 9)
+        let height = width * 9 / 16
+        let video = CGRect(x: frame.midX - width / 2, y: frame.midY - height / 2, width: width, height: height)
+        let region = video.insetBy(dx: width * 0.10, dy: height * 0.10)
+        let screen = CGRect(origin: .zero, size: image.size)
+        XCTAssertTrue(screen.contains(region) && !region.isEmpty, phase + ": video crop must be on screen")
+        let scaleX = CGFloat(source.width) / image.size.width
+        let scaleY = CGFloat(source.height) / image.size.height
+        // Round inward so no pixel outside the actual video region enters the sample.
+        let pixels = CGRect(x: ceil(region.minX * scaleX), y: ceil(region.minY * scaleY),
+                            width: floor(region.maxX * scaleX) - ceil(region.minX * scaleX),
+                            height: floor(region.maxY * scaleY) - ceil(region.minY * scaleY))
+        XCTAssertTrue(CGRect(x: 0, y: 0, width: source.width, height: source.height).contains(pixels), phase)
+        let crop = try XCTUnwrap(source.cropping(to: pixels), phase)
+        let cropped = XCTAttachment(image: UIImage(cgImage: crop))
+        cropped.name = "rendered-video-region-" + phase; cropped.lifetime = .keepAlways; add(cropped)
+        let overlays = (app.buttons.allElementsBoundByIndex + app.sliders.allElementsBoundByIndex
+                        + app.staticTexts.allElementsBoundByIndex).filter { $0.exists }.map {
+            $0.frame.insetBy(dx: -4, dy: -4)
+        }.filter { $0.intersects(region) }
+        let sampleWidth = 64, sampleHeight = 36, bytesPerRow = sampleWidth * 4
+        var rgba = [UInt8](repeating: 0, count: bytesPerRow * sampleHeight)
+        let rendered = rgba.withUnsafeMutableBytes { buffer -> Bool in
+            guard let context = CGContext(data: buffer.baseAddress, width: sampleWidth, height: sampleHeight,
+                                          bitsPerComponent: 8, bytesPerRow: bytesPerRow,
+                                          space: CGColorSpaceCreateDeviceRGB(),
+                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue) else { return false }
+            // Align buffer row zero with screenshot top for overlay masking below.
+            context.translateBy(x: 0, y: CGFloat(sampleHeight)); context.scaleBy(x: 1, y: -1)
+            context.draw(crop, in: CGRect(x: 0, y: 0, width: sampleWidth, height: sampleHeight))
+            return true
+        }
+        XCTAssertTrue(rendered, phase)
+        var colors: [Int: Int] = [:]
+        var samples = 0
+        for y in 0..<sampleHeight {
+            for x in 0..<sampleWidth {
+                let point = CGPoint(x: (pixels.minX + (CGFloat(x) + 0.5) * pixels.width / CGFloat(sampleWidth)) / scaleX,
+                                    y: (pixels.minY + (CGFloat(y) + 0.5) * pixels.height / CGFloat(sampleHeight)) / scaleY)
+                if overlays.contains(where: { $0.contains(point) }) { continue }
+                let offset = y * bytesPerRow + x * 4
+                // Explicit RGBA context owns exactly width * height * 4 bytes.
+                let color = (Int(rgba[offset]) >> 4) << 8 | (Int(rgba[offset + 1]) >> 4) << 4 | (Int(rgba[offset + 2]) >> 4)
+                colors[color, default: 0] += 1; samples += 1
+            }
+        }
+        XCTAssertGreaterThan(samples, sampleWidth * sampleHeight / 4, phase + ": overlays obscure the video sample")
+        let populatedColors = colors.values.filter { $0 >= 4 }.count
+        XCTAssertGreaterThanOrEqual(populatedColors, 16, phase + ": rendered lesson must vary; uniform green/black is a failure (colors=\(populatedColors), samples=\(samples))")
+        XCTAssertLessThan(colors.values.max() ?? samples, samples * 9 / 10, phase + ": nearly uniform rendered video")
     }
     private func shot(_ name: String) {
         let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
