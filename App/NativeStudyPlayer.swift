@@ -118,6 +118,7 @@ private final class PlayerClock {
                     let next = Int(elapsed)
                     self.lastPosition = next
                     if self.seconds != next { self.seconds = next }
+                    self.traceTransportState(.clockSample)
                 }
             }
         } catch {
@@ -139,7 +140,7 @@ private final class PlayerClock {
         ready = false; loading = false; playing = false
         problem = "系统播放器暂时无法连接视频源，请重试。"
     }
-    func playPause() { guard ready, let player = player else { return }; if player.timeControlStatus != .paused { player.pause() } else { player.play() } }
+    func playPause() { guard ready, let player = player else { return }; traceTransportState(.appToggle); if player.timeControlStatus != .paused { player.pause() } else { player.play() } }
     func setPlaybackRate(_ rate: Float) {
         guard Self.playbackRates.contains(rate) else { return }
         playbackRate = rate
@@ -147,6 +148,10 @@ private final class PlayerClock {
     }
     func traceTransportState(_ command: String) {
         if traceTransport { print("NATIVE_TRANSPORT time=\(ProcessInfo.processInfo.systemUptime) command=\(command) rate=\(player?.rate ?? -1) control=\(player?.timeControlStatus.rawValue ?? -1)") }
+        traceTransportState(.checkpoint)
+    }
+    func traceTransportState(_ event: PlayerTransportEvent) {
+        (player as? StudyAVPlayer)?.trace(event, publishedSeconds: seconds, publishedPlaying: playing, ready: ready, pendingSeek: pendingSeek != nil)
     }
     func pause() { player?.pause() }
     func currentSeconds() -> Int? {

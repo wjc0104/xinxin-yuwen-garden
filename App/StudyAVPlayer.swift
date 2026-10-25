@@ -11,9 +11,13 @@ final class StudyAVPlayer: AVPlayer {
     private var rateObservation: NSKeyValueObservation?
     private var controlObservation: NSKeyValueObservation?
     var traceTransport = false
+    private lazy var tracePlayer = PlayerTransportTrace.shared.allocatePlayer()
+    private weak var traceItem: AVPlayerItem?
+    private var traceItemVersion = 0
 
     func configureRate(_ rate: Float, useSystemDefaultRate: Bool = true) {
         transportLock.lock(); defer { transportLock.unlock() }
+        trace(.configureBefore, requestedRate: rate)
         selectedRate = rate
         if useSystemDefaultRate {
             if #available(iOS 16.0, *) { defaultRate = rate }
@@ -23,52 +27,83 @@ final class StudyAVPlayer: AVPlayer {
             controlObservation = observe(\.timeControlStatus, options: [.new]) { [weak self] _, _ in self?.reconcileTransport() }
         }
         if wantsPlayback { applyRate(rate) }
+        trace(.configureAfter, requestedRate: rate)
     }
     override func play() {
         transportLock.lock(); defer { transportLock.unlock() }
         if applyingCommand { super.play(); return }
-        wantsPlayback = true; trace("play")
+        trace(.playBefore)
+        wantsPlayback = true
         applyRate(selectedRate)
+        trace(.playAfter)
     }
     override func pause() {
         transportLock.lock(); defer { transportLock.unlock() }
         if applyingCommand { super.pause(); return }
-        wantsPlayback = false; trace("pause")
+        trace(.pauseBefore)
+        wantsPlayback = false
         applyRate(0)
+        trace(.pauseAfter)
     }
     override var rate: Float {
         get { super.rate }
         set {
             transportLock.lock(); defer { transportLock.unlock() }
             if applyingCommand { super.rate = newValue; return }
-            wantsPlayback = newValue > 0; trace("setRate-\(newValue)")
+            trace(.setRateBefore, requestedRate: newValue)
+            wantsPlayback = newValue > 0
             applyRate(wantsPlayback ? selectedRate : 0)
+            trace(.setRateAfter, requestedRate: newValue)
         }
     }
     override func playImmediately(atRate rate: Float) {
         transportLock.lock(); defer { transportLock.unlock() }
         if applyingCommand { super.playImmediately(atRate: rate); return }
-        wantsPlayback = rate > 0; trace("playImmediately-\(rate)")
+        trace(.playImmediatelyBefore, requestedRate: rate)
+        wantsPlayback = rate > 0
         applyRate(wantsPlayback ? selectedRate : 0)
+        trace(.playImmediatelyAfter, requestedRate: rate)
     }
     private func applyRate(_ rate: Float) {
         let previous = applyingCommand
         applyingCommand = true
         defer { applyingCommand = previous }
+        trace(.applyBefore, requestedRate: rate)
         if rate > 0 { super.playImmediately(atRate: rate) } else { super.pause() }
+        trace(.applyAfter, requestedRate: rate)
     }
     private func reconcileTransport() {
         transportLock.lock(); defer { transportLock.unlock() }
+        trace(.observedState)
         guard !applyingCommand else { return }
         if !wantsPlayback && (super.rate != 0 || timeControlStatus != .paused) {
-            trace("repairPaused")
+            trace(.repairPaused)
             applyRate(0)
         } else if wantsPlayback && super.rate > 0 && super.rate != selectedRate {
-            trace("repairRate")
+            trace(.repairRate)
             applyRate(selectedRate)
         }
     }
-    private func trace(_ command: String) {
-        if traceTransport { print("NATIVE_COMMAND time=\(ProcessInfo.processInfo.systemUptime) action=\(command) wants=\(wantsPlayback) actual=\(super.rate) control=\(timeControlStatus.rawValue) selected=\(selectedRate)") }
+    func trace(_ event: PlayerTransportEvent, requestedRate: Float? = nil, publishedSeconds: Int? = nil, publishedPlaying: Bool? = nil, ready: Bool? = nil, pendingSeek: Bool? = nil) {
+        guard traceTransport else { return }
+        transportLock.lock(); defer { transportLock.unlock() }
+        if event != .clockSample {
+            print("NATIVE_COMMAND time=\(ProcessInfo.processInfo.systemUptime) action=\(event.rawValue) wants=\(wantsPlayback) actual=\(super.rate) control=\(timeControlStatus.rawValue) selected=\(selectedRate)")
+        }
+        guard PlayerTransportTrace.shared.enabled else { return }
+        if traceItem !== currentItem { traceItem = currentItem; traceItemVersion += 1 }
+        let position = currentTime().seconds
+        let actualRate = super.rate
+        var state: [String: Any] = ["player": tracePlayer, "item": traceItemVersion,
+            "position": position.isFinite ? position : -1, "rate": actualRate.isFinite ? actualRate : -1,
+            "control": timeControlStatus.rawValue, "selected": selectedRate.isFinite ? selectedRate : -1,
+            "wants": wantsPlayback, "applying": applyingCommand,
+            "itemStatus": currentItem?.status.rawValue ?? -1]
+        if let requestedRate = requestedRate { state["requested"] = requestedRate.isFinite ? requestedRate : -1 }
+        if let publishedSeconds = publishedSeconds { state["publishedSeconds"] = publishedSeconds }
+        if let publishedPlaying = publishedPlaying { state["publishedPlaying"] = publishedPlaying }
+        if let ready = ready { state["ready"] = ready }
+        if let pendingSeek = pendingSeek { state["pendingSeek"] = pendingSeek }
+        PlayerTransportTrace.shared.record(event, state: state)
     }
 }

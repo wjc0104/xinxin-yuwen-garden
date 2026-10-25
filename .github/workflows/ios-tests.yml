@@ -22,7 +22,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Check diagnostic reporting and gate policy
-        run: python3 scripts/test-public-source-diagnostics.py
+        run: |
+          python3 scripts/test-public-source-diagnostics.py
+          python3 scripts/test-player-transport-diagnostics.py
       - name: Diagnose public source and search before simulator work
         id: source
         continue-on-error: true
@@ -86,6 +88,7 @@ jobs:
               xcrun xcresulttool export attachments --path "$result" --output-path "build/screenshots/$name" || true
             fi
           done
+          python3 scripts/export-player-transport.py
       - name: Report real source gate failure
         if: ${{ !cancelled() && steps.source.outcome != 'success' }}
         run: |
@@ -97,6 +100,7 @@ jobs:
           name: simulator-results
           path: |
             build/*.log
+            build/player-transport.jsonl
             build/public-source.json
             build/screenshots/
           if-no-files-found: warn

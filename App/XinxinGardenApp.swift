@@ -2,6 +2,7 @@ import SwiftUI
 import GardenCore
 @main struct XinxinGardenApp: App {
     @StateObject private var store = AppStore()
+    init() { _ = PlayerTransportTrace.shared }
     var body: some Scene { WindowGroup { GardenRoot().environmentObject(store).environment(\.locale, Locale(identifier: "zh_CN")).environment(\.calendar, GardenDate.calendar).environment(\.timeZone, GardenDate.calendar.timeZone) } }
 }
 struct GardenRoot: View {

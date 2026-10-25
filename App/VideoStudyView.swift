@@ -32,6 +32,7 @@ struct VideoStudyView: View {
                 if let error = video.problem { VStack(spacing: 10) { Text(error).accessibilityIdentifier("video-source-error").foregroundColor(.white).multilineTextAlignment(.center); Button("重试播放") { Task { await video.load(resource, localURL: localURL, at: video.currentSeconds() ?? initialSeconds, force: true) } } }.padding(20) }
                 if video.ready {
                     VStack { HStack { Spacer(); Button {
+                        video.traceTransportState(.fullscreenBegin)
                         restoreNoteFocus = focused; focused = false; fullScreen = true
                     } label: { Label("全屏", systemImage: "arrow.up.left.and.arrow.down.right").padding(10).background(Color.black.opacity(0.75)).cornerRadius(10) }
                         .foregroundColor(.white).accessibilityIdentifier("video-fullscreen") }; Spacer() }.padding(10)
@@ -55,7 +56,7 @@ struct VideoStudyView: View {
                             GardenCard {
                                 HStack { Text("学习笔记").font(.headline); Spacer(); Button("收起") { focused = false; composing = false } }
                                 TextEditor(text: $note).frame(height: 90).focused($focused).accessibilityIdentifier("video-note-input")
-                                HStack { Text("时间点").font(.subheadline); TextField("分:秒 或 时:分:秒", text: $stamp).keyboardType(.numbersAndPunctuation).textFieldStyle(.roundedBorder); Button("取当前时间") { stamp = video.currentSeconds().map(TimeLabel.video) ?? "" }.disabled(!video.ready) }
+                                HStack { Text("时间点").font(.subheadline); TextField("分:秒 或 时:分:秒", text: $stamp).keyboardType(.numbersAndPunctuation).textFieldStyle(.roundedBorder); Button("取当前时间") { video.traceTransportState(.noteCaptureBefore); stamp = video.currentSeconds().map(TimeLabel.video) ?? ""; video.traceTransportState(.noteCaptureAfter) }.disabled(!video.ready) }
                                 if let problem = problem { Text(problem).font(.caption).foregroundColor(.red) }
                                 Button("保存笔记") { saveNote() }.accessibilityIdentifier("video-save-note")
                             }.id("video-composer")
@@ -73,9 +74,11 @@ struct VideoStudyView: View {
             Button { beginNote() } label: { Label("标记时间 · 写笔记", systemImage: "square.and.pencil").font(.headline).frame(maxWidth: .infinity).padding(15) }.background(GardenTheme.card).accessibilityIdentifier("study-note")
         }
         .task(id: resource.id) { await video.load(resource, localURL: localURL, at: initialSeconds) }
-        .onDisappear { if !fullScreen { video.pause() } }
+        .onAppear { video.traceTransportState(.inlineAppeared) }
+        .onChange(of: focused) { video.traceTransportState($0 ? .focusOn : .focusOff) }
+        .onDisappear { video.traceTransportState(.inlineDisappeared); if !fullScreen { video.pause() } }
         .sheet(item: $browser) { SafariSheet(url: $0.url) }
-        .fullScreenCover(isPresented: $fullScreen, onDismiss: { focused = restoreNoteFocus }) {
+        .fullScreenCover(isPresented: $fullScreen, onDismiss: { video.traceTransportState(.fullscreenDismissed); focused = restoreNoteFocus }) {
             if video.player != nil { FullScreenStudyPlayer(video: video) { fullScreen = false } }
         }
     }

@@ -10,7 +10,7 @@ struct FullScreenStudyPlayer: View {
         ZStack(alignment: .topLeading) {
             if let player = video.player { NativeFullScreenPlayer(player: player).ignoresSafeArea() }
             HStack {
-                Button(action: exit) {
+                Button(action: { video.traceTransportState(.fullscreenExit); exit() }) {
                     Label("退出全屏", systemImage: "arrow.down.right.and.arrow.up.left")
                         .padding(12).background(Color.black.opacity(0.75)).cornerRadius(12)
                 }.accessibilityIdentifier("video-exit-fullscreen")
@@ -24,6 +24,8 @@ struct FullScreenStudyPlayer: View {
             .foregroundColor(.white).padding(16)
         }.background(Color.black)
             .background(InterfaceOrientationObservation().allowsHitTesting(false))
+            .onAppear { video.traceTransportState(.fullscreenAppeared) }
+            .onDisappear { video.traceTransportState(.fullscreenDisappeared) }
     }
 }
 
@@ -83,12 +85,17 @@ private struct NativeFullScreenPlayer: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> AVPlayerViewController {
         // Rotation follows the app's portrait/both-landscape declarations.
         let controller = AVPlayerViewController()
+        (player as? StudyAVPlayer)?.trace(.fullscreenAttachedBefore)
         controller.player = player
+        (player as? StudyAVPlayer)?.trace(.fullscreenAttachedAfter)
         controller.showsPlaybackControls = true
         controller.view.accessibilityIdentifier = "fullscreen-native-player"
         return controller
     }
     func updateUIViewController(_ controller: AVPlayerViewController, context: Context) {}
+    static func dismantleUIViewController(_ controller: AVPlayerViewController, coordinator: ()) {
+        (controller.player as? StudyAVPlayer)?.trace(.fullscreenDetached)
+    }
 }
 
 /// Public window-scene orientation, exposed for accessibility/native rotation verification.
