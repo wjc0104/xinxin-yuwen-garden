@@ -129,25 +129,21 @@ enum StudyPlayerHostRole: Equatable {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black
-        attachment?.claim(self)
+        attachment?.refresh(self)
     }
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        attachment?.claim(self) // Also handles a cancelled interactive dismissal.
+        attachment?.refresh(self) // Only the registered host can recover a cancelled dismissal.
         if role == .fullscreen, attachment?.fullscreenMounted == true {
             (attachment?.controller.player as? StudyAVPlayer)?.trace(.fullscreenMounted)
         }
-    }
-    override func viewDidDisappear(_ animated: Bool) {
-        super.viewDidDisappear(animated)
-        if role == .fullscreen { attachment?.end(self) }
     }
     func bind(_ next: RetainedStudyPlayerController?) {
         guard attachment !== next else { return }
         release()
         attachment = next
         loadViewIfNeeded()
-        next?.claim(self)
+        next?.register(self)
     }
     func release() {
         attachment?.end(self)
@@ -187,7 +183,7 @@ enum StudyPlayerHostRole: Equatable {
             controller.player === video?.player
     }
 
-    func claim(_ host: StudyPlayerHostController) {
+    func register(_ host: StudyPlayerHostController) {
         guard isCurrent else { return }
         switch host.role {
         case .inline:
@@ -200,6 +196,17 @@ enum StudyPlayerHostRole: Equatable {
             guard fullscreenHost == nil else { return }
         case .fullscreen:
             fullscreenHost = host
+        }
+        attach(to: host)
+    }
+
+    func refresh(_ host: StudyPlayerHostController) {
+        guard isCurrent else { return }
+        switch host.role {
+        case .inline:
+            guard inlineHost === host, fullscreenHost == nil else { return }
+        case .fullscreen:
+            guard fullscreenHost === host else { return }
         }
         attach(to: host)
     }

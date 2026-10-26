@@ -174,6 +174,7 @@ import GardenCore
             controller.view.window === window && retained.owner?.role == .inline &&
                 controller.parent === retained.owner
         }
+        let inlineHost = try XCTUnwrap(retained.owner)
         XCTAssertTrue(controller.player === player)
         XCTAssertTrue(player.currentItem === item)
         let seek = expectation(description: "Position the mounted production controller at a fractional paused frame")
@@ -211,6 +212,11 @@ import GardenCore
                 XCTAssertEqual(video.playbackRate, selectedRate)
                 XCTAssertEqual(video.currentSeconds(), noteAnchor)
                 try await Task.sleep(nanoseconds: 50_000_000)
+            }
+            if attempt == 1 {
+                try await assertCompactPageSheetKeepsFullscreenOwner(
+                    video: video, player: player, item: item, retained: retained,
+                    fullscreenHost: fullscreenHost, inlineHost: inlineHost)
             }
             // An old inline update while fullscreen is active must never steal the child.
             let staleInline = StudyPlayerHostController(role: .inline)
@@ -252,6 +258,74 @@ import GardenCore
         presentation.fullScreen = false
         await waitForPresentation { !presentation.appeared && retained.owner?.role == .inline }
         video.pause()
+        assertSupersededFullscreenHostCannotReclaim(retained: retained, player: player,
+                                                   item: item, inline: inline, inlineHost: inlineHost)
+    }
+
+    private func assertCompactPageSheetKeepsFullscreenOwner(
+        video: NativeStudyPlayer, player: AVPlayer, item: AVPlayerItem,
+        retained: RetainedStudyPlayerController, fullscreenHost: StudyPlayerHostController,
+        inlineHost: StudyPlayerHostController
+    ) async throws {
+        let parent = try XCTUnwrap(fullscreenHost.parent)
+        parent.setOverrideTraitCollection(UITraitCollection(verticalSizeClass: .compact), forChild: fullscreenHost)
+        defer { parent.setOverrideTraitCollection(nil, forChild: fullscreenHost) }
+        XCTAssertEqual(fullscreenHost.traitCollection.verticalSizeClass, .compact)
+        let original = player.currentTime()
+        let sheet = UIViewController()
+        sheet.view.backgroundColor = .systemBackground
+        sheet.modalPresentationStyle = .pageSheet // The production speed selector's UIKit presentation style.
+        defer { sheet.dismiss(animated: false) }
+        fullscreenHost.present(sheet, animated: false)
+        await waitForPresentation { sheet.view.window != nil }
+        XCTAssertTrue(retained.owner === fullscreenHost)
+        XCTAssertTrue(retained.controller.parent === fullscreenHost)
+        XCTAssertTrue(retained.controller.player === player && player.currentItem === item)
+        inlineHost.viewDidAppear(false) // An inline callback while covered cannot steal fullscreen.
+        XCTAssertTrue(retained.owner === fullscreenHost)
+        XCTAssertEqual(player.currentTime().seconds, original.seconds, accuracy: 0.005)
+        XCTAssertEqual(player.rate, 0)
+        XCTAssertNil(video.problem)
+        sheet.dismiss(animated: false)
+        await waitForPresentation { sheet.presentingViewController == nil && fullscreenHost.view.window != nil }
+        XCTAssertTrue(retained.owner === fullscreenHost)
+        XCTAssertTrue(retained.controller.parent === fullscreenHost)
+        XCTAssertTrue(retained.controller.player === player && player.currentItem === item)
+        XCTAssertEqual(player.currentTime().seconds, original.seconds, accuracy: 0.005)
+    }
+
+    private func assertSupersededFullscreenHostCannotReclaim(
+        retained: RetainedStudyPlayerController, player: AVPlayer, item: AVPlayerItem,
+        inline: UIViewController, inlineHost: StudyPlayerHostController
+    ) {
+        let first = StudyPlayerHostController(role: .fullscreen)
+        inline.addChild(first)
+        inline.view.addSubview(first.view)
+        first.didMove(toParent: inline)
+        first.bind(retained)
+        XCTAssertTrue(retained.owner === first)
+        let newer = StudyPlayerHostController(role: .fullscreen)
+        inline.addChild(newer)
+        inline.view.addSubview(newer.view)
+        newer.didMove(toParent: inline)
+        newer.bind(retained)
+        XCTAssertTrue(retained.owner === newer)
+        first.viewDidAppear(false) // A delayed or cancelled old appearance cannot re-register A.
+        XCTAssertTrue(retained.owner === newer)
+        first.release() // A stale end also cannot detach B.
+        XCTAssertTrue(retained.owner === newer)
+        newer.viewWillDisappear(true)
+        newer.viewDidAppear(false) // B's own cancelled disappearance retains its authorization.
+        XCTAssertTrue(retained.owner === newer)
+        XCTAssertTrue(retained.controller.parent === newer)
+        XCTAssertTrue(retained.controller.player === player && player.currentItem === item)
+        newer.release()
+        XCTAssertTrue(retained.owner === inlineHost)
+        for host in [newer, first] {
+            host.willMove(toParent: nil)
+            host.view.removeFromSuperview()
+            host.removeFromParent()
+        }
     }
 
     private func assertNativeCommandsSupersedeAppSeek(_ video: NativeStudyPlayer, player: AVPlayer, item: AVPlayerItem) async throws {
@@ -259,6 +333,11 @@ import GardenCore
         XCTAssertTrue(item is StudyAVPlayerItem)
         for command in 0..<3 {
             let target = CMTime(seconds: 44.375 + Double(command) * 20, preferredTimescale: 600)
+            var published: [(seconds: Int?, actual: Double)] = []
+            let publication = video.$seconds.dropFirst().sink {
+                published.append(($0, player.currentTime().seconds))
+            }
+            defer { publication.cancel() }
             video.seek(to: target)
             XCTAssertNotNil(video.pendingSeek, "The app seek must still be in flight")
             let appRevision = native.intentRevision
@@ -290,6 +369,12 @@ import GardenCore
                     XCTAssertEqual(player.currentTime().seconds, newerTarget.seconds, accuracy: 0.05)
                 }
                 XCTAssertEqual(native.intentRevision, newerRevision)
+                if command < 2 {
+                    XCTAssertFalse(published.contains {
+                        $0.seconds == Int(target.seconds) &&
+                            abs($0.actual - newerTarget.seconds) <= 0.05
+                    }, "An obsolete app target must not publish after the newer native position takes effect")
+                }
                 try await Task.sleep(nanoseconds: 50_000_000)
             }
         }

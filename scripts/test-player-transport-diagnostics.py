@@ -98,6 +98,10 @@ class TransportDiagnosticChecks(unittest.TestCase):
         self.assertEqual(fullscreen.count('controller.player = player'), 1)
         self.assertIn('if video.player != nil { NativeInlinePlayer(video: video) }', inline)
         self.assertNotIn('VideoPlayer(', inline + fullscreen + native)
+        self.assertIn('next?.register(self)', fullscreen)
+        self.assertIn('attachment?.refresh(self)', fullscreen)
+        self.assertNotIn('attachment?.end(self)', fullscreen.split('override func viewDidAppear(', 1)[1].split('func bind(', 1)[0])
+        self.assertIn('guard fullscreenHost === host else { return }', fullscreen)
         for evidence in ['host.addChild(controller)', 'host.view.addSubview(controller.view)',
                          'controller.didMove(toParent: host)', 'controller.willMove(toParent: nil)',
                          'controller.view.removeFromSuperview()', 'controller.removeFromParent()',
@@ -114,12 +118,16 @@ class TransportDiagnosticChecks(unittest.TestCase):
                          'CMTime(seconds: 21.625, preferredTimescale: 600)',
                          'video.retainedController === retained', 'controller.player === player',
                          'player.currentItem === item', 'accuracy: 0.005',
-                         'let staleInline = StudyPlayerHostController(role: .inline)']:
+                         'let staleInline = StudyPlayerHostController(role: .inline)',
+                         'assertCompactPageSheetKeepsFullscreenOwner(',
+                         'assertSupersededFullscreenHostCannotReclaim(']:
             self.assertIn(evidence, native)
         for evidence in ['paused-inline-before-entry', 'paused-fullscreen-before-2x',
                          'paused-landscape-right', 'paused-landscape-left',
                          'paused-inline-after-dismissal', 'Double(before), accuracy: 1)']:
             self.assertIn(evidence, ui)
+        self.assertIn('fullscreenSpeed.tap()\n        app.buttons["video-speed-option-2"].tap()',
+                      ui.split('let nativeFrame =', 1)[1].split('phase: "paused-landscape-right"', 1)[0])
 
     def test_native_intent_supersedes_obsolete_application_seek(self):
         owner = (ROOT / "App/NativeStudyPlayer.swift").read_text(encoding="utf-8")
@@ -145,5 +153,8 @@ class TransportDiagnosticChecks(unittest.TestCase):
                          'item.seek(to: newerTarget', 'player.play(); player.pause()']:
             self.assertIn(evidence, overlap)
         self.assertIn('XCTAssertEqual(native.intentRevision, newerRevision)', race)
+        self.assertIn('video.$seconds.dropFirst().sink', race)
+        self.assertIn('XCTAssertFalse(published.contains', race)
+        self.assertIn('abs($0.actual - newerTarget.seconds) <= 0.05', race)
 if __name__ == "__main__":
     unittest.main()

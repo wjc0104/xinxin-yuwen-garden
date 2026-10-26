@@ -209,6 +209,12 @@ final class GardenUITests: XCTestCase {
         let nativeFrame = app.descendants(matching: .any)["fullscreen-native-player"].firstMatch.frame
         XCTAssertGreaterThan(nativeFrame.width, nativeFrame.height, "The native video controller itself must occupy landscape")
         XCTAssertGreaterThan(nativeFrame.width, app.frame.width * 0.9)
+        // Open the real speed sheet in compact height; dismissing it must keep this fullscreen owner.
+        fullscreenSpeed.tap()
+        app.buttons["video-speed-option-2"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["fullscreen-native-player"].firstMatch.waitForExistence(timeout: 5))
+        XCTAssertEqual(fullscreenSpeed.label, "倍速 2×")
+        XCTAssertEqual(runningPosition.value as? String, "已暂停")
         try assertRenderedVideo(app, playerID: "fullscreen-native-player", phase: "paused-landscape-right")
         shot("15-原生视频横屏全屏")
         XCUIDevice.shared.orientation = .landscapeRight
