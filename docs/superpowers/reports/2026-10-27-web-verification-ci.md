@@ -48,3 +48,20 @@ Windows Playwright WebKit 曾尝试相同自编媒体；VP8/WebM 和随后自编
 独立评审 exact diff；只提交/推送获准 feature head，查看该 head 的 Linux 工作流及 artifacts。控制器已告知设置精确主机/目标的非密钥仓库变量；首次推送会实际探测已知尚未验收的私有 Sites，不能把 full workflow 描述为全部绿色。若显式请求远端遇登录、challenge、redirect、timeout 或缺身份，保留失败/未检查状态；继续解决托管与真实网络证据，不覆盖成本地 fixture 成功。
 
 官方参考：[Playwright CI](https://playwright.dev/docs/ci)、[官方 1.64.1 release](https://github.com/microsoft/playwright/releases/tag/v1.64.1)、[浏览器/媒体编解码说明](https://playwright.dev/docs/browsers)。
+
+## GitHub Actions 实际执行（控制器补记）
+
+精确代码提交 `4bbdba05e78981bae56e661cb957bdb8b862220a`，远程分支 `wm0104/web-verification-ci`；未更新 main、未强推、未触发旧原生工作流。
+
+运行：[40421701115](https://github.com/wjc0104/xinxin-yuwen-garden/actions/runs/40421701115)，已完成，整体 `failure`：
+
+| Job | 实际结论 | 证据 |
+|---|---|---|
+| code_suite | success | Linux 导出与 45 项既有 + 4 组 CI 测试 |
+| browser_fixture | success | Linux Chromium，3 个真实合成视频解码帧、导航、精确搜索、选区笔记重载、倍速与时间跳转 |
+| hosted_acceptance | failure | 当前私有站点 HTTP 401，`NOT CHECKED / authentication_required`，没有登录身份或原视频验收 |
+| evidence_report | success | 失败后仍生成 JSON/中文摘要，`complete=false` |
+
+控制器已下载 `web-verification-report` 并读取 `report.json`、`summary.md` 和失败步骤日志。`hosted_real_playback` 与四个网络单元均为 `NOT CHECKED`。此结果证明检测机制生效，不代表网站交付成功；没有发送成功邮件或关机。没有为了整体绿色跳过身份、放宽私有权限或覆盖失败结果。
+
+当前站点仍须解决可直连托管和正式身份访问，GitHub Runner 的 HTTP401 也不能证明中国手机网络可达。之前用户电脑显式无代理直连的独立探测发生 TLS 连接重置，仍保留为失败证据；不能用 GitHub 所在线路覆盖该结果。
