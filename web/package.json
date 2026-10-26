@@ -1,0 +1,1 @@
+{"name":"xinyu-web-companion","private":true,"type":"module","scripts":{"export":"node scripts/export-data.mjs","test":"node --test tests/*.test.mjs","serve":"node scripts/serve.mjs"}}
