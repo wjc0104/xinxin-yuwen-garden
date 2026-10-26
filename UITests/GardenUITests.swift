@@ -15,20 +15,28 @@ final class GardenUITests: XCTestCase {
         let original = app.buttons["resource-curated-text-7u-04-7dbbc1cc5964f7a5"]
         XCTAssertTrue(original.waitForExistence(timeout: 5)); original.tap()
 
+        let options = app.buttons["poetry-reading-options"]
+        XCTAssertTrue(options.waitForExistence(timeout: 5)); options.tap()
         let login = app.buttons["poetry-site-login"]
         let restore = app.buttons["poetry-return-original"]
-        let guidance = app.staticTexts["poetry-login-guidance"]
         XCTAssertTrue(login.waitForExistence(timeout: 5))
         XCTAssertEqual(login.label, "原站登录")
         XCTAssertFalse(restore.isEnabled)
-        XCTAssertTrue(guidance.label.contains("原站已公开提供的全文会直接显示"))
+        app.buttons["poetry-reading-guidance"].tap()
+        let guidance = app.alerts.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "原站已公开提供的全文会直接显示")).firstMatch
+        XCTAssertTrue(guidance.waitForExistence(timeout: 3))
         XCTAssertTrue(guidance.label.contains("账号功能可选"))
+        app.alerts.buttons["知道了"].tap()
         XCTAssertTrue(app.staticTexts["古文岛 · 原文署名见页面"].exists)
         XCTAssertTrue(app.buttons["open-in-browser"].exists)
         XCTAssertTrue(app.buttons["web-quote-selection"].exists)
-        login.tap()
-        XCTAssertTrue(restore.isEnabled, "The actual reader action must call the attached controller even when network navigation is cancelled")
-        XCTAssertTrue(guidance.label.contains("账号功能及登录结果由原站决定"))
+        options.tap(); login.tap()
+        let inlineRestore = app.buttons["poetry-return-inline"]
+        XCTAssertTrue(inlineRestore.waitForExistence(timeout: 3), "The actual reader action must call the attached controller even when network navigation is cancelled")
+        options.tap(); XCTAssertTrue(restore.isEnabled)
+        app.buttons["poetry-reading-guidance"].tap()
+        XCTAssertTrue(app.alerts.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "账号功能及登录结果由原站决定")).firstMatch.waitForExistence(timeout: 3))
+        app.alerts.buttons["知道了"].tap()
         shot("17-诗词原站登录与返回入口")
 
         // The note sheet remains the existing reader's sheet while login navigation is pending.
@@ -38,16 +46,59 @@ final class GardenUITests: XCTestCase {
         XCUIDevice.shared.press(.home); app.activate()
         XCTAssertEqual(note.value as? String, "poetry reader draft")
         app.buttons["save-note"].tap()
-        XCTAssertTrue(restore.waitForExistence(timeout: 4)); XCTAssertTrue(restore.isEnabled)
-        restore.tap()
+        XCTAssertTrue(inlineRestore.waitForExistence(timeout: 4)); inlineRestore.tap()
+        options.tap()
         XCTAssertFalse(restore.isEnabled)
         XCTAssertTrue(login.isEnabled)
+        app.buttons["poetry-reading-guidance"].tap(); app.alerts.buttons["知道了"].tap()
         XCTAssertTrue(app.buttons["web-quote-selection"].exists)
         XCTAssertTrue(app.buttons["open-in-browser"].exists)
         shot("18-诗词返回原文保留阅读操作")
         app.tabBars.buttons["我的"].tap()
         app.buttons["我的笔记与收藏"].tap()
         XCTAssertTrue(app.staticTexts["poetry reader draft"].firstMatch.waitForExistence(timeout: 5))
+    }
+
+    func testPoetryReaderPortraitBothLandscapesAndBackKeepReadableSpace() throws {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        defer { XCUIDevice.shared.orientation = .portrait }
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--ui-testing-offline-reader", "--ui-testing-poetry-layout"]
+        app.launch()
+        app.tabBars.buttons["课程"].tap()
+        app.buttons["book-7u"].tap(); app.buttons["lesson-7u-04"].tap()
+        let picker = app.scrollViews["lesson-category-picker"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 5)); picker.swipeLeft()
+        app.buttons["课文解读"].firstMatch.tap()
+        let original = app.buttons["resource-curated-text-7u-04-7dbbc1cc5964f7a5"]
+        XCTAssertTrue(original.waitForExistence(timeout: 5)); original.tap()
+        let web = app.webViews.firstMatch
+        XCTAssertTrue(web.staticTexts["响应式阅读测试"].waitForExistence(timeout: 5))
+        let phases: [(String, UIDeviceOrientation)] = [("portrait", .portrait), ("landscape-left", .landscapeLeft), ("landscape-right", .landscapeRight), ("portrait-return", .portrait)]
+        for (phase, orientation) in phases {
+            XCUIDevice.shared.orientation = orientation
+            let landscape = orientation.isLandscape
+            let reflowed = NSPredicate { _, _ in
+                let frame = app.frame, reader = web.frame
+                return (frame.width > frame.height) == landscape && reader.width >= frame.width - 120 && reader.height >= frame.height * (landscape ? 0.4 : 0.6)
+            }
+            wait(for: [XCTNSPredicateExpectation(predicate: reflowed, object: nil)], timeout: 8)
+            XCTAssertTrue(web.staticTexts["响应式阅读测试"].exists, phase)
+            XCTAssertTrue(app.buttons["web-quote-selection"].isHittable, phase)
+            XCTAssertTrue(app.buttons["study-note"].isHittable, phase)
+            XCTAssertTrue(app.buttons["open-in-browser"].isHittable, phase)
+            let options = app.buttons["poetry-reading-options"]
+            XCTAssertTrue(options.isHittable, phase)
+            shot("poetry-layout-" + phase)
+            let geometry = XCTAttachment(string: "\(phase): app=\(app.frame), web=\(web.frame)")
+            geometry.name = "poetry-native-geometry-" + phase; geometry.lifetime = .keepAlways; add(geometry)
+            options.tap()
+            XCTAssertTrue(app.buttons["poetry-site-login"].exists, phase)
+            app.buttons["poetry-reading-guidance"].tap()
+            XCTAssertTrue(app.alerts["阅读说明"].waitForExistence(timeout: 3))
+            app.alerts.buttons["知道了"].tap()
+        }
     }
 
     func testTextSelectionHighlightsAndSurvivesRelaunch() throws {

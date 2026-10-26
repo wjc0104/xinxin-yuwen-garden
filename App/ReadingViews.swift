@@ -13,6 +13,8 @@ struct ReadingView: View {
     @State private var browser: BrowserLink?
     @State private var showDelete = false
     @State private var webSelectionMessage: String?
+    @State private var showWebGuidance = false
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @StateObject private var web = WebStudyController()
     @StateObject private var selection = TextSelectionController()
     @State private var textHeight: CGFloat = 400
@@ -32,20 +34,24 @@ struct ReadingView: View {
                         Text(resource.source).font(.caption).lineLimit(1)
                         Spacer(minLength: 8)
                         Button { browser = BrowserLink(url: url) } label: { Label("浏览器打开", systemImage: "safari").font(.caption) }.accessibilityIdentifier("open-in-browser").fixedSize()
+                        if EmbeddedResource.isPoetrySite(url.host ?? "") {
+                            Menu {
+                                Button { web.openLogin() } label: { Label("原站登录", systemImage: "person.crop.circle") }
+                                    .accessibilityIdentifier("poetry-site-login")
+                                Button { web.returnToOriginal() } label: { Label("返回原文", systemImage: "arrow.uturn.backward") }
+                                    .disabled(!web.canReturnToOriginal).accessibilityIdentifier("poetry-return-original")
+                                Button("阅读说明") { showWebGuidance = true }.accessibilityIdentifier("poetry-reading-guidance")
+                            } label: { Image(systemName: "ellipsis.circle").font(.body) }
+                            .accessibilityLabel("阅读选项").accessibilityIdentifier("poetry-reading-options")
+                        }
                     }
-                    Text(web.failed ? "原站加载失败，可稍后重试、用浏览器打开或写笔记。" : "原作者公开文字 · 若原站要求启动 App 或限制阅读，可点上方“浏览器打开”。").font(.caption).foregroundColor(.secondary)
-                    if EmbeddedResource.isPoetrySite(url.host ?? "") {
-                        HStack(spacing: 16) {
-                            Button { web.openLogin() } label: { Label("原站登录", systemImage: "person.crop.circle") }
-                                .accessibilityIdentifier("poetry-site-login")
-                            Button { web.returnToOriginal() } label: { Label("返回原文", systemImage: "arrow.uturn.backward") }
-                                .disabled(!web.canReturnToOriginal).accessibilityIdentifier("poetry-return-original")
-                        }.font(.subheadline)
-                        Text(web.canReturnToOriginal ? "可在下方原站页面自行登录；完成后点“返回原文”。账号功能及登录结果由原站决定。" : "原站已公开提供的全文会直接显示；收藏等账号功能可选“原站登录”。未提供的内容仍以原站为准。")
-                            .font(.caption).foregroundColor(.secondary).accessibilityIdentifier("poetry-login-guidance")
+                    if web.failed {
+                        Text("原站加载失败，可稍后重试、用浏览器打开或写笔记。").font(.caption).foregroundColor(.secondary)
+                    } else if web.canReturnToOriginal {
+                        Button("返回原文") { web.returnToOriginal() }.font(.caption).accessibilityIdentifier("poetry-return-inline")
                     }
                     if let message = webSelectionMessage { Text(message).font(.caption).foregroundColor(GardenTheme.mint) }
-                }.frame(maxWidth: .infinity, alignment: .leading).padding(12)
+                }.frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 12).padding(.vertical, 6)
                 EmbeddedResource(url: url, controller: web)
             } else {
                 ScrollView {
@@ -73,7 +79,7 @@ struct ReadingView: View {
                 Button { web.selectedText { quote in
                     if quote.isEmpty { webSelectionMessage = "请先长按选中文字；原站限制选区时可手动写笔记。" }
                     else { webSelectionMessage = nil; draft = NoteDraft(quote: quote) }
-                } } label: { Label("摘录选中文字", systemImage: "highlighter").font(.headline).frame(maxWidth: .infinity).padding(15) }.accessibilityIdentifier("web-quote-selection")
+                } } label: { Label("摘录选中文字", systemImage: "highlighter").font(.headline).frame(maxWidth: .infinity).padding(.horizontal, 15).padding(.vertical, verticalSizeClass == .compact ? 8 : 15) }.accessibilityIdentifier("web-quote-selection")
                 Divider().frame(height: 24)
             }
             if !resource.body.isEmpty && resource.kind != .pdf && resource.kind != .video && resource.kind != .localVideo {
@@ -82,13 +88,17 @@ struct ReadingView: View {
             }
             Button {
                 draft = NoteDraft()
-            } label: { Label(resource.kind == .localVideo || resource.kind == .video ? "标记时间 · 写笔记" : "写笔记", systemImage: "square.and.pencil").font(.headline).frame(maxWidth: .infinity).padding(15) }.accessibilityIdentifier("study-note")
+            } label: { Label(resource.kind == .localVideo || resource.kind == .video ? "标记时间 · 写笔记" : "写笔记", systemImage: "square.and.pencil").font(.headline).frame(maxWidth: .infinity).padding(.horizontal, 15).padding(.vertical, isWebText && verticalSizeClass == .compact ? 8 : 15) }.accessibilityIdentifier("study-note")
             }.background(GardenTheme.card)
             }
         }.background(GardenTheme.background).navigationTitle(resource.kind.label).navigationBarTitleDisplayMode(.inline)
         .toolbar { if !resource.id.hasPrefix("curated-") && resource.checkedAt == nil { Button { showDelete = true } label: { Image(systemName: "trash") }.accessibilityLabel("移除资料") } }
         .sheet(item: $draft) { value in NoteEditor(lessonID: resource.lessonID, resourceID: resource.id, regions: value.regions, quote: value.quote, timestamp: value.seconds.map(TimeLabel.video) ?? "") }
         .sheet(item: $browser) { SafariSheet(url: $0.url) }
+        .alert("阅读说明", isPresented: $showWebGuidance) { Button("知道了", role: .cancel) {} } message: {
+            Text(web.canReturnToOriginal ? "可在下方原站页面自行登录；完成后点“返回原文”。账号功能及登录结果由原站决定。" : "原站已公开提供的全文会直接显示；收藏等账号功能可选“原站登录”。未提供的内容仍以原站为准。若原站要求启动 App 或限制阅读，可选“浏览器打开”。")
+                .accessibilityIdentifier("poetry-login-guidance")
+        }
         .onAppear { store.remember(resource) }
         .alert("从资料库移除？", isPresented: $showDelete) { Button("移除", role: .destructive) { remove() }; Button("取消", role: .cancel) {} } message: { Text("笔记会保留。已导入的文件保留在本机，不会删除外部原资料。") }
     }
