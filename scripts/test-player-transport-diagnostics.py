@@ -16,6 +16,60 @@ spec.loader.exec_module(exporter)
 
 
 class TransportDiagnosticChecks(unittest.TestCase):
+    def test_render_pairs_export_without_trace_and_exclude_unrelated_or_oversize_files(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "app" / "Library" / "Caches" / exporter.RENDER_DIRECTORY
+            source.mkdir(parents=True)
+            (source / "g1-s1.json").write_bytes(b'{"sequence":1,"bufferCopied":true}')
+            (source / "g1-s1.png").write_bytes(b"bounded-test-png")
+            (source / "g1-s2.json").write_bytes(b'{"sequence":2,"bufferCopied":false}')
+            (source / "g1-s3.json").write_bytes(b"x" * (exporter.MAX_RENDER_JSON + 1))
+            (source / "g1-s4.json").write_bytes(b'{"sequence":4}')
+            with (source / "g1-s4.png").open("wb") as stream:
+                stream.truncate(exporter.MAX_RENDER_PNG + 1)
+            (source / "g1-s8.png").write_bytes(b"orphan-never-export")
+            (source / "credentials.txt").write_text("never-print-secret")
+            with patch.object(exporter, "Path", side_effect=lambda path: root / path if path == "build" else Path(path)):
+                _, output = self.export(root / "app")
+            destination = root / "build" / exporter.RENDER_DIRECTORY
+            self.assertEqual(sorted(path.name for path in destination.iterdir()),
+                             ["g1-s1.json", "g1-s1.png", "g1-s2.json", "g1-s4.json"])
+            self.assertNotIn("sequence", output)
+            self.assertNotIn("never-print", output)
+
+    def test_render_sample_count_is_bounded_and_ordinary_launch_remains_output_free(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / exporter.RENDER_DIRECTORY
+            source.mkdir()
+            for generation in [1, 2]:
+                for sequence in range(1, 9):
+                    (source / f"g{generation}-s{sequence}.json").write_bytes(b"{}")
+            with patch.object(exporter, "Path", side_effect=lambda path: root / path if path == "build" else Path(path)), redirect_stdout(io.StringIO()) as output:
+                exporter.export_render(root)
+            self.assertIn("count exceeds its bound", output.getvalue())
+            self.assertFalse((root / "build").exists())
+        sink = (ROOT / "App/SameItemRenderDiagnostic.swift").read_text(encoding="utf-8")
+        ui = (ROOT / "UITests/GardenUITests.swift").read_text(encoding="utf-8")
+        workflow = (ROOT / ".github/workflows/ios-tests.yml").read_text(encoding="utf-8")
+        self.assertTrue(sink.startswith("#if DEBUG\n"))
+        self.assertIn('arguments.contains("--ui-testing"), arguments.contains(flag)', sink)
+        self.assertIn('player.currentItem === item', sink)
+        self.assertIn('attachment.video?.retainedController === attachment', sink)
+        self.assertIn('Self.sampleCount < Self.maxSamples', sink)
+        self.assertIn('item?.remove(output)', sink)
+        for forbidden in ['player.seek(', 'player.play(', 'player.pause(', 'AVPlayer(playerItem:', 'URLRequest', 'resource.url']:
+            self.assertNotIn(forbidden, sink)
+        self.assertIn('checkVideoPlaybackFullScreenLandscape(sameItemDiagnostics: false)', ui)
+        self.assertIn('if sameItemDiagnostics { app.launchArguments.append("--same-item-render-diagnostics") }', ui)
+        self.assertLess(ui.index('phase: "initial-inline-playing-'), ui.index('let entering ='))
+        self.assertIn('initialPictures.allSatisfy { $0 }', ui)
+        self.assertIn('decodedReceipt=\\(decodedReceipt)', ui)
+        self.assertIn('screenshotStartUptime=', ui)
+        self.assertIn('same_item_render_diagnostics:', workflow)
+        self.assertIn('build/same-item-render/', workflow)
+
     def export(self, container, result=None, simulator="test-simulator"):
         output = io.StringIO()
         if result is None:

@@ -36,6 +36,9 @@ private final class PlayerClock {
     private var statusObserver: NSKeyValueObservation?
     private var playbackObserver: NSKeyValueObservation?
     private var clock: PlayerClock?
+    #if DEBUG
+    private var renderDiagnostic: SameItemRenderDiagnostic?
+    #endif
     private var loadWatchdog: Task<Void, Never>?
     private let session: URLSession = {
         let config = URLSessionConfiguration.ephemeral
@@ -87,6 +90,11 @@ private final class PlayerClock {
             value.automaticallyWaitsToMinimizeStalling = true
             retainedController = RetainedStudyPlayerController(video: self, player: value)
             player = value
+            #if DEBUG
+            if let retainedController = retainedController {
+                renderDiagnostic = SameItemRenderDiagnostic.make(retainedController)
+            }
+            #endif
             statusObserver = item.observe(\.status, options: [.initial,.new]) { [weak self] item, _ in
                 Task { @MainActor [weak self] in
                     guard let self = self, self.generation == token else { return }
@@ -230,6 +238,9 @@ private final class PlayerClock {
         return data
     }
     private func clearPlayer() {
+        #if DEBUG
+        renderDiagnostic?.invalidate(); renderDiagnostic = nil
+        #endif
         retainedController?.invalidate(); retainedController = nil
         loadWatchdog?.cancel(); loadWatchdog = nil
         player?.pause()

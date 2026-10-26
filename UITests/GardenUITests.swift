@@ -114,11 +114,20 @@ final class GardenUITests: XCTestCase {
         shot("10-视频时间笔记")
     }
     func testVideoPlaybackFullScreenLandscape() throws {
+        try checkVideoPlaybackFullScreenLandscape(sameItemDiagnostics: false)
+    }
+    func testVideoPlaybackFullScreenLandscapeWithSameItemDiagnostics() throws {
+        try checkVideoPlaybackFullScreenLandscape(sameItemDiagnostics: true)
+    }
+    private func checkVideoPlaybackFullScreenLandscape(sameItemDiagnostics: Bool) throws {
         continueAfterFailure = false
         try checkRenderedVideoImageCoordinates()
         XCUIDevice.shared.orientation = .portrait
         defer { XCUIDevice.shared.orientation = .portrait }
-        let app = XCUIApplication(); app.launchArguments = ["--ui-testing", "--trace-player-transport", "--legacy-player-transport"]; app.launch()
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--trace-player-transport", "--legacy-player-transport"]
+        if sameItemDiagnostics { app.launchArguments.append("--same-item-render-diagnostics") }
+        app.launch()
         app.tabBars.buttons["课程"].tap()
         app.buttons["book-7u"].tap(); app.buttons["lesson-7u-02"].tap()
         app.buttons["resource-curated-7u-02-BV1eUAieoEZd-2"].tap()
@@ -137,11 +146,28 @@ final class GardenUITests: XCTestCase {
         app.buttons["video-speed-option-1.5"].tap()
         XCTAssertEqual(play.label, "播放", "Changing speed while paused cannot start playback")
         XCTAssertEqual(speed.label, "倍速 1.5×")
+        if sameItemDiagnostics {
+            // Initial paused evidence may be an opening frame; it is explicitly not an informative-image gate.
+            _ = try assertRenderedVideo(app, playerID: "native-video-player", phase: "initial-inline-paused-diagnostic",
+                                        enforceImageGate: false, sameItemCapture: true)
+        }
         play.tap()
         let position = app.staticTexts["video-position"]
         let moving = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label != %@ AND label != %@ AND label != %@", "--:--", "00:00", ""), object: position)
         wait(for: [moving], timeout: 25)
         XCTAssertEqual(speed.label, "倍速 1.5×")
+        let initial = try XCTUnwrap(videoSeconds(position.label))
+        var initialPictures: [Bool] = []
+        for offset in [0, 2, 4] {
+            wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+                (self.videoSeconds(position.label) ?? -1) >= initial + offset
+            }, object: nil)], timeout: 15)
+            XCTAssertEqual(play.label, "暂停", "Initial picture checkpoints must observe real running playback")
+            initialPictures.append(try assertRenderedVideo(app, playerID: "native-video-player",
+                phase: "initial-inline-playing-\(offset)", enforceImageGate: false, sameItemCapture: sameItemDiagnostics))
+        }
+        // Collect all three actual observations before failing; never retry until a green picture improves.
+        XCTAssertTrue(initialPictures.allSatisfy { $0 }, "Initial running displayed-video gates failed: \(initialPictures)")
         // A real running item must advance across presentation and dismissal at the selected rate.
         let entering = try XCTUnwrap(videoSeconds(position.label))
         app.buttons["video-fullscreen"].tap()
@@ -371,13 +397,25 @@ final class GardenUITests: XCTestCase {
     }
     // This lesson's actual decoded image is 1280x720. AVKit uses aspect-fit in both containers.
     // Sample only its inset image, never letterboxing, app chrome or accessible transport overlays.
-    private func assertRenderedVideo(_ app: XCUIApplication, playerID: String, phase: String) throws {
+    @discardableResult private func assertRenderedVideo(_ app: XCUIApplication, playerID: String, phase: String,
+                                                       enforceImageGate: Bool = true, sameItemCapture: Bool = false) throws -> Bool {
         let player = app.descendants(matching: .any)[playerID].firstMatch
         XCTAssertTrue(player.waitForExistence(timeout: 5), phase)
         if playerID == "fullscreen-native-player" {
             let status = player.descendants(matching: .any)["fullscreen-video-render-status"].firstMatch
             XCTAssertTrue(status.waitForExistence(timeout: 5), phase)
             wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "画面已就绪 · 已暂停"), object: status)], timeout: 16)
+        }
+        var decodedReceipt = "output-disabled"
+        if sameItemCapture {
+            let capture = app.buttons["same-item-render-capture"]
+            XCTAssertTrue(capture.waitForExistence(timeout: 5))
+            XCTAssertTrue(capture.isHittable)
+            let priorReceipt = capture.value as? String
+            capture.tap() // Exactly one request; a missing/new-buffer miss remains honest evidence.
+            decodedReceipt = try XCTUnwrap(capture.value as? String)
+            XCTAssertNotEqual(decodedReceipt, "0", "A capture request must have a numeric receipt")
+            XCTAssertNotEqual(decodedReceipt, priorReceipt, "A stale receipt cannot pair a later screenshot")
         }
         // A single AX snapshot supplies player geometry and all masks before the screenshot.
         func flattened(_ node: XCUIElementSnapshot) -> [XCUIElementSnapshot] {
@@ -393,7 +431,9 @@ final class GardenUITests: XCTestCase {
         }
         let overlays = nodes.filter { [XCUIElement.ElementType.button, .slider, .staticText].contains($0.elementType) }
             .map { $0.frame.insetBy(dx: -4, dy: -4) }
+        let screenStartUptime = ProcessInfo.processInfo.systemUptime
         let screenshot = XCUIScreen.main.screenshot()
+        let screenEndUptime = ProcessInfo.processInfo.systemUptime
         let full = XCTAttachment(screenshot: screenshot)
         full.name = "rendered-video-raw-" + phase; full.lifetime = .keepAlways; add(full)
         let raw = screenshot.image
@@ -413,6 +453,8 @@ final class GardenUITests: XCTestCase {
         uprightCGImage=\(source.width)x\(source.height) appFrame=\(bounds) playerFrame=\(frame)
         renderStatus=\(nodes.first { $0.identifier == "fullscreen-video-render-status" }?.value ?? "inline") video=\(video) regionAX=\(region) regionPixels=\(pixels)
         scaleX=\(scaleX) scaleY=\(scaleY) masksAX=\(overlays)
+        screenshotStartUptime=\(screenStartUptime) screenshotEndUptime=\(screenEndUptime)
+        decodedReceipt=\(decodedReceipt)
         """)
         diagnostic.name = "rendered-video-coordinates-" + phase; diagnostic.lifetime = .keepAlways; add(diagnostic)
         XCTAssertTrue(frame.width.isFinite && frame.height.isFinite && frame.width > 0 && frame.height > 0, phase)
@@ -452,10 +494,14 @@ final class GardenUITests: XCTestCase {
         }
         XCTAssertGreaterThan(samples, sampleWidth * sampleHeight / 4, phase + ": overlays obscure the video sample")
         let populatedColors = colors.values.filter { $0 >= 4 }.count
-        let statistics = XCTAttachment(string: "samples=\(samples) populatedColors=\(populatedColors) largestBucket=\(colors.values.max() ?? 0) bufferBytes=\(rgba.count)")
+        let informative = populatedColors >= 16 && (colors.values.max() ?? samples) < samples * 9 / 10
+        let statistics = XCTAttachment(string: "samples=\(samples) populatedColors=\(populatedColors) largestBucket=\(colors.values.max() ?? 0) bufferBytes=\(rgba.count) informative=\(informative) enforceImageGate=\(enforceImageGate)")
         statistics.name = "rendered-video-statistics-" + phase; statistics.lifetime = .keepAlways; add(statistics)
-        XCTAssertGreaterThanOrEqual(populatedColors, 16, phase + ": rendered lesson must vary; uniform green/black is a failure (colors=\(populatedColors), samples=\(samples))")
-        XCTAssertLessThan(colors.values.max() ?? samples, samples * 9 / 10, phase + ": nearly uniform rendered video")
+        if enforceImageGate {
+            XCTAssertGreaterThanOrEqual(populatedColors, 16, phase + ": rendered lesson must vary; uniform green/black is a failure (colors=\(populatedColors), samples=\(samples))")
+            XCTAssertLessThan(colors.values.max() ?? samples, samples * 9 / 10, phase + ": nearly uniform rendered video")
+        }
+        return informative
     }
     // UIImage.draw applies EXIF/UIImage orientation, including mirroring. The output owns upright pixels.
     private func uprightVideoImage(_ image: UIImage) throws -> UIImage {
