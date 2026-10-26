@@ -98,9 +98,10 @@ private struct NativeFullScreenPlayer: UIViewControllerRepresentable {
 final class MountedFullScreenPlayer: UIViewController {
     let playerController = AVPlayerViewController()
     private weak var video: NativeStudyPlayer?
-    private var presentation = UUID()
+    private(set) var presentation = UUID()
     private var displayObservation: NSKeyValueObservation?
     private var appeared = false
+    private var disappearing = false
     private var reportedMount = false
     private var reportedReady = false
 
@@ -108,6 +109,7 @@ final class MountedFullScreenPlayer: UIViewController {
         endPresentation()
         self.video = video
         presentation = UUID()
+        disappearing = false
         reportedMount = false; reportedReady = false
         video.bindFullScreenPlayer(to: playerController, presentation: presentation)
         if isViewLoaded { observeDisplay(); checkMount() }
@@ -138,19 +140,30 @@ final class MountedFullScreenPlayer: UIViewController {
     }
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        disappearing = false
         appeared = true
+        video?.resumeFullScreenPresentation(presentation) // A cancelled interactive dismissal keeps its unused ticket.
+        if displayObservation == nil { observeDisplay() }
         checkMount()
     }
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         checkMount()
     }
+    override func viewWillDisappear(_ animated: Bool) {
+        disappearing = true
+        appeared = false
+        displayObservation = nil
+        video?.beginFullScreenDisappearance(presentation)
+        super.viewWillDisappear(animated)
+    }
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
-        appeared = false
         endPresentation()
     }
     func endPresentation() {
+        disappearing = true
+        appeared = false
         displayObservation = nil
         video?.endFullScreenPresentation(presentation)
     }
@@ -160,7 +173,8 @@ final class MountedFullScreenPlayer: UIViewController {
         }
     }
     private func checkMount() {
-        guard appeared, view.window != nil, !view.bounds.isEmpty, !playerController.view.bounds.isEmpty else { return }
+        guard appeared, !disappearing, view.window != nil, !view.bounds.isEmpty,
+              !playerController.view.bounds.isEmpty else { return }
         if !reportedMount {
             reportedMount = true
             (playerController.player as? StudyAVPlayer)?.trace(.fullscreenMounted)

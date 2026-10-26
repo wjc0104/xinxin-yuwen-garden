@@ -104,7 +104,13 @@ class TransportDiagnosticChecks(unittest.TestCase):
                       'generation == token', 'self.player === player', 'player.currentItem === item',
                       'position.isValid', 'position.seconds.isFinite', 'CMTimeCompare(player.currentTime(), position) != 0']:
             self.assertIn(guard, binding)
-        self.assertIn('fullScreenRestoration = FullScreenRestoration(', binding)
+        self.assertIn('let ticket = FullScreenRestoration(', binding)
+        self.assertIn('fullScreenRestoration = ticket', binding)
+        self.assertIn('suspendedRestoration = ticket', binding)
+        self.assertIn('func beginFullScreenDisappearance(', binding)
+        self.assertIn('func resumeFullScreenPresentation(', binding)
+        self.assertIn('override func viewWillDisappear(', fullscreen)
+        self.assertIn('guard appeared, !disappearing, view.window != nil', fullscreen)
         self.assertIn('guard displayReady else { return }', binding)
         self.assertIn('seek(to: ticket.position, preservingPausedBinding: true, presentation: presentation)', binding)
         for command in ['.pause()', '.play()', '.rate =']:

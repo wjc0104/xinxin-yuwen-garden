@@ -204,6 +204,7 @@ import GardenCore
         presentation.focused = false
         try await assertNativeCommandsSupersedeBinding(video, player: player, item: item)
         try await assertNativeSeekSupersedesUnmountedRestoration(video, player: player, item: item)
+        try await assertDisappearanceStopsRestoration(video, player: player)
         // The identical production binding must leave running transport and its forward clock alone.
         player.play()
         await assertRate(player, equals: selectedRate)
@@ -312,6 +313,77 @@ import GardenCore
             XCTAssertNil(video.problem)
             try await Task.sleep(nanoseconds: 50_000_000)
         }
+    }
+    private func assertDisappearanceStopsRestoration(_ video: NativeStudyPlayer, player: AVPlayer) async throws {
+        let positioned = expectation(description: "Prepare real fractional player for disappearance race")
+        player.seek(to: CMTime(seconds: 21.625, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero) { success in
+            XCTAssertTrue(success); positioned.fulfill()
+        }
+        await fulfillment(of: [positioned], timeout: 15)
+        let original = player.currentTime()
+        let container = MountedFullScreenPlayer()
+        container.bind(video)
+        let didRetime = video.waitingForFullScreenRestoration
+        container.loadViewIfNeeded()
+        let host = ManualAppearanceHost()
+        host.loadViewIfNeeded()
+        host.addChild(container)
+        container.view.frame = host.view.bounds
+        container.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        host.view.addSubview(container.view)
+        container.didMove(toParent: host)
+        container.beginAppearanceTransition(true, animated: false)
+        container.endAppearanceTransition() // Appeared, but still no window: a genuine ticket cannot be consumed.
+        container.beginAppearanceTransition(false, animated: true) // Public UIKit will-disappear boundary.
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        let previousWindow = scene.windows.first { $0.isKeyWindow }
+        let window = UIWindow(windowScene: scene)
+        window.rootViewController = host
+        window.makeKeyAndVisible()
+        container.view.frame = host.view.bounds
+        container.view.layoutIfNeeded()
+        defer { container.endPresentation(); window.isHidden = true; previousWindow?.makeKey() }
+        await waitForPresentation { container.playerController.isReadyForDisplay }
+        container.viewDidLayoutSubviews() // The same layout path can run while the dismissal animation is active.
+        XCTAssertNil(video.pendingSeek, "Ready/layout during disappearance must not issue the old restoration")
+        if didRetime {
+            XCTAssertTrue(video.waitingForFullScreenRestoration, "Cancelled interactive exit retains only the unused target")
+            XCTAssertEqual(video.currentSeconds(), Int(original.seconds), "Disappearing ticket must not publish bind time")
+        }
+        container.endAppearanceTransition()
+        XCTAssertFalse(video.waitingForFullScreenRestoration, "Completed disappearance discards its ticket")
+        container.viewDidLayoutSubviews()
+        XCTAssertNil(video.pendingSeek)
+        window.isHidden = true
+        previousWindow?.makeKey()
+
+        let issued = MountedFullScreenPlayer()
+        issued.bind(video)
+        issued.loadViewIfNeeded()
+        issued.beginAppearanceTransition(true, animated: false)
+        issued.endAppearanceTransition()
+        video.cancelFullScreenRestoration(presentation: issued.presentation)
+        video.seek(to: CMTime(seconds: 44.375, preferredTimescale: 600),
+                   preservingPausedBinding: true, presentation: issued.presentation)
+        XCTAssertNotNil(video.pendingSeek, "The old presentation must own a real asynchronous seek")
+        issued.beginAppearanceTransition(false, animated: true)
+        XCTAssertNil(video.pendingSeek, "Will-disappear must cancel the issued seek before its completion publishes")
+        issued.endAppearanceTransition()
+
+        // A later presentation's genuine asynchronous seek owns its own UUID.
+        let newer = UUID()
+        let target = CMTime(seconds: 83.375, preferredTimescale: 600)
+        video.seek(to: target, preservingPausedBinding: true, presentation: newer)
+        let newerSeek = try XCTUnwrap(video.pendingSeek)
+        container.endPresentation() // A stale old callback must not cancel this newer seek.
+        issued.endPresentation()
+        XCTAssertEqual(video.pendingSeek, newerSeek)
+        await waitForPresentation { video.pendingSeek == nil }
+        XCTAssertEqual(player.currentTime().seconds, target.seconds, accuracy: 0.05)
+        XCTAssertNil(video.problem)
+    }
+    private final class ManualAppearanceHost: UIViewController {
+        override var shouldAutomaticallyForwardAppearanceMethods: Bool { false }
     }
     private func waitForPresentation(iterations: Int = 200, _ condition: () -> Bool) async {
         for _ in 0..<iterations {

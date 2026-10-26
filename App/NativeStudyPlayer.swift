@@ -47,10 +47,11 @@ private final class PlayerClock {
     private var lastPosition: Int?
     @Published private(set) var pendingSeek: UUID?
     private var fullScreenRestoration: FullScreenRestoration?
+    private var suspendedRestoration: FullScreenRestoration?
     private var issuedRestoration: IssuedRestoration?
     private var restorationWatchdog: Task<Void, Never>?
     var waitingForFullScreenRestoration: Bool {
-        guard let ticket = fullScreenRestoration else { return false }
+        guard let ticket = fullScreenRestoration ?? suspendedRestoration else { return false }
         return generation == ticket.generation && player === ticket.player &&
             ticket.player.currentItem === ticket.item && ticket.player.intentRevision == ticket.intentRevision
     }
@@ -209,15 +210,20 @@ private final class PlayerClock {
               CMTimeCompare(player.currentTime(), position) != 0,
               let native = native, let item = item, let intentRevision = intentRevision else { return }
         lastPosition = Int(position.seconds); seconds = Int(position.seconds)
-        fullScreenRestoration = FullScreenRestoration(presentation: presentation, generation: token,
+        let ticket = FullScreenRestoration(presentation: presentation, generation: token,
             player: native, item: item, position: position, intentRevision: intentRevision)
+        fullScreenRestoration = ticket
         native.trace(.fullscreenRestoreWaiting, pendingSeek: true, targetSeconds: position.seconds)
+        startRestorationWatchdog(for: ticket)
+    }
+    private func startRestorationWatchdog(for ticket: FullScreenRestoration) {
+        restorationWatchdog?.cancel()
         restorationWatchdog = Task { [weak self] in
             do { try await Task.sleep(nanoseconds: 8_000_000_000) } catch { return }
-            guard let self = self, self.fullScreenRestoration?.presentation == presentation else { return }
-            if !self.waitingForFullScreenRestoration { self.cancelFullScreenRestoration(presentation: presentation); return }
-            self.cancelFullScreenRestoration(presentation: presentation)
-            native.trace(.fullscreenRestoreTimedOut, targetSeconds: position.seconds)
+            guard let self = self, self.fullScreenRestoration?.presentation == ticket.presentation else { return }
+            if !self.waitingForFullScreenRestoration { self.cancelFullScreenRestoration(presentation: ticket.presentation); return }
+            self.cancelFullScreenRestoration(presentation: ticket.presentation)
+            ticket.player.trace(.fullscreenRestoreTimedOut, targetSeconds: ticket.position.seconds)
             self.problem = "全屏画面未就绪，请退出后重试。"
         }
     }
@@ -235,11 +241,35 @@ private final class PlayerClock {
         seek(to: ticket.position, preservingPausedBinding: true, presentation: presentation)
     }
     func cancelFullScreenRestoration(presentation: UUID? = nil) {
-        guard let ticket = fullScreenRestoration,
-              presentation == nil || ticket.presentation == presentation else { return }
-        fullScreenRestoration = nil
-        restorationWatchdog?.cancel(); restorationWatchdog = nil
-        ticket.player.trace(.fullscreenRestoreCancelled, targetSeconds: ticket.position.seconds)
+        if let ticket = fullScreenRestoration, presentation == nil || ticket.presentation == presentation {
+            fullScreenRestoration = nil
+            restorationWatchdog?.cancel(); restorationWatchdog = nil
+            ticket.player.trace(.fullscreenRestoreCancelled, targetSeconds: ticket.position.seconds)
+        }
+        if let ticket = suspendedRestoration, presentation == nil || ticket.presentation == presentation {
+            suspendedRestoration = nil
+            ticket.player.trace(.fullscreenRestoreCancelled, targetSeconds: ticket.position.seconds)
+        }
+    }
+    func beginFullScreenDisappearance(_ presentation: UUID) {
+        if let ticket = fullScreenRestoration, ticket.presentation == presentation {
+            fullScreenRestoration = nil
+            suspendedRestoration = ticket // Retain the unused target only if an interactive exit is cancelled.
+            restorationWatchdog?.cancel(); restorationWatchdog = nil
+        }
+        cancelIssuedRestoration(presentation: presentation)
+    }
+    func resumeFullScreenPresentation(_ presentation: UUID) {
+        guard let ticket = suspendedRestoration, ticket.presentation == presentation else { return }
+        suspendedRestoration = nil
+        guard fullScreenRestoration == nil, generation == ticket.generation,
+              player === ticket.player, ticket.player.currentItem === ticket.item,
+              ticket.player.intentRevision == ticket.intentRevision, ticket.player.isExplicitlyPaused else {
+            ticket.player.trace(.fullscreenRestoreCancelled, targetSeconds: ticket.position.seconds)
+            return
+        }
+        fullScreenRestoration = ticket
+        startRestorationWatchdog(for: ticket)
     }
     func endFullScreenPresentation(_ presentation: UUID) {
         cancelFullScreenRestoration(presentation: presentation)
