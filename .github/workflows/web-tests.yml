@@ -1,0 +1,110 @@
+name: Web evidence (not phone acceptance)
+
+on:
+  push:
+    branches: [main, 'wm0104/web-verification-ci']
+    paths: ['web/**', '.github/workflows/web-tests.yml']
+  pull_request:
+    paths: ['web/**', '.github/workflows/web-tests.yml']
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: 'Optional private HTTPS root; requires exact WEB_VERIFY_ALLOWED_HOST repository variable. Missing production identity fails acceptance, not offline tests.'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+concurrency:
+  group: web-evidence-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  code_suite:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Regenerate public export and run existing 45 plus CI logic tests
+        run: node web/ci/verify.mjs offline
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: web-code-evidence
+          path: web/ci/artifacts/code_suite.json
+          retention-days: 7
+
+  browser_fixture:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install isolated locked dev toolchain
+        run: npm ci --prefix web/ci --ignore-scripts --no-audit --no-fund
+      - name: Install official CI browsers
+        working-directory: web/ci
+        run: npx --no-install playwright install --with-deps chromium
+      - name: Export and exercise only authored loopback fixtures
+        run: |
+          node web/scripts/export-data.mjs
+          node web/ci/browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: web-browser-fixture-evidence
+          path: |
+            web/ci/artifacts/browser_fixture.json
+            web/ci/artifacts/*-local-fixture.png
+          retention-days: 7
+
+  hosted_acceptance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Bounded anonymous HTTPS probe (not authenticated playback)
+        env:
+          WEB_VERIFY_URL: ${{ inputs.target_url || vars.WEB_VERIFY_URL }}
+          WEB_VERIFY_ALLOWED_HOST: ${{ vars.WEB_VERIFY_ALLOWED_HOST }}
+        run: node web/ci/verify.mjs hosted
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: web-hosted-evidence
+          path: web/ci/artifacts/hosted_access.json
+          retention-days: 7
+
+  evidence_report:
+    if: always()
+    needs: [code_suite, browser_fixture, hosted_acceptance]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: web-*-evidence
+          merge-multiple: true
+          path: web/ci/artifacts
+      - name: Always distinguish PASS, FAIL, and NOT CHECKED
+        run: node web/ci/verify.mjs report
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-verification-report
+          path: |
+            web/ci/artifacts/report.json
+            web/ci/artifacts/summary.md
+          retention-days: 7
