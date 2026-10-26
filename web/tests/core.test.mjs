@@ -8,6 +8,16 @@ const library = JSON.parse(await readFile(new URL('../../App/Resources/library.j
 const data = exportData(catalog, library);
 const ids = new Set(data.lessons.map(x => x.id));
 const valid = () => emptyState();
+test('compact exported near-limit backup remains importable',async()=>{
+  const s=valid(),r=data.resources.find(r=>r.kind==='video');
+  for(let i=0;i<190;i++)s.notes.push(makeNote({lessonID:r.lessonID,resourceID:r.id,text:'x'.repeat(10000),quote:'',start:null,end:null,url:r.url,timestampSeconds:0}));
+  while(Buffer.byteLength(JSON.stringify(s))<MAX_BACKUP_BYTES-11000)s.notes.push({...s.notes[0],id:crypto.randomUUID()});
+  validateBackup(s,ids,data.resources);
+  assert.ok(Buffer.byteLength(JSON.stringify(s,null,2))>MAX_BACKUP_BYTES);
+  const app=await readFile(new URL('../dist/app.js',import.meta.url),'utf8');
+  assert.match(app,/new Blob\(\[JSON\.stringify\(state\)\]/);
+  assert.deepEqual(validateBackup(JSON.stringify(s),ids,data.resources),s);
+});
 test('all 198 stable lesson IDs and original order, explicit field whitelist only', () => {
   assert.equal(data.lessons.length, 198);
   assert.deepEqual(data.lessons.map(x => x.id), catalog.books.flatMap(b => b.units.flatMap(u => u.lessons.map(l => l.id))));

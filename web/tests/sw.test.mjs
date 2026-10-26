@@ -24,7 +24,7 @@ function worker(bad = '') {
   return {lifecycle,request,stores,fetched};
 }
 test('SW caches only fixed app assets, serves offline shell, bypasses API/login/third parties and update checks',async()=>{
-  const w=worker();await w.lifecycle('install');assert.equal(w.fetched.length,8);
+  const w=worker();await w.lifecycle('install');assert.equal(w.fetched.length,9);
   const before=w.fetched.length;assert.equal((await w.request('./')).status,200);assert.equal(w.fetched.length,before);
   for(const path of ['login','api/media','https://elsewhere.test/video','index.html?login=1'])assert.equal(w.request(path),undefined);
   assert.equal(w.request('data/catalogue.json',{cache:'no-store'}),undefined);
@@ -40,11 +40,11 @@ test('SW only removes obsolete caches for its own path; never forces a running p
   assert.ok(!w.stores.has('xinyu-public:/private/:old'));assert.ok(w.stores.has('xinyu-public:/other/:old'));assert.ok(w.stores.has('unrelated'));
   assert.doesNotMatch(source,/self\.skipWaiting\(|clients\.claim\(|indexedDB\./);
 });
-test('shipped client forbids third-party players and does not claim media is connected',async()=>{
+test('shipped client uses only native video controls and does not embed third-party players',async()=>{
   const app=await readFile(new URL('../dist/app.js',import.meta.url),'utf8');
   const core=await readFile(new URL('../dist/core.js',import.meta.url),'utf8');
   const html=await readFile(new URL('../dist/index.html',import.meta.url),'utf8');
   assert.doesNotMatch(app+core+html,/player\.bilibili\.com|videoEmbedURL|el\('iframe'/);
-  assert.match(html,/frame-src 'none'; media-src 'self'/);assert.match(app,/视频尚未接通/);
+  assert.match(html,/frame-src 'none'; media-src 'self'/);assert.match(app,/el\('video',\{controls:true,playsInline:true/);
   assert.doesNotMatch(app,/innerHTML|insertAdjacentHTML/);
 });

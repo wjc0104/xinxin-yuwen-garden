@@ -1,9 +1,14 @@
 import { emptyState, searchLessons, safeURL, validateBackup, makeNote, scheduleForDate, MAX_BACKUP_BYTES } from './core.js';
 import { loadState, saveState } from './storage.js';
+import { createPlayerSession, PLAYBACK_RATES } from './player.js';
 const main = document.querySelector('#main'), status = document.querySelector('#status');
 let data, state = emptyState(), revision = 0, storageReady = false, saving = false, draftDirty = false;
 let query = '', bookFilter = '', selectedDate = localDate(), swRegistration;
 const drafts = new Map();
+const playbackPositions = new Map();
+let activePlayer;
+function releasePlayer(){if(activePlayer){playbackPositions.set(activePlayer.resourceID,activePlayer.dispose());activePlayer=null;}}
+const clockTime=seconds=>`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`;
 const weekdays = ['星期一','星期二','星期三','星期四','星期五','星期六','星期日'];
 const lessonMap = new Map(), resourceMap = new Map();
 function el(tag, props = {}, ...children) {
@@ -91,7 +96,7 @@ function lessonDetail(id) {
     if(!entries.length) main.append(p('暂未收录，不以其他资料代替。'));
     else main.append(el('section',{class:'group'},...entries.map(r=>linkNode(`#resource/${r.id}`,el('span',{class:'resource-symbol','aria-hidden':'true',text:r.kind==='video'?'▷':'文'}),el('span',{class:'lesson-info'},el('strong',{text:r.title}),el('small',{text:`${r.source} · ${r.category}${r.isPaid?' · 原站可能收费':''}`}),p(r.summary,'caption')),el('span',{class:'chevron',text:'›'})))));
   }
-  main.append(p('资料按现有目录整理；视频未接通，外部全文尚未接入。没有收录的试讲稿不会用提纲冒充。','caption'));
+  main.append(p('视频使用系统控件播放公开完整分集，清晰度以原站实际返回为准；外部全文尚未接入。没有收录的试讲稿不会用提纲冒充。','caption'));
 }
 function highlightedBody(resource) {
   const article=el('article',{class:'reading-body',tabIndex:0,'aria-label':'可选中文字的自编正文'});
@@ -105,12 +110,18 @@ function highlightedBody(resource) {
 function resourceDetail(id) {
   const resource=resourceMap.get(id); if(!resource) return missing();
   main.append(link(`‹ ${lessonMap.get(resource.lessonID).title}`,`#lesson/${resource.lessonID}`,'back'),heading(resource.title,`${resource.source} · ${resource.category}`));
-  let article;
+  let article,player;
   if(resource.body) {
     main.append(p('欣语自编资料，不是教材全文或官方答案。选中文字后点击“取用所选文字”，再保存重点或笔记。','notice'));
     article=highlightedBody(resource);main.append(article);
   } else if(resource.kind==='video') {
-    main.append(el('section',{class:'player-placeholder'},el('span',{class:'play-symbol','aria-hidden':'true',text:'▷'}),el('h2',{text:'视频尚未接通'}),p('正在验证欣语内的系统视频播放。目前没有已验证的媒体源，不加载第三方播放器，也不将原站链接视为播放完成。')),el('section',{class:'notice'},p('这里仅保留具体资料和手动时间笔记。实际播放、分集、全屏、倍速与时间跳转尚未完成。',''),externalLink(resource.url,'查看视频来源 ↗')));
+    const video=el('video',{controls:true,playsInline:true,preload:'metadata',class:'study-video','aria-label':resource.title});
+    const message=p('正在连接视频…','caption');message.setAttribute('role','status');
+    player=createPlayerSession({video,resourceID:id,...playbackPositions.get(id),onStatus:(text,error)=>{message.textContent=text;message.className=error?'notice':'caption';}});activePlayer=player;
+    const rate=el('select',{'aria-label':'播放速度',onchange:e=>player.setRate(Number(e.target.value))},...PLAYBACK_RATES.map(value=>el('option',{value:String(value),text:`${value} 倍速`})));
+    rate.value=String(playbackPositions.get(id)?.rate||1);
+    main.append(el('section',{class:'panel video-panel'},video,message,el('div',{class:'player-actions'},field('播放速度',rate),button('全屏',()=>player.fullscreen(),'secondary'),button('重试视频',()=>player.retry(),'secondary')),p('仅播放原站公开的完整视频，不解锁登录或付费内容。','caption'),externalLink(resource.url,'视频来源与署名 ↗')));
+    void player.retry();
   } else {
     main.append(el('section',{class:'panel'},el('h2',{text:'此文请在原站阅读'}),p('此来源尚未验证允许网页内全文阅读。当前不嵌入、不自动展开，也不抓取受限正文。'),externalLink(resource.url)));
   }
@@ -140,14 +151,20 @@ function resourceDetail(id) {
     draft.start=before.toString().length;draft.quote=range.toString();draft.end=draft.start+draft.quote.length;
     quoteView.textContent=`已选：${draft.quote}`;draftDirty=true;
   },'secondary'),quoteView,button('清除所选文字',()=>{draft.quote='';draft.start=null;draft.end=null;quoteView.textContent='尚未选择文字';},'text-button'));
-  if(resource.kind==='video') form.append(field('手动时间点（可留空）',timestamp),p('可记录你在来源页面看到的时间；欣语内尚未播放，不会自动读取或跳转。','caption'));
+  if(resource.kind==='video') form.append(button('取用当前播放时间',()=>{
+    const seconds=player?.currentTime();if(seconds===null||seconds===undefined){notify('视频尚未就绪，不能读取播放时间。',true);return;}
+    timestamp.value=clockTime(seconds);draft.timestamp=timestamp.value;draftDirty=true;
+  },'secondary'),field('时间点（可取用当前时间，也可手动填写）',timestamp),p('保存前点击“取用当前播放时间”；已保存的时间点可跳转回本视频。','caption'));
   form.append(field('笔记内容',text),el('button',{type:'submit',class:'primary',text:'保存到本机',disabled:!storageReady}));main.append(form);
   const notes=state.notes.filter(n=>n.resourceID===id);
   main.append(el('h2',{text:`这份资料的笔记 · ${notes.length}`}),...notes.map(noteCard));
 }
 function noteCard(n) {
   const resource=resourceMap.get(n.resourceID);
-  return el('section',{class:'panel note-card'},el('div',{class:'section-title'},link(resource?.title||'资料',`#resource/${n.resourceID}`),button('删除',async()=>{if(confirm('删除这条笔记及对应重点？')) await change(s=>{s.notes=s.notes.filter(x=>x.id!==n.id);},'笔记已删除');},'text-button')),n.quote?el('blockquote',{text:n.quote}):null,n.text?p(n.text,'note-text'):null,p(`${new Date(n.createdAt).toLocaleString('zh-CN')}${n.timestampSeconds!==null?` · 手动时间 ${Math.floor(n.timestampSeconds/60)}:${String(n.timestampSeconds%60).padStart(2,'0')}`:''}`,'caption'));
+  return el('section',{class:'panel note-card'},el('div',{class:'section-title'},link(resource?.title||'资料',`#resource/${n.resourceID}`),button('删除',async()=>{if(confirm('删除这条笔记及对应重点？')) await change(s=>{s.notes=s.notes.filter(x=>x.id!==n.id);},'笔记已删除');},'text-button')),n.quote?el('blockquote',{text:n.quote}):null,n.text?p(n.text,'note-text'):null,p(new Date(n.createdAt).toLocaleString('zh-CN'),'caption'),n.timestampSeconds!==null?button(`跳转到 ${clockTime(n.timestampSeconds)}`,()=>{
+    if(activePlayer?.resourceID===n.resourceID){if(!activePlayer.seek(n.timestampSeconds))notify('视频尚未就绪或时间超出长度，请待视频加载后重试。',true);}
+    else{playbackPositions.set(n.resourceID,{position:n.timestampSeconds,rate:1});location.hash=`#resource/${n.resourceID}`;}
+  },'text-button'):null);
 }
 function lessonSelect(value='7u-01') { const s=el('select',{},...data.lessons.map(l=>el('option',{value:l.id,text:`${data.books.find(b=>b.id===l.bookID).title} · ${l.title}`})));s.value=value;return s; }
 function schedule() {
@@ -170,7 +187,7 @@ function schedule() {
 }
 function exportBackup() {
   if(!storageReady){notify('尚未成功读取本机数据，不能导出空备份覆盖旧文件。',true);return;}
-  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=el('a',{href:url,download:`欣语网页备份-${localDate()}.json`});
+  const blob=new Blob([JSON.stringify(state)],{type:'application/json'}),url=URL.createObjectURL(blob),a=el('a',{href:url,download:`欣语网页备份-${localDate()}.json`});
   document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);notify('已请求下载备份，请在“文件”或下载列表确认保存。');
 }
 async function importBackup(file) {
@@ -195,7 +212,7 @@ async function checkUpdate() {
 function me() {
   main.append(heading('我的','想法留在本机，记得为它们做一份备份。'));
   main.append(el('section',{class:'panel'},el('h2',{text:'本机数据与备份'}),p(storageReady?'本机存储已连接。不会上传笔记、收藏或课表；不同浏览器、主屏幕应用及设备可能各自独立。':'本机存储读取失败：当前仅可浏览。未启用临时保存，也不会用空记录覆盖旧数据。'),p('Safari 清理、系统回收网站数据或换设备都会影响记录。导出文件包含你的私人内容，请自行保管。'),el('div',{class:'actions'},button('导出网页备份',exportBackup,'primary'),el('label',{class:'button-link secondary',text:'导入网页备份'},el('input',{type:'file',accept:'.json,application/json',class:'file-input','aria-label':'选择网页备份文件',disabled:!storageReady,onchange:e=>importBackup(e.target.files[0])}))),p('独立网页版备份（第 1 版），最大 2 MB。不兼容原生 App 备份；导入会先检查完整内容，再一次性替换。','caption')));
-  main.append(el('section',{class:'panel'},el('h2',{text:'添加到 iPhone / iPad 主屏幕'}),p('先在 Safari 打开此私有链接，完成所有者账号登录。主屏幕模式也可能要求重新登录。'),el('ol',{class:'install-steps'},...[['1','打开分享','在 Safari 点击分享按钮（方框向上箭头）。'],['2','添加到主屏幕','在分享菜单中找到“添加到主屏幕”；可向下滚动。'],['3','确认添加','名称保留“欣语”，按系统提示添加后，从主屏幕打开。']].map(([n,title,body])=>el('li',{},el('span',{class:'step-number',text:n}),el('div',{},el('strong',{text:title}),p(body))))),p('无需证书、描述文件或付费签名。这是网页，不是原生 IPA。首次打开需联网；仅在离线缓存成功后，目录与自编文字可离线。第三方全文和视频未接通，来源链接仍需网络。','caption')));
+  main.append(el('section',{class:'panel'},el('h2',{text:'添加到 iPhone / iPad 主屏幕'}),p('先在 Safari 打开此私有链接，完成所有者账号登录。主屏幕模式也可能要求重新登录。'),el('ol',{class:'install-steps'},...[['1','打开分享','在 Safari 点击分享按钮（方框向上箭头）。'],['2','添加到主屏幕','在分享菜单中找到“添加到主屏幕”；可向下滚动。'],['3','确认添加','名称保留“欣语”，按系统提示添加后，从主屏幕打开。']].map(([n,title,body])=>el('li',{},el('span',{class:'step-number',text:n}),el('div',{},el('strong',{text:title}),p(body))))),p('无需证书、描述文件或付费签名。这是网页，不是原生 IPA。首次打开需联网；仅在离线缓存成功后，目录与自编文字可离线。第三方全文尚未接入；视频与来源链接仍需网络及有效登录。','caption')));
   main.append(el('section',{class:'panel'},el('h2',{text:'资料与版本'}),p(`整理日期：${data.checkedAt} · 数据版本：${data.dataVersion}`,'caption'),button('检查网站资料更新',checkUpdate,'secondary'),p('只比较网站已经发布的数据版本，不会自动搜索第三方资料。提醒未启用。私有测试链接仅授权所有者访问。','caption')));
   main.append(el('h2',{text:`我的收藏 · ${state.favorites.length}`}),state.favorites.length?el('section',{class:'group'},...state.favorites.map(id=>lessonCard(lessonMap.get(id)))):p('还没有收藏，可在课文详情中添加。'));
   main.append(el('h2',{text:`我的笔记 · ${state.notes.length}`}),...(state.notes.length?[...state.notes].reverse().map(noteCard):[p('阅读自编资料或观看视频时，可以记下第一条笔记。')]));
@@ -203,6 +220,7 @@ function me() {
 function missing() {main.append(heading('没有找到这份资料','链接可能已变更，请返回课程重新选择。'),link('返回课程','#courses','button-link primary'));}
 function render() {
   if(!data)return;
+  releasePlayer();
   main.replaceChildren(); const [route='home',id]=location.hash.slice(1).split('/');
   const tab=['lesson','resource'].includes(route)?'courses':route;
   document.querySelectorAll('[data-tab]').forEach(a=>{if(a.dataset.tab===tab)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
@@ -231,6 +249,8 @@ async function start() {
   }
 }
 addEventListener('hashchange',()=>{render();scrollTo(0,0);main.focus({preventScroll:true});});
+addEventListener('pagehide',releasePlayer);
+addEventListener('pageshow',event=>{if(event.persisted)render();});
 addEventListener('beforeunload',event=>{if(draftDirty||saving){event.preventDefault();event.returnValue='';}});
 addEventListener('offline',()=>notify('当前离线：仅已成功缓存的目录与自编文字可用；本机记录仍取决于存储权限，外部来源需联网。'));
 start();

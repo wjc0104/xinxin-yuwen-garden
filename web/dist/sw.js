@@ -5,7 +5,7 @@ const PREFIX = `xinyu-public:${BASE.pathname}:`;
 const CACHE = PREFIX + self.XINYU_VERSION;
 const ASSETS = new Map(Object.entries({
   'index.html': 'text/html', 'app.js': 'javascript', 'core.js': 'javascript',
-  'storage.js': 'javascript', 'style.css': 'text/css',
+  'storage.js': 'javascript', 'player.js': 'javascript', 'style.css': 'text/css',
   'manifest.webmanifest': 'json', 'icon.svg': 'image/svg+xml',
   'data/catalogue.json': 'application/json'
 }).map(([path,type]) => [new URL(path,BASE).href,type]));

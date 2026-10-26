@@ -27,7 +27,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const data = exportData(catalog,library);
   await mkdir(new URL('data/',dist),{recursive:true});
   await writeFile(new URL('data/catalogue.json',dist),JSON.stringify(data));
-  const assets = ['index.html','app.js','core.js','storage.js','style.css','manifest.webmanifest','sw.js','icon.svg','data/catalogue.json'];
+  const assets = ['index.html','app.js','core.js','storage.js','player.js','style.css','manifest.webmanifest','sw.js','icon.svg','data/catalogue.json'];
   const bytes = await Promise.all(assets.map(f=>readFile(new URL(f,dist))));
   await writeFile(new URL('version.js',dist),`self.XINYU_VERSION = '${hash(Buffer.concat(bytes))}';\n`);
   console.log(`Exported ${data.lessons.length} lessons / ${data.resources.length} resources; data version ${data.dataVersion}`);
