@@ -79,6 +79,11 @@ class TriageChecks(unittest.TestCase):
             request, timeout = opener.requests[0]
             self.assertEqual(request.get_header("Range"), f"bytes=0-{triage.CAP - 1}")
             self.assertEqual(timeout, 5)
+            unknown_length = triage.fetch(URL, destination, Opener(Response(status=200, headers={"Content-Type": "video/mp4"})))
+            declared_length = triage.fetch(URL, destination, Opener(Response(status=200, headers={"Content-Length": "4"})))
+            self.assertFalse(unknown_length["completeObject"])
+            self.assertTrue(declared_length["completeObject"])
+            self.assertEqual(unknown_length["sha256"], result["sha256"])
             for response in [Response(headers={"Content-Range": "bytes 1-4/5"}),
                              Response(headers={"Content-Range": "bytes 0-2/4"}),
                              Response(headers={"Content-Range": "bytes 0-3/4", "Content-Length": "5"}),
@@ -158,6 +163,7 @@ class TriageChecks(unittest.TestCase):
                 self.assertEqual(len(images), 1)
                 self.assertNotIn("NEVER_EXPORT", json.dumps(result))
                 self.assertIn("%+31", commands[0])
+                self.assertNotIn("-codec_whitelist", commands[0])
                 self.assertIn("none", commands[1])
                 self.assertIn("h264", commands[1])
                 self.assertIn("-copyts", commands[1])
@@ -167,6 +173,26 @@ class TriageChecks(unittest.TestCase):
             with patch.object(triage.shutil, "which", return_value=None), self.assertRaisesRegex(triage.Inconclusive, "tools"):
                 triage.decode(private / "prefix.mp4", private, requested)
 
+    @unittest.skipUnless(triage.shutil.which("ffprobe") and triage.shutil.which("ffmpeg"),
+                         "Local ffprobe/FFmpeg pair unavailable; synthetic A/V tool compatibility unverified")
+    def test_real_local_h264_aac_command_path(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            private = Path(temporary)
+            prefix = private / "synthetic.mp4"
+            completed = subprocess.run([triage.shutil.which("ffmpeg"), "-nostdin", "-v", "error",
+                                        "-f", "lavfi", "-i", "color=c=blue:s=160x90:r=10",
+                                        "-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono", "-t", "1",
+                                        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac",
+                                        "-movflags", "+faststart", str(prefix)],
+                                       capture_output=True, timeout=35, check=False)
+            self.assertEqual(completed.returncode, 0, "Synthetic H264+AAC generation failed; raw stderr kept private")
+            self.assertFalse(bool(completed.stderr), "Synthetic generator emitted stderr; raw content kept private")
+            result, images = triage.decode(prefix, private, [{"sequence": 1, "targetPTS": 0.5,
+                                                             "targetValue": 5, "targetTimescale": 10}])
+            self.assertEqual(result["stream"]["codec_name"], "h264")
+            self.assertLessEqual(abs(result["frames"][0]["ptsDifference"]), 0.1)
+            self.assertEqual(len(images), 1)
+
     def test_failure_cleans_locator_and_prefix_and_exports_only_safe_report(self):
         for failure in ["fetch", "decode", "success"]:
             with self.subTest(failure=failure), tempfile.TemporaryDirectory() as temporary:
@@ -174,6 +200,13 @@ class TriageChecks(unittest.TestCase):
                 cache, _, _, _ = self.fixture(root)
                 runner = root / "runner"
                 runner.mkdir()
+                stale = root / "build/selected-media-triage"
+                stale.mkdir(parents=True)
+                (stale / "report.json").write_text("STALE_NEVER_UPLOAD")
+                (stale / "frame-1.png").write_bytes(b"STALE_NEVER_UPLOAD")
+                (stale / "frame-2.png").write_bytes(b"x" * (triage.PNG_CAP + 1))
+                (stale / "frame-3.png").mkdir()
+                (stale / "frame-4.png").mkdir()
                 def fake_fetch(url, prefix):
                     prefix.write_bytes(b"PRIVATE_MEDIA_NEVER_EXPORT")
                     if failure == "fetch":
@@ -188,12 +221,14 @@ class TriageChecks(unittest.TestCase):
                 old = Path.cwd()
                 try:
                     os.chdir(root)
-                    with patch.dict(os.environ, {"SAME_ITEM_RENDER_DIAGNOSTICS": "true", "RUNNER_TEMP": str(runner)}), \
+                    with patch.dict(os.environ, {"SAME_ITEM_RENDER_DIAGNOSTICS": "true", "RUNNER_TEMP": str(runner),
+                                                 "GITHUB_OUTPUT": str(root / "github-output")}), \
                          patch.object(triage, "container_cache", return_value=cache), \
                          patch.object(triage, "fetch", side_effect=fake_fetch), \
                          patch.object(triage, "decode", side_effect=fake_decode), redirect_stdout(io.StringIO()) as console:
                         self.assertEqual(triage.main(), 0)
-                    destination = root / "build/selected-media-triage"
+                    exports = [line for line in (root / "github-output").read_text().splitlines() if line.startswith("build/")]
+                    destination = (root / exports[0]).parent
                     report = json.loads((destination / "report.json").read_text())
                     self.assertEqual(report["status"], "DECODED_SAME_LOCATOR_TRIAGE" if failure == "success" else "INCONCLUSIVE")
                     self.assertTrue(report["cleanupVerified"])
@@ -202,10 +237,51 @@ class TriageChecks(unittest.TestCase):
                     self.assertEqual(list(runner.iterdir()), [])
                     names = {p.name for p in destination.iterdir()}
                     self.assertEqual(names, {"report.json", "frame-1.png"} if failure == "success" else {"report.json"})
+                    self.assertEqual({(root / name).name for name in exports}, names)
+                    self.assertEqual(len({(root / name).parent for name in exports}), 1)
+                    self.assertNotEqual(destination, stale)
+                    self.assertEqual((stale / "report.json").read_text(), "STALE_NEVER_UPLOAD")
                     self.assertNotIn("NEVER_EXPORT", (destination / "report.json").read_text() + console.getvalue())
                     self.assertNotIn(str(root), console.getvalue())
                 finally:
                     os.chdir(old)
+
+    def test_output_directories_and_symlinks_never_publish_stale_paths(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            old = Path.cwd()
+            try:
+                os.chdir(root)
+                stale = root / "build/selected-media-triage"
+                stale.mkdir(parents=True)
+                # Fixed old report leaf is a directory, not an output file to replace/delete.
+                (stale / "report.json").mkdir()
+                target = root / "do-not-touch"
+                target.write_text("PRIVATE_NEVER_UPLOAD")
+                try:
+                    (stale / "frame-1.png").symlink_to(target)
+                except OSError:
+                    self.skipTest("Unprivileged symlink creation unavailable")
+                with patch.dict(os.environ, {"GITHUB_OUTPUT": str(root / "github-output")}):
+                    fresh = triage.fresh_export_directory()
+                    triage.publish_artifacts(fresh, {"status": "INCONCLUSIVE"}, [])
+                published = (root / "github-output").read_text()
+                self.assertIn(fresh.relative_to(root).as_posix() + "/report.json", published)
+                self.assertNotIn("frame-1.png", published)
+                self.assertEqual(target.read_text(), "PRIVATE_NEVER_UPLOAD")
+                # A symlinked export root must yield no fresh directory and no output registration.
+                foreign = root / "foreign"
+                foreign.mkdir()
+                linked = root / "linked"
+                linked.mkdir()
+                (linked / "build").symlink_to(foreign, target_is_directory=True)
+                os.chdir(linked)
+                with self.assertRaises(triage.Inconclusive):
+                    triage.fresh_export_directory()
+                self.assertEqual(list(foreign.iterdir()), [])
+                self.assertFalse((linked / "github-output").exists())
+            finally:
+                os.chdir(old)
 
     def test_private_subprocess_stderr_rejection_and_deadline_kill(self):
         class Child:

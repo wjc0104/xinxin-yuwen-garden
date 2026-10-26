@@ -114,6 +114,7 @@ jobs:
           done
           python3 scripts/export-player-transport.py
       - name: Triage privately handed off selected media
+        id: media_triage
         if: ${{ always() && inputs.same_item_render_diagnostics == true && (steps.playback.outcome == 'success' || steps.playback.outcome == 'failure') }}
         timeout-minutes: 3
         env:
@@ -132,8 +133,7 @@ jobs:
             build/*.log
             build/player-transport.jsonl
             build/same-item-render/
-            build/selected-media-triage/report.json
-            build/selected-media-triage/frame-[1-4].png
+            ${{ steps.media_triage.outputs.artifact_files }}
             build/public-source.json
             build/screenshots/
           if-no-files-found: warn

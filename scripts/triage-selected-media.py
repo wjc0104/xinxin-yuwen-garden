@@ -148,7 +148,7 @@ def fetch(url, path, opener=None):
         require(count > 0 and (expected is None or count == expected), "incomplete_transfer")
         return {"bytes": count, "sha256": digest.hexdigest(), "httpStatus": status,
                 "rangeStart": 0, "rangeEnd": count - 1, "objectBytes": total,
-                "completeObject": count == total if total is not None else status == 200}
+                "completeObject": count == total if total is not None else status == 200 and expected is not None}
 
 
 def private_process(command, private, stem):
@@ -192,7 +192,8 @@ def decode(prefix, private, requested):
     require(bool(probe and decoder), "software_tools_unavailable")
     entries = "stream=codec_name,profile,pix_fmt,width,height,time_base,color_range,color_space,color_primaries,color_transfer:frame=pts,pts_time,pict_type,width,height,pix_fmt,color_range,color_space,color_primaries,color_transfer"
     # Omitted interval start means decode from beginning; no seeking or timestamp rewriting.
-    metadata = private_process([probe, "-v", "error", "-codec_whitelist", "h264", "-err_detect", "explode", "-select_streams", "v:0",
+    # Container probing may also open AAC; a global video-only whitelist rejects valid A/V files.
+    metadata = private_process([probe, "-v", "error", "-err_detect", "explode", "-select_streams", "v:0",
                                 "-read_intervals", "%+31", "-show_frames", "-show_streams", "-show_entries", entries,
                                 "-of", "json", str(prefix)], private, "probe")
     data = bounded_json(metadata, private, 4 * 1024 * 1024)
@@ -257,13 +258,37 @@ def cleanup_private(private, runner):
         shutil.rmtree(private)
 
 
+def fresh_export_directory():
+    root = safe_path(Path("build/selected-media-triage").absolute(), Path.cwd())
+    root.mkdir(parents=True, exist_ok=True)
+    return Path(tempfile.mkdtemp(prefix="run-", dir=root))
+
+
+def publish_artifacts(output, report, images):
+    """Publish exact newly created leaves only; old files and unsafe roots get no upload paths."""
+    output = safe_path(output, Path.cwd())
+    destination = safe_path(output / "report.json", Path.cwd())
+    with destination.open("x", encoding="utf-8") as stream:
+        stream.write(json.dumps(report, indent=2) + "\n")
+    artifacts = [destination]
+    if report["status"] == "DECODED_SAME_LOCATOR_TRIAGE":
+        artifacts.extend(safe_path(path, output) for path in images)
+    require(all(path.is_file() and path.stat().st_size <= (PNG_CAP if path.suffix == ".png" else 65536)
+                for path in artifacts), "export_validation_failed")
+    if os.environ.get("GITHUB_OUTPUT"):
+        # All values are fixed relative directories plus mkdtemp-generated names, never private paths.
+        names = [path.relative_to(Path.cwd()).as_posix() for path in artifacts]
+        with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as stream:
+            stream.write("artifact_files<<selected_media_artifacts\n" + "\n".join(names) + "\nselected_media_artifacts\n")
+
+
 def main():
     if os.environ.get("SAME_ITEM_RENDER_DIAGNOSTICS") != "true":
         return 0
     report = {"schema": 1, "status": "INCONCLUSIVE", "reason": "unavailable", "limitation": LIMITATION,
               "priorBytesEqualityEstablished": False, "softwareDecodeFromBeginning": True, "cleanupVerified": False}
-    private = locator_path = runner = None
-    images = []
+    private = locator_path = runner = output = None
+    exported_images = []
     try:
         runner = Path(os.environ["RUNNER_TEMP"]).absolute()
         require(runner.is_dir() and not runner.is_symlink() and runner.resolve() == runner, "private_root_rejected")
@@ -277,11 +302,10 @@ def main():
         report["prefix"] = fetch(locator["url"], prefix)
         decoded, images = decode(prefix, private, requested)
         report.update(decoded, status="DECODED_SAME_LOCATOR_TRIAGE", reason="bounded_frames_available")
-        output = safe_path(Path("build/selected-media-triage").absolute(), Path.cwd())
-        output.mkdir(parents=True, exist_ok=True)
-        require(not any(output.iterdir()), "export_directory_not_empty")
+        output = fresh_export_directory()
         for image in images:
             shutil.copyfile(image, output / image.name)
+            exported_images.append(output / image.name)
     except Inconclusive as error:
         report.update(status="INCONCLUSIVE", reason=error.args[0])
     except Exception:
@@ -296,10 +320,8 @@ def main():
         except Exception:
             report.update(status="INCONCLUSIVE", reason="cleanup_unverified")
         try:
-            output = safe_path(Path("build/selected-media-triage").absolute(), Path.cwd())
-            output.mkdir(parents=True, exist_ok=True)
-            # Only our fixed report/PNG names are uploaded; never private files or raw process output.
-            (safe_path(output / "report.json", Path.cwd())).write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+            output = output or fresh_export_directory()
+            publish_artifacts(output, report, exported_images)
         except Exception:
             pass
     print("SELECTED_MEDIA_TRIAGE " + report["status"] + " " + report["reason"])
