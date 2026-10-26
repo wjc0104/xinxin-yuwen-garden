@@ -86,76 +86,64 @@ class TransportDiagnosticChecks(unittest.TestCase):
         self.assertIn('build/player-transport.jsonl', workflow)
         self.assertIn('python3 scripts/test-player-transport-diagnostics.py', workflow)
 
-    def test_fractional_binding_uses_shared_owner_seek_and_real_native_regression(self):
+    def test_retained_stock_controller_and_production_presentation(self):
         owner = (ROOT / "App/NativeStudyPlayer.swift").read_text(encoding="utf-8")
         fullscreen = (ROOT / "App/FullScreenStudyPlayer.swift").read_text(encoding="utf-8")
-        player = (ROOT / "App/StudyAVPlayer.swift").read_text(encoding="utf-8")
+        inline = (ROOT / "App/VideoStudyView.swift").read_text(encoding="utf-8")
         native = (ROOT / "AppTests/NativePlaybackTests.swift").read_text(encoding="utf-8")
         ui = (ROOT / "UITests/GardenUITests.swift").read_text(encoding="utf-8")
-        binding = owner.split('func bindFullScreenPlayer(', 1)[1].split('func seek(_ seconds:', 1)[0]
-        self.assertIn('video.bindFullScreenPlayer(to: playerController, presentation: presentation)', fullscreen)
-        self.assertIn('addChild(playerController)', fullscreen)
-        self.assertIn('playerController.didMove(toParent: self)', fullscreen)
-        self.assertIn('override func viewDidAppear(', fullscreen)
-        self.assertIn('observe(\\.isReadyForDisplay, options: [.initial, .new])', fullscreen)
-        self.assertNotIn('controller.player = player', fullscreen)
-        self.assertLess(binding.index('let item = player.currentItem, position = player.currentTime()'), binding.index('controller.player = player'))
-        for guard in ['pendingSeek == nil', 'item?.status == .readyToPlay', 'isExplicitlyPaused == true',
-                      'generation == token', 'self.player === player', 'player.currentItem === item',
-                      'position.isValid', 'position.seconds.isFinite', 'CMTimeCompare(player.currentTime(), position) != 0']:
-            self.assertIn(guard, binding)
-        self.assertIn('let ticket = FullScreenRestoration(', binding)
-        self.assertIn('fullScreenRestoration = ticket', binding)
-        self.assertIn('suspendedRestoration = ticket', binding)
-        self.assertIn('func beginFullScreenDisappearance(', binding)
-        self.assertIn('func resumeFullScreenPresentation(', binding)
-        self.assertIn('override func viewWillDisappear(', fullscreen)
-        self.assertIn('guard appeared, !disappearing, view.window != nil', fullscreen)
-        self.assertIn('guard displayReady else { return }', binding)
-        self.assertIn('seek(to: ticket.position, preservingPausedBinding: true, presentation: presentation)', binding)
-        for command in ['.pause()', '.play()', '.rate =']:
-            self.assertNotIn(command, binding)
-        self.assertIn('player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero, completionHandler: completion)', owner)
-        self.assertIn('super.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero, completionHandler: completionHandler)', player)
-        self.assertIn('player?.currentItem === item, self.pendingSeek == seekToken', owner)
-        paused = player.split('var isExplicitlyPaused: Bool {', 1)[1].split('func configureRate(', 1)[0]
-        self.assertIn('transportLock.lock()', paused)
-        self.assertIn('!wantsPlayback && super.rate == 0 && timeControlStatus == .paused', paused)
+        self.assertLess(owner.index('retainedController = RetainedStudyPlayerController(video: self, player: value)'),
+                        owner.index('player = value'))
+        self.assertEqual(fullscreen.count('AVPlayerViewController()'), 1)
+        self.assertEqual(fullscreen.count('controller.player = player'), 1)
+        self.assertIn('if video.player != nil { NativeInlinePlayer(video: video) }', inline)
+        self.assertNotIn('VideoPlayer(', inline + fullscreen + native)
+        for evidence in ['host.addChild(controller)', 'host.view.addSubview(controller.view)',
+                         'controller.didMove(toParent: host)', 'controller.willMove(toParent: nil)',
+                         'controller.view.removeFromSuperview()', 'controller.removeFromParent()',
+                         'guard fullscreenHost == nil else { return }',
+                         'inlineHost.view.window != nil', 'controller.parent === owner',
+                         '"native-video-player"', '"fullscreen-native-player"',
+                         '"fullscreen-video-render-status"', 'controller.isReadyForDisplay']:
+            self.assertIn(evidence, fullscreen)
+        for obsolete in ['FullScreenRestoration', 'suspendedRestoration', 'restorationWatchdog',
+                         'bindFullScreenPlayer', 'preservingPausedBinding']:
+            self.assertNotIn(obsolete, owner + fullscreen)
         for evidence in ['try await assertFractionalFullScreenBinding(video, player: player, item: item)',
-                         'CMTime(seconds: 21.625, preferredTimescale: 600)', 'let before = player.currentTime()',
-                         'FullScreenStudyPlayer(video: video)', 'VideoPlayer(player: video.player)',
-                         'UIWindow(windowScene: scene)', 'accuracy: 0.005', 'for sample in 0..<20',
-                         'XCTAssertTrue(player.currentItem === item)', 'XCTAssertEqual(player.rate, selectedRate)']:
+                         'NativeInlinePlayer(video: video)', 'FullScreenStudyPlayer(video: video)',
+                         'CMTime(seconds: 21.625, preferredTimescale: 600)',
+                         'video.retainedController === retained', 'controller.player === player',
+                         'player.currentItem === item', 'accuracy: 0.005',
+                         'let staleInline = StudyPlayerHostController(role: .inline)']:
             self.assertIn(evidence, native)
-        self.assertIn('Double(before), accuracy: 1)', ui)
+        for evidence in ['paused-inline-before-entry', 'paused-fullscreen-before-2x',
+                         'paused-landscape-right', 'paused-landscape-left',
+                         'paused-inline-after-dismissal', 'Double(before), accuracy: 1)']:
+            self.assertIn(evidence, ui)
 
-    def test_native_intent_supersedes_only_obsolete_binding_completion(self):
+    def test_native_intent_supersedes_obsolete_application_seek(self):
         owner = (ROOT / "App/NativeStudyPlayer.swift").read_text(encoding="utf-8")
         player = (ROOT / "App/StudyAVPlayer.swift").read_text(encoding="utf-8")
         native = (ROOT / "AppTests/NativePlaybackTests.swift").read_text(encoding="utf-8")
         self.assertIn('let item = StudyAVPlayerItem(asset: asset)', owner)
         self.assertIn('item.studyPlayer = value', owner)
-        self.assertIn('let nativeRevision = (player as? StudyAVPlayer)?.intentRevision', owner)
-        self.assertIn('guard (player as? StudyAVPlayer)?.intentRevision == nativeRevision,', owner)
-        self.assertIn('player.seekPreservingPausedBinding(to: target, completionHandler: completion)', owner)
-        self.assertIn('if !preservingBindingSeek { commandRevision = UUID() }', player)
+        self.assertIn('pendingSeekIntentRevision = (player as? StudyAVPlayer)?.intentRevision', owner)
+        self.assertIn('guard (player as? StudyAVPlayer)?.intentRevision == issuedRevision else { return }', owner)
+        self.assertIn('player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero, completionHandler: completion)', owner)
+        self.assertIn('player?.currentItem === item, self.pendingSeek == seekToken', owner)
         self.assertEqual(player.count('override func seek('), 9, "All six player and three item public seek overloads participate")
         self.assertIn('override func cancelPendingSeeks()', player)
         self.assertIn('weak var studyPlayer: StudyAVPlayer?', player)
-        for entry in ['override func play()', 'override func pause()', 'override var rate:', 'override func playImmediately(', 'override func setRate(']:
+        for entry in ['override func play()', 'override func pause()', 'override var rate:',
+                      'override func playImmediately(', 'override func setRate(']:
             command = player.split(entry, 1)[1].split('\n    }', 1)[0]
             self.assertIn('commandRevision = UUID()', command)
-        failure = owner.split('if success {', 1)[1].split('private func data(', 1)[0]
-        self.assertIn('self.ready = false; player?.pause(); self.playing = false', failure)
-        race = native.split('private func assertNativeCommandsSupersedeBinding(', 1)[1].split('private func waitForPresentation(', 1)[0]
-        self.assertIn('func seek(to target: CMTime, preservingPausedBinding: Bool = false, presentation: UUID? = nil)', owner)
-        overlap = race.split('video.seek(to: before, preservingPausedBinding: true)', 1)[1].split('let newerRevision = native.intentRevision', 1)[0]
+        race = native.split('private func assertNativeCommandsSupersedeAppSeek(', 1)[1].split('private func waitForPresentation(', 1)[0]
+        overlap = race.split('video.seek(to: target)', 1)[1].split('let newerRevision = native.intentRevision', 1)[0]
         self.assertNotIn('await ', overlap)
-        for evidence in ['XCTAssertNotNil(video.pendingSeek', 'player.seek(to: target', 'item.seek(to: target', 'player.play(); player.pause()']:
+        for evidence in ['XCTAssertNotNil(video.pendingSeek', 'player.seek(to: newerTarget',
+                         'item.seek(to: newerTarget', 'player.play(); player.pause()']:
             self.assertIn(evidence, overlap)
-        self.assertIn('XCTAssertEqual(native.intentRevision, newerRevision', race)
-        self.assertIn('XCTAssertFalse(published.contains', race)
-
-
+        self.assertIn('XCTAssertEqual(native.intentRevision, newerRevision)', race)
 if __name__ == "__main__":
     unittest.main()

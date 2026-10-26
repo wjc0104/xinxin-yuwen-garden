@@ -27,7 +27,7 @@ struct VideoStudyView: View {
         VStack(spacing: 0) {
             ZStack {
                 Color.black
-                if let player = video.player { VideoPlayer(player: player).accessibilityIdentifier("native-video-player") }
+                if video.player != nil { NativeInlinePlayer(video: video) }
                 if video.loading { ProgressView("正在连接视频…").foregroundColor(.white).padding().background(Color.black.opacity(0.65)).cornerRadius(12) }
                 if let error = video.problem { VStack(spacing: 10) { Text(error).accessibilityIdentifier("video-source-error").foregroundColor(.white).multilineTextAlignment(.center); Button("重试播放") { Task { await video.load(resource, localURL: localURL, at: video.currentSeconds() ?? initialSeconds, force: true) } } }.padding(20) }
                 if video.ready {

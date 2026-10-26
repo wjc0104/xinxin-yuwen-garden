@@ -15,22 +15,8 @@ private final class PlayerClock {
 }
 
 @MainActor final class NativeStudyPlayer: ObservableObject {
-    private struct FullScreenRestoration {
-        let presentation: UUID
-        let generation: UUID
-        let player: StudyAVPlayer
-        let item: AVPlayerItem
-        let position: CMTime
-        let intentRevision: UUID
-    }
-    private struct IssuedRestoration {
-        let presentation: UUID
-        let seek: UUID
-        let player: StudyAVPlayer
-        let item: AVPlayerItem
-        let intentRevision: UUID
-    }
     @Published private(set) var player: AVPlayer?
+    private(set) var retainedController: RetainedStudyPlayerController?
     @Published private(set) var loading = false
     @Published private(set) var ready = false
     @Published private(set) var problem: String?
@@ -46,15 +32,7 @@ private final class PlayerClock {
     private var generation = UUID()
     private var lastPosition: Int?
     @Published private(set) var pendingSeek: UUID?
-    private var fullScreenRestoration: FullScreenRestoration?
-    private var suspendedRestoration: FullScreenRestoration?
-    private var issuedRestoration: IssuedRestoration?
-    private var restorationWatchdog: Task<Void, Never>?
-    var waitingForFullScreenRestoration: Bool {
-        guard let ticket = fullScreenRestoration ?? suspendedRestoration else { return false }
-        return generation == ticket.generation && player === ticket.player &&
-            ticket.player.currentItem === ticket.item && ticket.player.intentRevision == ticket.intentRevision
-    }
+    private var pendingSeekIntentRevision: UUID?
     private var statusObserver: NSKeyValueObservation?
     private var playbackObserver: NSKeyValueObservation?
     private var clock: PlayerClock?
@@ -107,6 +85,7 @@ private final class PlayerClock {
             value.traceTransport = traceTransport
             value.configureRate(playbackRate, useSystemDefaultRate: useSystemDefaultRate)
             value.automaticallyWaitsToMinimizeStalling = true
+            retainedController = RetainedStudyPlayerController(video: self, player: value)
             player = value
             statusObserver = item.observe(\.status, options: [.initial,.new]) { [weak self] item, _ in
                 Task { @MainActor [weak self] in
@@ -139,7 +118,7 @@ private final class PlayerClock {
             clock = PlayerClock(value) { [weak self, weak value] _ in
                 Task { @MainActor [weak self] in
                     guard let self = self, self.generation == token, self.ready, self.pendingSeek == nil,
-                          !self.waitingForFullScreenRestoration, value?.currentItem?.status == .readyToPlay,
+                          value?.currentItem?.status == .readyToPlay,
                           let elapsed = value?.currentTime().seconds, elapsed.isFinite, elapsed >= 0, elapsed <= 86400 else { return }
                     // Read now: an enqueued pre-seek callback must not restore its stale zero sample.
                     let next = Int(elapsed)
@@ -160,16 +139,15 @@ private final class PlayerClock {
     func playbackFailed(_ item: AVPlayerItem) {
         guard player?.currentItem === item else { return }
         _ = currentSeconds()
-        cancelFullScreenRestoration()
-        cancelIssuedRestoration()
         pendingSeek = nil
+        pendingSeekIntentRevision = nil
         loadWatchdog?.cancel(); loadWatchdog = nil
         if let error = item.error as NSError? { print("NATIVE_PLAYER_ERROR \(error.domain) \(error.code)") }
         player?.pause()
         ready = false; loading = false; playing = false
         problem = "系统播放器暂时无法连接视频源，请重试。"
     }
-    func playPause() { guard ready, let player = player else { return }; cancelFullScreenRestoration(); cancelIssuedRestoration(); traceTransportState(.appToggle); if player.timeControlStatus != .paused { player.pause() } else { player.play() } }
+    func playPause() { guard ready, let player = player else { return }; traceTransportState(.appToggle); if player.timeControlStatus != .paused { player.pause() } else { player.play() } }
     func setPlaybackRate(_ rate: Float) {
         guard Self.playbackRates.contains(rate) else { return }
         playbackRate = rate
@@ -182,109 +160,13 @@ private final class PlayerClock {
     func traceTransportState(_ event: PlayerTransportEvent) {
         (player as? StudyAVPlayer)?.trace(event, publishedSeconds: seconds, publishedPlaying: playing, ready: ready, pendingSeek: pendingSeek != nil)
     }
-    func pause() { cancelFullScreenRestoration(); cancelIssuedRestoration(); player?.pause() }
+    func pause() { player?.pause() }
     func currentSeconds() -> Int? {
-        if ready, pendingSeek == nil, !waitingForFullScreenRestoration,
+        if ready, pendingSeek == nil,
            player?.currentItem?.status == .readyToPlay, let value = player?.currentTime().seconds, value.isFinite, value >= 0, value <= 86400 {
             lastPosition = Int(value)
         }
         return lastPosition
-    }
-    func bindFullScreenPlayer(to controller: AVPlayerViewController, presentation: UUID) {
-        cancelFullScreenRestoration()
-        cancelIssuedRestoration()
-        guard let player = player else { return }
-        let item = player.currentItem, position = player.currentTime(), token = generation
-        let native = player as? StudyAVPlayer
-        let intentRevision = native?.intentRevision
-        let paused = ready && pendingSeek == nil && item?.status == .readyToPlay &&
-            native?.isExplicitlyPaused == true &&
-            position.isValid && position.seconds.isFinite && (0...86400).contains(position.seconds)
-        (player as? StudyAVPlayer)?.trace(.fullscreenAttachedBefore)
-        controller.player = player
-        (player as? StudyAVPlayer)?.trace(.fullscreenAttachedAfter)
-        // AVKit can retime a paused item during this assignment; preserve its exact fractional position.
-        guard paused, generation == token, self.player === player, player.currentItem === item,
-              ready, pendingSeek == nil, item?.status == .readyToPlay,
-              native?.isExplicitlyPaused == true, native?.intentRevision == intentRevision,
-              CMTimeCompare(player.currentTime(), position) != 0,
-              let native = native, let item = item, let intentRevision = intentRevision else { return }
-        lastPosition = Int(position.seconds); seconds = Int(position.seconds)
-        let ticket = FullScreenRestoration(presentation: presentation, generation: token,
-            player: native, item: item, position: position, intentRevision: intentRevision)
-        fullScreenRestoration = ticket
-        native.trace(.fullscreenRestoreWaiting, pendingSeek: true, targetSeconds: position.seconds)
-        startRestorationWatchdog(for: ticket)
-    }
-    private func startRestorationWatchdog(for ticket: FullScreenRestoration) {
-        restorationWatchdog?.cancel()
-        restorationWatchdog = Task { [weak self] in
-            do { try await Task.sleep(nanoseconds: 8_000_000_000) } catch { return }
-            guard let self = self, self.fullScreenRestoration?.presentation == ticket.presentation else { return }
-            if !self.waitingForFullScreenRestoration { self.cancelFullScreenRestoration(presentation: ticket.presentation); return }
-            self.cancelFullScreenRestoration(presentation: ticket.presentation)
-            ticket.player.trace(.fullscreenRestoreTimedOut, targetSeconds: ticket.position.seconds)
-            self.problem = "全屏画面未就绪，请退出后重试。"
-        }
-    }
-    func fullScreenMounted(_ presentation: UUID, displayReady: Bool) {
-        guard let ticket = fullScreenRestoration, ticket.presentation == presentation else { return }
-        if !waitingForFullScreenRestoration || !ready || pendingSeek != nil ||
-            ticket.item.status != .readyToPlay || !ticket.player.isExplicitlyPaused ||
-            CMTimeCompare(ticket.player.currentTime(), ticket.position) == 0 {
-            cancelFullScreenRestoration(presentation: presentation)
-            return
-        }
-        guard displayReady else { return }
-        fullScreenRestoration = nil
-        restorationWatchdog?.cancel(); restorationWatchdog = nil
-        seek(to: ticket.position, preservingPausedBinding: true, presentation: presentation)
-    }
-    func cancelFullScreenRestoration(presentation: UUID? = nil) {
-        if let ticket = fullScreenRestoration, presentation == nil || ticket.presentation == presentation {
-            fullScreenRestoration = nil
-            restorationWatchdog?.cancel(); restorationWatchdog = nil
-            ticket.player.trace(.fullscreenRestoreCancelled, targetSeconds: ticket.position.seconds)
-        }
-        if let ticket = suspendedRestoration, presentation == nil || ticket.presentation == presentation {
-            suspendedRestoration = nil
-            ticket.player.trace(.fullscreenRestoreCancelled, targetSeconds: ticket.position.seconds)
-        }
-    }
-    func beginFullScreenDisappearance(_ presentation: UUID) {
-        if let ticket = fullScreenRestoration, ticket.presentation == presentation {
-            fullScreenRestoration = nil
-            suspendedRestoration = ticket // Retain the unused target only if an interactive exit is cancelled.
-            restorationWatchdog?.cancel(); restorationWatchdog = nil
-        }
-        cancelIssuedRestoration(presentation: presentation)
-    }
-    func resumeFullScreenPresentation(_ presentation: UUID) {
-        guard let ticket = suspendedRestoration, ticket.presentation == presentation else { return }
-        suspendedRestoration = nil
-        guard fullScreenRestoration == nil, generation == ticket.generation,
-              player === ticket.player, ticket.player.currentItem === ticket.item,
-              ticket.player.intentRevision == ticket.intentRevision, ticket.player.isExplicitlyPaused else {
-            ticket.player.trace(.fullscreenRestoreCancelled, targetSeconds: ticket.position.seconds)
-            return
-        }
-        fullScreenRestoration = ticket
-        startRestorationWatchdog(for: ticket)
-    }
-    func endFullScreenPresentation(_ presentation: UUID) {
-        cancelFullScreenRestoration(presentation: presentation)
-        cancelIssuedRestoration(presentation: presentation)
-    }
-    private func cancelIssuedRestoration(presentation: UUID? = nil) {
-        guard let issued = issuedRestoration,
-              presentation == nil || issued.presentation == presentation else { return }
-        issuedRestoration = nil
-        if pendingSeek == issued.seek { pendingSeek = nil }
-        // Only cancel this seek while it is still the latest native intent.
-        if player === issued.player, issued.player.currentItem === issued.item,
-           issued.player.intentRevision == issued.intentRevision {
-            issued.item.cancelPendingSeeks()
-        }
     }
     func seek(_ seconds: Int) {
         guard ready, let player = player, seconds >= 0 else { return }
@@ -292,47 +174,30 @@ private final class PlayerClock {
         let target = duration.isFinite ? min(Double(seconds), max(0, duration - 0.1)) : Double(seconds)
         seek(to: CMTime(seconds: target, preferredTimescale: 600))
     }
-    func seek(to target: CMTime, preservingPausedBinding: Bool = false, presentation: UUID? = nil) {
-        if !preservingPausedBinding { cancelFullScreenRestoration(); cancelIssuedRestoration() }
+    func seek(to target: CMTime) {
         guard ready, let player = player, let item = player.currentItem else { return }
         let token = generation, seekToken = UUID()
-        let nativeRevision = (player as? StudyAVPlayer)?.intentRevision
         pendingSeek = seekToken
-        if preservingPausedBinding, let presentation = presentation, let native = player as? StudyAVPlayer {
-            issuedRestoration = IssuedRestoration(presentation: presentation, seek: seekToken,
-                player: native, item: item, intentRevision: native.intentRevision)
-        }
-        if preservingPausedBinding { (player as? StudyAVPlayer)?.trace(.fullscreenRestoreBefore, pendingSeek: true, targetSeconds: target.seconds) }
+        pendingSeekIntentRevision = nil
         let completion: (Bool) -> Void = { [weak self, weak player, weak item] success in
             Task { @MainActor [weak self] in
                 guard let self = self, self.generation == token, self.player === player,
                       let item = item, player?.currentItem === item, self.pendingSeek == seekToken else { return }
-                if let presentation = presentation {
-                    guard self.issuedRestoration?.presentation == presentation,
-                          self.issuedRestoration?.seek == seekToken else { return }
-                    self.issuedRestoration = nil
-                }
+                let issuedRevision = self.pendingSeekIntentRevision
                 self.pendingSeek = nil
-                if preservingPausedBinding {
-                    (player as? StudyAVPlayer)?.trace(.fullscreenRestoreCompleted, pendingSeek: false, targetSeconds: target.seconds, seekSucceeded: success)
-                    // Later native seeks/transport win even if they end paused again before this callback.
-                    guard (player as? StudyAVPlayer)?.intentRevision == nativeRevision,
-                          (player as? StudyAVPlayer)?.isExplicitlyPaused == true else { return }
-                }
+                self.pendingSeekIntentRevision = nil
+                // A later AVKit seek or transport command wins, even if it ends paused.
+                guard (player as? StudyAVPlayer)?.intentRevision == issuedRevision else { return }
                 if success {
                     self.lastPosition = Int(target.seconds); self.seconds = Int(target.seconds)
                 } else {
-                    // A failed restoration must not silently replace the saved position with zero.
                     self.ready = false; player?.pause(); self.playing = false
                     self.problem = "没有恢复到上次时间点，请重试。"
                 }
             }
         }
-        if preservingPausedBinding, let player = player as? StudyAVPlayer {
-            player.seekPreservingPausedBinding(to: target, completionHandler: completion)
-        } else {
-            player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero, completionHandler: completion)
-        }
+        player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero, completionHandler: completion)
+        pendingSeekIntentRevision = (player as? StudyAVPlayer)?.intentRevision
     }
     private func data(_ url: URL) async throws -> Data {
         var request = URLRequest(url: url)
@@ -365,11 +230,11 @@ private final class PlayerClock {
         return data
     }
     private func clearPlayer() {
-        cancelFullScreenRestoration()
-        cancelIssuedRestoration()
+        retainedController?.invalidate(); retainedController = nil
         loadWatchdog?.cancel(); loadWatchdog = nil
         player?.pause()
         pendingSeek = nil
+        pendingSeekIntentRevision = nil
         clock = nil; statusObserver = nil; playbackObserver = nil; player = nil; playing = false
     }
 }

@@ -82,123 +82,208 @@ private struct PlaybackSpeedSheet: View {
 
 private struct NativeFullScreenPlayer: UIViewControllerRepresentable {
     let video: NativeStudyPlayer
-    func makeUIViewController(context: Context) -> MountedFullScreenPlayer {
-        let container = MountedFullScreenPlayer()
-        container.bind(video)
-        return container
+    func makeUIViewController(context: Context) -> StudyPlayerHostController {
+        let host = StudyPlayerHostController(role: .fullscreen)
+        host.bind(video.retainedController)
+        return host
     }
-    func updateUIViewController(_ controller: MountedFullScreenPlayer, context: Context) {}
-    static func dismantleUIViewController(_ controller: MountedFullScreenPlayer, coordinator: ()) {
-        controller.endPresentation()
-        (controller.playerController.player as? StudyAVPlayer)?.trace(.fullscreenDetached)
+    func updateUIViewController(_ host: StudyPlayerHostController, context: Context) {
+        host.bind(video.retainedController)
+    }
+    static func dismantleUIViewController(_ host: StudyPlayerHostController, coordinator: ()) {
+        host.release()
     }
 }
 
-// UIKit owns appearance and rotation forwarding for this ordinary container and its stock AVKit child.
-final class MountedFullScreenPlayer: UIViewController {
-    let playerController = AVPlayerViewController()
-    private weak var video: NativeStudyPlayer?
-    private(set) var presentation = UUID()
-    private var displayObservation: NSKeyValueObservation?
-    private var appeared = false
-    private var disappearing = false
-    private var reportedMount = false
-    private var reportedReady = false
-
-    func bind(_ video: NativeStudyPlayer) {
-        endPresentation()
-        self.video = video
-        presentation = UUID()
-        disappearing = false
-        reportedMount = false; reportedReady = false
-        video.bindFullScreenPlayer(to: playerController, presentation: presentation)
-        if isViewLoaded { observeDisplay(); checkMount() }
+struct NativeInlinePlayer: UIViewControllerRepresentable {
+    let video: NativeStudyPlayer
+    func makeUIViewController(context: Context) -> StudyPlayerHostController {
+        let host = StudyPlayerHostController(role: .inline)
+        host.bind(video.retainedController)
+        return host
     }
+    func updateUIViewController(_ host: StudyPlayerHostController, context: Context) {
+        host.bind(video.retainedController)
+    }
+    static func dismantleUIViewController(_ host: StudyPlayerHostController, coordinator: ()) {
+        host.release()
+    }
+}
+
+enum StudyPlayerHostRole: Equatable {
+    case inline, fullscreen
+}
+
+// Each representable returns its own ordinary UIKit container. Only the retained
+// stock AVKit child moves between them; a stale host cannot claim a new generation.
+@MainActor final class StudyPlayerHostController: UIViewController {
+    let role: StudyPlayerHostRole
+    private(set) var attachment: RetainedStudyPlayerController?
+
+    init(role: StudyPlayerHostRole) {
+        self.role = role
+        super.init(nibName: nil, bundle: nil)
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black
-        playerController.showsPlaybackControls = true
-        playerController.view.accessibilityIdentifier = "fullscreen-native-player"
-        addChild(playerController)
-        playerController.view.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(playerController.view)
-        NSLayoutConstraint.activate([
-            playerController.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            playerController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            playerController.view.topAnchor.constraint(equalTo: view.topAnchor),
-            playerController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-        ])
-        playerController.didMove(toParent: self)
-        let status = PlayerRenderStatusView(frame: CGRect(x: 0, y: 0, width: 1, height: 1))
-        status.video = video; status.controller = playerController
-        status.backgroundColor = .clear; status.isUserInteractionEnabled = false
-        status.isAccessibilityElement = true
-        status.accessibilityIdentifier = "fullscreen-video-render-status"
-        status.accessibilityLabel = "播放画面状态"
-        playerController.view.addSubview(status)
-        observeDisplay()
+        attachment?.claim(self)
     }
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        disappearing = false
-        appeared = true
-        video?.resumeFullScreenPresentation(presentation) // A cancelled interactive dismissal keeps its unused ticket.
-        if displayObservation == nil { observeDisplay() }
-        checkMount()
-    }
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        checkMount()
-    }
-    override func viewWillDisappear(_ animated: Bool) {
-        disappearing = true
-        appeared = false
-        displayObservation = nil
-        video?.beginFullScreenDisappearance(presentation)
-        super.viewWillDisappear(animated)
+        attachment?.claim(self) // Also handles a cancelled interactive dismissal.
+        if role == .fullscreen, attachment?.fullscreenMounted == true {
+            (attachment?.controller.player as? StudyAVPlayer)?.trace(.fullscreenMounted)
+        }
     }
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
-        endPresentation()
+        if role == .fullscreen { attachment?.end(self) }
     }
-    func endPresentation() {
-        disappearing = true
-        appeared = false
-        displayObservation = nil
-        video?.endFullScreenPresentation(presentation)
+    func bind(_ next: RetainedStudyPlayerController?) {
+        guard attachment !== next else { return }
+        release()
+        attachment = next
+        loadViewIfNeeded()
+        next?.claim(self)
     }
-    private func observeDisplay() {
-        displayObservation = playerController.observe(\.isReadyForDisplay, options: [.initial, .new]) { [weak self] _, _ in
-            Task { @MainActor [weak self] in self?.checkMount() }
-        }
-    }
-    private func checkMount() {
-        guard appeared, !disappearing, view.window != nil, !view.bounds.isEmpty,
-              !playerController.view.bounds.isEmpty else { return }
-        if !reportedMount {
-            reportedMount = true
-            (playerController.player as? StudyAVPlayer)?.trace(.fullscreenMounted)
-        }
-        if playerController.isReadyForDisplay && !reportedReady {
-            reportedReady = true
-            (playerController.player as? StudyAVPlayer)?.trace(.fullscreenDisplayReady)
-        }
-        video?.fullScreenMounted(presentation, displayReady: playerController.isReadyForDisplay)
+    func release() {
+        attachment?.end(self)
+        attachment = nil
     }
 }
 
-// The accessible status reads the actual controller/owner at query time: no cached completion flag.
-// Keep AVPlayerViewController itself stock and retain its existing accessible transport children.
+@MainActor final class RetainedStudyPlayerController {
+    weak var video: NativeStudyPlayer?
+    let controller: AVPlayerViewController
+    private weak var inlineHost: StudyPlayerHostController?
+    private weak var waitingInlineHost: StudyPlayerHostController?
+    private weak var fullscreenHost: StudyPlayerHostController?
+    private(set) weak var owner: StudyPlayerHostController?
+    private var invalidated = false
+
+    init(video: NativeStudyPlayer, player: StudyAVPlayer) {
+        self.video = video
+        let controller = AVPlayerViewController()
+        controller.showsPlaybackControls = true
+        controller.player = player // The sole binding for this AVPlayer generation.
+        self.controller = controller
+        let status = PlayerRenderStatusView(frame: CGRect(x: 0, y: 0, width: 1, height: 1))
+        status.video = video
+        status.controller = controller
+        status.attachment = self
+        status.backgroundColor = .clear
+        status.isUserInteractionEnabled = false
+        status.isAccessibilityElement = true
+        status.accessibilityIdentifier = "fullscreen-video-render-status"
+        status.accessibilityLabel = "播放画面状态"
+        controller.view.addSubview(status)
+    }
+
+    private var isCurrent: Bool {
+        !invalidated && video?.retainedController === self &&
+            controller.player === video?.player
+    }
+
+    func claim(_ host: StudyPlayerHostController) {
+        guard isCurrent else { return }
+        switch host.role {
+        case .inline:
+            if let current = inlineHost, current !== host, current.isViewLoaded,
+               current.view.window != nil {
+                waitingInlineHost = host
+                return
+            }
+            inlineHost = host
+            guard fullscreenHost == nil else { return }
+        case .fullscreen:
+            fullscreenHost = host
+        }
+        attach(to: host)
+    }
+
+    func end(_ host: StudyPlayerHostController) {
+        switch host.role {
+        case .inline:
+            if waitingInlineHost === host { waitingInlineHost = nil }
+            guard inlineHost === host else { return }
+            inlineHost = nil
+            if let waiting = waitingInlineHost, waiting.isViewLoaded,
+               waiting.view.window != nil {
+                inlineHost = waiting
+                waitingInlineHost = nil
+            }
+        case .fullscreen:
+            guard fullscreenHost === host else { return }
+            fullscreenHost = nil
+        }
+        if owner === host { detach() }
+        if host.role == .inline, fullscreenHost == nil, isCurrent,
+           let inlineHost = inlineHost { attach(to: inlineHost) }
+        if host.role == .fullscreen, isCurrent,
+           let inlineHost = inlineHost, inlineHost.isViewLoaded,
+           inlineHost.view.window != nil {
+            attach(to: inlineHost)
+        }
+    }
+
+    func invalidate() {
+        invalidated = true
+        detach()
+        inlineHost = nil
+        waitingInlineHost = nil
+        fullscreenHost = nil
+    }
+
+    private func attach(to host: StudyPlayerHostController) {
+        guard isCurrent, host.isViewLoaded else { return }
+        if owner === host { return }
+        detach()
+        host.addChild(controller)
+        controller.view.translatesAutoresizingMaskIntoConstraints = false
+        controller.view.accessibilityIdentifier =
+            host.role == .fullscreen ? "fullscreen-native-player" : "native-video-player"
+        host.view.addSubview(controller.view)
+        NSLayoutConstraint.activate([
+            controller.view.leadingAnchor.constraint(equalTo: host.view.leadingAnchor),
+            controller.view.trailingAnchor.constraint(equalTo: host.view.trailingAnchor),
+            controller.view.topAnchor.constraint(equalTo: host.view.topAnchor),
+            controller.view.bottomAnchor.constraint(equalTo: host.view.bottomAnchor)
+        ])
+        controller.didMove(toParent: host)
+        owner = host
+    }
+
+    private func detach() {
+        guard controller.parent != nil else { owner = nil; return }
+        controller.willMove(toParent: nil)
+        controller.view.removeFromSuperview()
+        controller.removeFromParent()
+        owner = nil
+    }
+
+    var fullscreenMounted: Bool {
+        isCurrent && owner === fullscreenHost && owner?.role == .fullscreen &&
+            controller.parent === owner && controller.view.window != nil &&
+            !controller.view.bounds.isEmpty
+    }
+}
+
+// The status is derived from the actual retained controller and its current UIKit owner.
 private final class PlayerRenderStatusView: UIView {
     weak var video: NativeStudyPlayer?
     weak var controller: AVPlayerViewController?
+    weak var attachment: RetainedStudyPlayerController?
     override var accessibilityValue: String? {
         get {
-            guard let video = video, let controller = controller, controller.player === video.player,
+            guard let video = video, let controller = controller, let attachment = attachment,
+                  attachment.fullscreenMounted, controller.player === video.player,
                   let item = controller.player?.currentItem, video.ready, video.problem == nil,
                   item.status == .readyToPlay else { return "画面尚未就绪" }
-            if video.pendingSeek != nil || video.waitingForFullScreenRestoration { return "正在定位播放时间" }
-            guard window != nil, controller.isReadyForDisplay else { return "正在显示画面" }
+            if video.pendingSeek != nil { return "正在定位播放时间" }
+            guard controller.isReadyForDisplay else { return "正在显示画面" }
             var ancestor: UIViewController? = controller
             while let current = ancestor {
                 if current.isBeingPresented || current.isBeingDismissed || current.transitionCoordinator != nil {
@@ -206,12 +291,17 @@ private final class PlayerRenderStatusView: UIView {
                 }
                 ancestor = current.parent
             }
-            return video.playing || controller.player?.timeControlStatus != .paused ? "画面已就绪 · 播放中" : "画面已就绪 · 已暂停"
+            if controller.player?.timeControlStatus == .paused && controller.player?.rate == 0 {
+                return "画面已就绪 · 已暂停"
+            }
+            if controller.player?.timeControlStatus == .playing && (controller.player?.rate ?? 0) > 0 {
+                return "画面已就绪 · 播放中"
+            }
+            return "正在显示画面"
         }
-        set { } // Status is derived from the real owner/controller, never assigned by callers.
+        set { }
     }
 }
-
 /// Public window-scene orientation, exposed for accessibility/native rotation verification.
 private struct InterfaceOrientationObservation: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> OrientationController { OrientationController() }

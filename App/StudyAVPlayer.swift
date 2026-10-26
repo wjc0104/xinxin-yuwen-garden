@@ -9,7 +9,6 @@ final class StudyAVPlayer: AVPlayer {
     private var selectedRate: Float = 1
     private var applyingCommand = false
     private var commandRevision = UUID()
-    private var preservingBindingSeek = false
     private var rateObservation: NSKeyValueObservation?
     private var controlObservation: NSKeyValueObservation?
     var traceTransport = false
@@ -27,15 +26,7 @@ final class StudyAVPlayer: AVPlayer {
     }
     func nativeSeekWillStart() {
         transportLock.lock(); defer { transportLock.unlock() }
-        if !preservingBindingSeek { commandRevision = UUID() }
-    }
-    func seekPreservingPausedBinding(to time: CMTime, completionHandler: @escaping (Bool) -> Void) {
-        transportLock.lock(); defer { transportLock.unlock() }
-        let previous = preservingBindingSeek
-        preservingBindingSeek = true
-        defer { preservingBindingSeek = previous }
-        // Exclude this owner seek and synchronous item forwarding from later native user intent.
-        super.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero, completionHandler: completionHandler)
+        commandRevision = UUID()
     }
     override func seek(to time: CMTime) {
         nativeSeekWillStart(); super.seek(to: time)

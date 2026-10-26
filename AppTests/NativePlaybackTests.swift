@@ -109,6 +109,7 @@ import GardenCore
         XCTAssertEqual(video.playbackRate, 2)
         XCTAssertEqual(player.rate, 0, "Seek must not resume a paused player")
         let same = video.player
+        let oldController = try XCTUnwrap(video.retainedController)
         await video.load(resource)
         XCTAssertTrue(video.player === same, "UI refresh must preserve the playing item and position")
         XCTAssertEqual(video.playbackRate, 2)
@@ -132,6 +133,14 @@ import GardenCore
         await fulfillment(of: [retried], timeout: 40)
         withExtendedLifetime(retryClock) {}
         XCTAssertTrue(video.ready)
+        let replacement = try XCTUnwrap(video.retainedController)
+        XCTAssertFalse(replacement === oldController, "Retry creates one new controller for its new player")
+        XCTAssertTrue(replacement.controller.player === video.player)
+        let staleHost = StudyPlayerHostController(role: .inline)
+        staleHost.bind(oldController)
+        XCTAssertNil(oldController.owner, "An obsolete generation cannot reattach")
+        staleHost.release()
+        XCTAssertTrue(replacement.controller.player === video.player)
         XCTAssertEqual(video.playbackRate, 2)
         XCTAssertEqual(video.player?.rate, 0, "Retry and seek preserve the paused state")
         XCTAssertEqual(Double(try XCTUnwrap(video.currentSeconds())), 205, accuracy: 2)
@@ -158,232 +167,132 @@ import GardenCore
         window.rootViewController = inline
         window.makeKeyAndVisible()
         defer { inline.dismiss(animated: false); window.isHidden = true; previousWindow?.makeKey() }
-        presentation.focused = true
-        await waitForPresentation { presentation.editorFocused }
-        XCTAssertTrue(player is StudyAVPlayer)
-        XCTAssertEqual(item.status, .readyToPlay)
-        XCTAssertTrue((player as? StudyAVPlayer)?.isExplicitlyPaused == true)
-        let seek = expectation(description: "Seek real paused item to a fractional non-keyframe position before mounting")
-        player.seek(to: CMTime(seconds: 21.625, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero) { success in
-            XCTAssertTrue(success)
-            seek.fulfill()
+
+        let retained = try XCTUnwrap(video.retainedController)
+        let controller = retained.controller
+        await waitForPresentation {
+            controller.view.window === window && retained.owner?.role == .inline &&
+                controller.parent === retained.owner
+        }
+        XCTAssertTrue(controller.player === player)
+        XCTAssertTrue(player.currentItem === item)
+        let seek = expectation(description: "Position the mounted production controller at a fractional paused frame")
+        player.seek(to: CMTime(seconds: 21.625, preferredTimescale: 600),
+                    toleranceBefore: .zero, toleranceAfter: .zero) { success in
+            XCTAssertTrue(success); seek.fulfill()
         }
         await fulfillment(of: [seek], timeout: 15)
         let before = player.currentTime()
-        XCTAssertEqual(before.seconds, 21.625, accuracy: 0.05, "Capture actual native seek result before AVKit binding")
+        XCTAssertEqual(before.seconds, 21.625, accuracy: 0.05)
         let noteAnchor = try XCTUnwrap(video.currentSeconds())
         let selectedRate = video.playbackRate
+
         for attempt in 1...2 {
             video.traceTransportState(.fullscreenBegin)
-            presentation.focused = false // Same inline VideoPlayer height/focus transition as VideoStudyView.
+            presentation.focused = false
             presentation.fullScreen = true
-            await waitForPresentation { presentation.appeared && self.nativeController(inline)?.player === player }
-            let controller = try XCTUnwrap(nativeController(inline), "Mount the production FullScreenStudyPlayer stock controller")
+            await waitForPresentation {
+                presentation.appeared && retained.owner?.role == .fullscreen &&
+                    controller.view.window != nil
+            }
+            let fullscreenHost = try XCTUnwrap(retained.owner)
+            XCTAssertTrue(nativeController(inline) === controller)
             XCTAssertTrue(controller.player === player)
-            await waitForPresentation(iterations: 320) { abs(player.currentTime().seconds - before.seconds) <= 0.005 || video.problem != nil }
+            XCTAssertTrue(player.currentItem === item)
             for sample in 0..<20 {
                 XCTAssertNil(video.problem)
-                XCTAssertTrue(video.player === player)
-                XCTAssertTrue(player.currentItem === item)
+                XCTAssertTrue(video.retainedController === retained)
+                XCTAssertTrue(controller.parent === fullscreenHost)
                 XCTAssertEqual(player.rate, 0)
                 XCTAssertEqual(player.timeControlStatus, .paused)
                 XCTAssertTrue((player as? StudyAVPlayer)?.isExplicitlyPaused == true)
-                XCTAssertEqual(player.currentTime().seconds, before.seconds, accuracy: 0.005, "Fractional native position after mount \(attempt), sample \(sample)")
+                XCTAssertEqual(player.currentTime().seconds, before.seconds, accuracy: 0.005,
+                               "Fractional position after transfer \(attempt), sample \(sample)")
                 XCTAssertEqual(video.playbackRate, selectedRate)
-                XCTAssertEqual(video.currentSeconds(), noteAnchor, "Binding must retain the original note anchor")
-                try await Task.sleep(nanoseconds: 50_000_000) // Sample throughout settling, including after seek completion.
+                XCTAssertEqual(video.currentSeconds(), noteAnchor)
+                try await Task.sleep(nanoseconds: 50_000_000)
             }
-            let result = XCTAttachment(string: "attempt=\(attempt) before=\(before.value)/\(before.timescale) after=\(player.currentTime().value)/\(player.currentTime().timescale) rate=\(player.rate) samePlayer=\(video.player === player) sameItem=\(player.currentItem === item)")
-            result.name = "Paused fractional production fullscreen binding \(attempt)"; result.lifetime = .keepAlways; add(result)
+            // An old inline update while fullscreen is active must never steal the child.
+            let staleInline = StudyPlayerHostController(role: .inline)
+            staleInline.bind(retained)
+            XCTAssertTrue(retained.owner === fullscreenHost)
+            staleInline.release()
+            XCTAssertTrue(retained.owner === fullscreenHost)
+
+            let result = XCTAttachment(string: "attempt=\(attempt) before=\(before.value)/\(before.timescale) after=\(player.currentTime().value)/\(player.currentTime().timescale) rate=\(player.rate) sameController=\(video.retainedController?.controller === controller) samePlayer=\(controller.player === player) sameItem=\(player.currentItem === item)")
+            result.name = "Retained paused production controller \(attempt)"
+            result.lifetime = .keepAlways
+            add(result)
+
             presentation.fullScreen = false
-            await waitForPresentation { !presentation.appeared && inline.presentedViewController == nil }
-            XCTAssertEqual(player.currentTime().seconds, before.seconds, accuracy: 0.005, "Dismissal must preserve the same fractional position")
+            await waitForPresentation {
+                !presentation.appeared && inline.presentedViewController == nil &&
+                    retained.owner?.role == .inline
+            }
+            retained.end(fullscreenHost) // Late old dismissal is harmless.
+            XCTAssertTrue(retained.owner?.role == .inline)
+            XCTAssertTrue(controller.player === player)
+            XCTAssertEqual(player.currentTime().seconds, before.seconds, accuracy: 0.005)
             XCTAssertEqual(presentation.draft, "原始学习笔记草稿")
             XCTAssertEqual(video.currentSeconds(), noteAnchor)
         }
-        presentation.focused = false
-        try await assertNativeCommandsSupersedeBinding(video, player: player, item: item)
-        try await assertNativeSeekSupersedesUnmountedRestoration(video, player: player, item: item)
-        try await assertDisappearanceStopsRestoration(video, player: player)
-        // The identical production binding must leave running transport and its forward clock alone.
+
+        try await assertNativeCommandsSupersedeAppSeek(video, player: player, item: item)
         player.play()
         await assertRate(player, equals: selectedRate)
         let runningBefore = player.currentTime().seconds
-        presentation.focused = false; presentation.fullScreen = true
-        await waitForPresentation { presentation.appeared && self.nativeController(inline)?.player === player }
+        presentation.fullScreen = true
+        await waitForPresentation { presentation.appeared && retained.owner?.role == .fullscreen }
+        XCTAssertTrue(video.retainedController?.controller === controller)
         XCTAssertTrue(player.currentItem === item)
         XCTAssertEqual(player.rate, selectedRate)
         XCTAssertGreaterThanOrEqual(player.currentTime().seconds, runningBefore - 0.05)
         let mounted = player.currentTime().seconds
         await waitForPresentation { player.currentTime().seconds > mounted + 0.3 }
-        XCTAssertEqual(player.rate, selectedRate)
         presentation.fullScreen = false
-        await waitForPresentation { !presentation.appeared && inline.presentedViewController == nil }
+        await waitForPresentation { !presentation.appeared && retained.owner?.role == .inline }
         video.pause()
     }
-    private func assertNativeCommandsSupersedeBinding(_ video: NativeStudyPlayer, player: AVPlayer, item: AVPlayerItem) async throws {
+
+    private func assertNativeCommandsSupersedeAppSeek(_ video: NativeStudyPlayer, player: AVPlayer, item: AVPlayerItem) async throws {
         let native = try XCTUnwrap(player as? StudyAVPlayer)
-        XCTAssertTrue(item is StudyAVPlayerItem, "Direct item seeks must share the native intent signal")
+        XCTAssertTrue(item is StudyAVPlayerItem)
         for command in 0..<3 {
-            let positioned = expectation(description: "Prepare a real fractional paused binding race \(command)")
-            player.seek(to: CMTime(seconds: 21.625, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero) { success in
-                XCTAssertTrue(success); positioned.fulfill()
-            }
-            await fulfillment(of: [positioned], timeout: 15)
-            let before = player.currentTime()
-            await waitForPresentation { video.seconds == Int(before.seconds) && video.pendingSeek == nil }
-            var published: [Int?] = []
-            let observation = video.$seconds.dropFirst().sink { published.append($0) }
-            defer { observation.cancel() }
-            // An unchanged AVKit binding needs no restore; start the same production seek explicitly.
-            video.seek(to: before, preservingPausedBinding: true)
-            // No suspension between the real preservation seek and the superseding native commands.
-            XCTAssertNotNil(video.pendingSeek, "This regression must overlap a real binding restoration, not a settled seek")
-            let bindingRevision = native.intentRevision
-            let target = CMTime(seconds: 73.375 + Double(command) * 18, preferredTimescale: 600)
-            let sought = expectation(description: "Later native command wins \(command)")
+            let target = CMTime(seconds: 44.375 + Double(command) * 20, preferredTimescale: 600)
+            video.seek(to: target)
+            XCTAssertNotNil(video.pendingSeek, "The app seek must still be in flight")
+            let appRevision = native.intentRevision
+            let newerTarget = CMTime(seconds: 103.375 + Double(command) * 20, preferredTimescale: 600)
+            let sought = expectation(description: "A later native command wins \(command)")
             if command == 0 {
-                player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero) { success in
+                player.seek(to: newerTarget, toleranceBefore: .zero, toleranceAfter: .zero) { success in
                     XCTAssertTrue(success); sought.fulfill()
                 }
             } else if command == 1 {
-                item.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero) { success in
+                item.seek(to: newerTarget, toleranceBefore: .zero, toleranceAfter: .zero) { success in
                     XCTAssertTrue(success); sought.fulfill()
                 }
             } else {
-                player.play(); player.pause() // End paused again before the old MainActor callback can run.
+                player.play(); player.pause()
                 sought.fulfill()
             }
             let newerRevision = native.intentRevision
-            XCTAssertNotEqual(newerRevision, bindingRevision)
+            XCTAssertNotEqual(newerRevision, appRevision)
             await fulfillment(of: [sought], timeout: 15)
             await waitForPresentation { video.pendingSeek == nil }
-            let expected = command < 2 ? target.seconds : before.seconds
-            for sample in 0..<10 {
-                XCTAssertTrue(video.ready, "A cancelled preservation seek is obsolete after native intent \(command)")
+            for _ in 0..<10 {
+                XCTAssertTrue(video.ready)
                 XCTAssertNil(video.problem)
                 XCTAssertTrue(video.player === player && player.currentItem === item)
                 XCTAssertEqual(player.rate, 0)
                 XCTAssertTrue(native.isExplicitlyPaused)
-                XCTAssertEqual(player.currentTime().seconds, expected, accuracy: 0.05)
-                XCTAssertEqual(native.intentRevision, newerRevision, "Old completion must not issue a stale pause (sample \(sample))")
-                XCTAssertFalse(published.contains { $0 == Int(before.seconds) }, "Old completion must not publish its captured timestamp")
+                if command < 2 {
+                    XCTAssertEqual(player.currentTime().seconds, newerTarget.seconds, accuracy: 0.05)
+                }
+                XCTAssertEqual(native.intentRevision, newerRevision)
                 try await Task.sleep(nanoseconds: 50_000_000)
             }
-            let result = XCTAttachment(string: "command=\(command) original=\(before.seconds) latest=\(player.currentTime().seconds) ready=\(video.ready) problem=\(video.problem != nil) paused=\(native.isExplicitlyPaused) pending=\(video.pendingSeek != nil)")
-            result.name = "Overlapping native binding intent \(command)"; result.lifetime = .keepAlways; add(result)
         }
-    }
-    private func assertNativeSeekSupersedesUnmountedRestoration(_ video: NativeStudyPlayer, player: AVPlayer, item: AVPlayerItem) async throws {
-        let positioned = expectation(description: "Position real item before the unmounted production container")
-        player.seek(to: CMTime(seconds: 21.625, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero) { success in
-            XCTAssertTrue(success); positioned.fulfill()
-        }
-        await fulfillment(of: [positioned], timeout: 15)
-        let original = player.currentTime()
-        let native = try XCTUnwrap(player as? StudyAVPlayer)
-        XCTAssertTrue(native.isExplicitlyPaused)
-        let container = MountedFullScreenPlayer()
-        container.bind(video) // Same production binding, intentionally before a window/appearance.
-        XCTAssertTrue(container.playerController.player === player)
-        XCTAssertTrue(video.waitingForFullScreenRestoration, "A real paused retime must leave a one-use ticket before mounting")
-        XCTAssertNotEqual(CMTimeCompare(player.currentTime(), original), 0, "This test requires AVKit's actual binding retime")
-        container.loadViewIfNeeded()
-        try await Task.sleep(nanoseconds: 600_000_000) // Cover one real owner clock tick while waiting.
-        XCTAssertEqual(video.currentSeconds(), Int(original.seconds), "Temporary bind time must not reach the note clock")
-        let revision = native.intentRevision
-        let target = CMTime(seconds: 83.375, preferredTimescale: 600)
-        let sought = expectation(description: "New direct item seek supersedes the unmounted ticket")
-        item.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero) { success in
-            XCTAssertTrue(success); sought.fulfill()
-        }
-        XCTAssertNotEqual(native.intentRevision, revision)
-        XCTAssertFalse(video.waitingForFullScreenRestoration)
-        await fulfillment(of: [sought], timeout: 15)
-        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
-        let previousWindow = scene.windows.first { $0.isKeyWindow }
-        let window = UIWindow(windowScene: scene)
-        window.rootViewController = container
-        window.makeKeyAndVisible()
-        defer { container.endPresentation(); window.isHidden = true; previousWindow?.makeKey() }
-        await waitForPresentation { container.view.window != nil && !container.playerController.view.bounds.isEmpty }
-        for sample in 0..<10 {
-            XCTAssertEqual(player.currentTime().seconds, target.seconds, accuracy: 0.05, "Superseding native seek after mounted callback \(sample)")
-            XCTAssertTrue(native.isExplicitlyPaused)
-            XCTAssertNil(video.problem)
-            try await Task.sleep(nanoseconds: 50_000_000)
-        }
-    }
-    private func assertDisappearanceStopsRestoration(_ video: NativeStudyPlayer, player: AVPlayer) async throws {
-        let positioned = expectation(description: "Prepare real fractional player for disappearance race")
-        player.seek(to: CMTime(seconds: 21.625, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero) { success in
-            XCTAssertTrue(success); positioned.fulfill()
-        }
-        await fulfillment(of: [positioned], timeout: 15)
-        let original = player.currentTime()
-        let container = MountedFullScreenPlayer()
-        container.bind(video)
-        let didRetime = video.waitingForFullScreenRestoration
-        container.loadViewIfNeeded()
-        let host = ManualAppearanceHost()
-        host.loadViewIfNeeded()
-        host.addChild(container)
-        container.view.frame = host.view.bounds
-        container.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        host.view.addSubview(container.view)
-        container.didMove(toParent: host)
-        container.beginAppearanceTransition(true, animated: false)
-        container.endAppearanceTransition() // Appeared, but still no window: a genuine ticket cannot be consumed.
-        container.beginAppearanceTransition(false, animated: true) // Public UIKit will-disappear boundary.
-        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
-        let previousWindow = scene.windows.first { $0.isKeyWindow }
-        let window = UIWindow(windowScene: scene)
-        window.rootViewController = host
-        window.makeKeyAndVisible()
-        container.view.frame = host.view.bounds
-        container.view.layoutIfNeeded()
-        defer { container.endPresentation(); window.isHidden = true; previousWindow?.makeKey() }
-        await waitForPresentation { container.playerController.isReadyForDisplay }
-        container.viewDidLayoutSubviews() // The same layout path can run while the dismissal animation is active.
-        XCTAssertNil(video.pendingSeek, "Ready/layout during disappearance must not issue the old restoration")
-        if didRetime {
-            XCTAssertTrue(video.waitingForFullScreenRestoration, "Cancelled interactive exit retains only the unused target")
-            XCTAssertEqual(video.currentSeconds(), Int(original.seconds), "Disappearing ticket must not publish bind time")
-        }
-        container.endAppearanceTransition()
-        XCTAssertFalse(video.waitingForFullScreenRestoration, "Completed disappearance discards its ticket")
-        container.viewDidLayoutSubviews()
-        XCTAssertNil(video.pendingSeek)
-        window.isHidden = true
-        previousWindow?.makeKey()
-
-        let issued = MountedFullScreenPlayer()
-        issued.bind(video)
-        issued.loadViewIfNeeded()
-        issued.beginAppearanceTransition(true, animated: false)
-        issued.endAppearanceTransition()
-        video.cancelFullScreenRestoration(presentation: issued.presentation)
-        video.seek(to: CMTime(seconds: 44.375, preferredTimescale: 600),
-                   preservingPausedBinding: true, presentation: issued.presentation)
-        XCTAssertNotNil(video.pendingSeek, "The old presentation must own a real asynchronous seek")
-        issued.beginAppearanceTransition(false, animated: true)
-        XCTAssertNil(video.pendingSeek, "Will-disappear must cancel the issued seek before its completion publishes")
-        issued.endAppearanceTransition()
-
-        // A later presentation's genuine asynchronous seek owns its own UUID.
-        let newer = UUID()
-        let target = CMTime(seconds: 83.375, preferredTimescale: 600)
-        video.seek(to: target, preservingPausedBinding: true, presentation: newer)
-        let newerSeek = try XCTUnwrap(video.pendingSeek)
-        container.endPresentation() // A stale old callback must not cancel this newer seek.
-        issued.endPresentation()
-        XCTAssertEqual(video.pendingSeek, newerSeek)
-        await waitForPresentation { video.pendingSeek == nil }
-        XCTAssertEqual(player.currentTime().seconds, target.seconds, accuracy: 0.05)
-        XCTAssertNil(video.problem)
-    }
-    private final class ManualAppearanceHost: UIViewController {
-        override var shouldAutomaticallyForwardAppearanceMethods: Bool { false }
     }
     private func waitForPresentation(iterations: Int = 200, _ condition: () -> Bool) async {
         for _ in 0..<iterations {
@@ -393,7 +302,9 @@ import GardenCore
         XCTAssertTrue(condition(), "Production fullscreen presentation/native position did not settle")
     }
     private func nativeController(_ controller: UIViewController) -> AVPlayerViewController? {
-        if let native = controller as? AVPlayerViewController, native.view.accessibilityIdentifier == "fullscreen-native-player" { return native }
+        if let native = controller as? AVPlayerViewController,
+           native.view.accessibilityIdentifier == "fullscreen-native-player" ||
+           native.view.accessibilityIdentifier == "native-video-player" { return native }
         if let presented = controller.presentedViewController, let native = nativeController(presented) { return native }
         return controller.children.compactMap { nativeController($0) }.first
     }
@@ -410,7 +321,7 @@ import GardenCore
         @FocusState private var focused: Bool
         var body: some View {
             VStack {
-                VideoPlayer(player: video.player).frame(height: presentation.focused ? 160 : 230)
+                NativeInlinePlayer(video: video).frame(height: presentation.focused ? 160 : 230)
                 TextEditor(text: $presentation.draft).focused($focused)
             }
             .onAppear { focused = presentation.focused }
