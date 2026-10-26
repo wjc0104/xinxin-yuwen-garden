@@ -11,11 +11,14 @@ import UniformTypeIdentifiers
 @MainActor final class SameItemRenderDiagnostic: NSObject {
     static let flag = "--same-item-render-diagnostics"
     static let directoryName = "same-item-render"
+    // Private handoff is deliberately outside every diagnostic artifact allowlist.
+    static let locatorName = "selected-media-private.json"
     static let maxSamples = 8
     static let maxPNGBytes = 4 * 1024 * 1024
     static let maxMetadataBytes = 64 * 1024
     private static var nextGeneration = 0
     private static var sampleCount = 0
+    private static let launchID = UUID().uuidString
     private static let writer = DispatchQueue(label: "garden.ui-test-render", qos: .utility)
     private weak var attachment: RetainedStudyPlayerController?
     private weak var item: AVPlayerItem?
@@ -45,9 +48,30 @@ import UniformTypeIdentifiers
         item?.add(output) // The SAME actual UI item; no substitute player, seek or transport command.
         let root = self.root
         let reset = generation == 1
+        let locatorGeneration = self.generation
+        let locator = root.deletingLastPathComponent().appendingPathComponent(Self.locatorName)
+        var privateLocator: Data?
+        if let asset = item?.asset as? AVURLAsset {
+            let url = asset.url
+            if url.scheme == "https", url.user == nil, url.password == nil,
+               let host = url.host,
+               host == "bilivideo.com" || host.hasSuffix(".bilivideo.com") || host == "upos-hz-mirrorakam.akamaized.net" {
+                privateLocator = try? JSONSerialization.data(withJSONObject: [
+                    "schema": 1, "generation": locatorGeneration, "launch": Self.launchID,
+                    "identityNamespace": "same-item-render-launch-local", "url": url.absoluteString
+                ])
+            }
+        }
+        let locatorData = privateLocator
         Self.writer.async {
             if reset { try? FileManager.default.removeItem(at: root) }
             try? FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+            // Replacing a local/unsupported item must not leave an earlier item's locator.
+            try? FileManager.default.removeItem(at: locator)
+            if let data = locatorData, data.count <= 16384 {
+                try? data.write(to: locator, options: .atomic)
+                try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: locator.path)
+            }
         }
         button.setTitle("取帧", for: .normal)
         button.backgroundColor = .black
@@ -93,6 +117,7 @@ import UniformTypeIdentifiers
         var row: [String: Any] = [
             "generation": generation, "player": generation, "item": generation, "controller": generation,
             "identityNamespace": "same-item-render-launch-local", "sequence": sequence,
+            "launch": Self.launchID,
             "uptime": uptime, "hostTime": hostTime, "currentTime": Self.time(player.currentTime()),
             "requestedItemTime": Self.time(requested), "itemTimeForDisplay": Self.time(display),
             "rate": player.rate, "controlStatus": player.timeControlStatus.rawValue,

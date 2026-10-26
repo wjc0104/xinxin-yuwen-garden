@@ -30,6 +30,7 @@ jobs:
         run: |
           python3 scripts/test-public-source-diagnostics.py
           python3 scripts/test-player-transport-diagnostics.py
+          python3 scripts/test-selected-media-triage.py
       - name: Diagnose public source and search before simulator work
         id: source
         continue-on-error: true
@@ -79,6 +80,7 @@ jobs:
           mkdir -p build
           xcodebuild test -project XinxinGarden.xcodeproj -scheme XinxinGarden -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 180 -skip-testing:GardenAppTests/NativePlaybackTests -skip-testing:GardenUITests/GardenUITests/testVideoPlaybackFullScreenLandscape -skip-testing:GardenUITests/GardenUITests/testVideoPlaybackFullScreenLandscapeWithSameItemDiagnostics -resultBundlePath build/Study.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee build/study-test.log
       - name: Test actual public playback and landscape
+        id: playback
         if: ${{ !cancelled() && steps.source.outputs.playback_ok == 'true' && steps.deterministic.outcome == 'success' }}
         timeout-minutes: 7
         env:
@@ -111,6 +113,12 @@ jobs:
             fi
           done
           python3 scripts/export-player-transport.py
+      - name: Triage privately handed off selected media
+        if: ${{ always() && inputs.same_item_render_diagnostics == true && (steps.playback.outcome == 'success' || steps.playback.outcome == 'failure') }}
+        timeout-minutes: 3
+        env:
+          SAME_ITEM_RENDER_DIAGNOSTICS: 'true'
+        run: python3 scripts/triage-selected-media.py
       - name: Report real source gate failure
         if: ${{ !cancelled() && steps.source.outcome != 'success' }}
         run: |
@@ -124,6 +132,8 @@ jobs:
             build/*.log
             build/player-transport.jsonl
             build/same-item-render/
+            build/selected-media-triage/report.json
+            build/selected-media-triage/frame-[1-4].png
             build/public-source.json
             build/screenshots/
           if-no-files-found: warn
