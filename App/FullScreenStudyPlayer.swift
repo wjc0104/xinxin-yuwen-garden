@@ -82,24 +82,94 @@ private struct PlaybackSpeedSheet: View {
 
 private struct NativeFullScreenPlayer: UIViewControllerRepresentable {
     let video: NativeStudyPlayer
-    func makeUIViewController(context: Context) -> AVPlayerViewController {
-        // Rotation follows the app's portrait/both-landscape declarations.
-        let controller = AVPlayerViewController()
-        video.bindFullScreenPlayer(to: controller)
-        controller.showsPlaybackControls = true
-        controller.view.accessibilityIdentifier = "fullscreen-native-player"
+    func makeUIViewController(context: Context) -> MountedFullScreenPlayer {
+        let container = MountedFullScreenPlayer()
+        container.bind(video)
+        return container
+    }
+    func updateUIViewController(_ controller: MountedFullScreenPlayer, context: Context) {}
+    static func dismantleUIViewController(_ controller: MountedFullScreenPlayer, coordinator: ()) {
+        controller.endPresentation()
+        (controller.playerController.player as? StudyAVPlayer)?.trace(.fullscreenDetached)
+    }
+}
+
+// UIKit owns appearance and rotation forwarding for this ordinary container and its stock AVKit child.
+final class MountedFullScreenPlayer: UIViewController {
+    let playerController = AVPlayerViewController()
+    private weak var video: NativeStudyPlayer?
+    private var presentation = UUID()
+    private var displayObservation: NSKeyValueObservation?
+    private var appeared = false
+    private var reportedMount = false
+    private var reportedReady = false
+
+    func bind(_ video: NativeStudyPlayer) {
+        endPresentation()
+        self.video = video
+        presentation = UUID()
+        reportedMount = false; reportedReady = false
+        video.bindFullScreenPlayer(to: playerController, presentation: presentation)
+        if isViewLoaded { observeDisplay(); checkMount() }
+    }
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .black
+        playerController.showsPlaybackControls = true
+        playerController.view.accessibilityIdentifier = "fullscreen-native-player"
+        addChild(playerController)
+        playerController.view.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(playerController.view)
+        NSLayoutConstraint.activate([
+            playerController.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            playerController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            playerController.view.topAnchor.constraint(equalTo: view.topAnchor),
+            playerController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+        playerController.didMove(toParent: self)
         let status = PlayerRenderStatusView(frame: CGRect(x: 0, y: 0, width: 1, height: 1))
-        status.video = video; status.controller = controller
+        status.video = video; status.controller = playerController
         status.backgroundColor = .clear; status.isUserInteractionEnabled = false
         status.isAccessibilityElement = true
         status.accessibilityIdentifier = "fullscreen-video-render-status"
         status.accessibilityLabel = "播放画面状态"
-        controller.view.addSubview(status)
-        return controller
+        playerController.view.addSubview(status)
+        observeDisplay()
     }
-    func updateUIViewController(_ controller: AVPlayerViewController, context: Context) {}
-    static func dismantleUIViewController(_ controller: AVPlayerViewController, coordinator: ()) {
-        (controller.player as? StudyAVPlayer)?.trace(.fullscreenDetached)
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        appeared = true
+        checkMount()
+    }
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        checkMount()
+    }
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        appeared = false
+        endPresentation()
+    }
+    func endPresentation() {
+        displayObservation = nil
+        video?.endFullScreenPresentation(presentation)
+    }
+    private func observeDisplay() {
+        displayObservation = playerController.observe(\.isReadyForDisplay, options: [.initial, .new]) { [weak self] _, _ in
+            Task { @MainActor [weak self] in self?.checkMount() }
+        }
+    }
+    private func checkMount() {
+        guard appeared, view.window != nil, !view.bounds.isEmpty, !playerController.view.bounds.isEmpty else { return }
+        if !reportedMount {
+            reportedMount = true
+            (playerController.player as? StudyAVPlayer)?.trace(.fullscreenMounted)
+        }
+        if playerController.isReadyForDisplay && !reportedReady {
+            reportedReady = true
+            (playerController.player as? StudyAVPlayer)?.trace(.fullscreenDisplayReady)
+        }
+        video?.fullScreenMounted(presentation, displayReady: playerController.isReadyForDisplay)
     }
 }
 
@@ -113,7 +183,7 @@ private final class PlayerRenderStatusView: UIView {
             guard let video = video, let controller = controller, controller.player === video.player,
                   let item = controller.player?.currentItem, video.ready, video.problem == nil,
                   item.status == .readyToPlay else { return "画面尚未就绪" }
-            if video.pendingSeek != nil { return "正在定位播放时间" }
+            if video.pendingSeek != nil || video.waitingForFullScreenRestoration { return "正在定位播放时间" }
             guard window != nil, controller.isReadyForDisplay else { return "正在显示画面" }
             var ancestor: UIViewController? = controller
             while let current = ancestor {

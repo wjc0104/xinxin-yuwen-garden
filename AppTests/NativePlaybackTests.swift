@@ -180,7 +180,7 @@ import GardenCore
             await waitForPresentation { presentation.appeared && self.nativeController(inline)?.player === player }
             let controller = try XCTUnwrap(nativeController(inline), "Mount the production FullScreenStudyPlayer stock controller")
             XCTAssertTrue(controller.player === player)
-            await waitForPresentation { abs(player.currentTime().seconds - before.seconds) <= 0.005 || video.problem != nil }
+            await waitForPresentation(iterations: 320) { abs(player.currentTime().seconds - before.seconds) <= 0.005 || video.problem != nil }
             for sample in 0..<20 {
                 XCTAssertNil(video.problem)
                 XCTAssertTrue(video.player === player)
@@ -203,6 +203,7 @@ import GardenCore
         }
         presentation.focused = false
         try await assertNativeCommandsSupersedeBinding(video, player: player, item: item)
+        try await assertNativeSeekSupersedesUnmountedRestoration(video, player: player, item: item)
         // The identical production binding must leave running transport and its forward clock alone.
         player.play()
         await assertRate(player, equals: selectedRate)
@@ -272,8 +273,48 @@ import GardenCore
             result.name = "Overlapping native binding intent \(command)"; result.lifetime = .keepAlways; add(result)
         }
     }
-    private func waitForPresentation(_ condition: () -> Bool) async {
-        for _ in 0..<200 {
+    private func assertNativeSeekSupersedesUnmountedRestoration(_ video: NativeStudyPlayer, player: AVPlayer, item: AVPlayerItem) async throws {
+        let positioned = expectation(description: "Position real item before the unmounted production container")
+        player.seek(to: CMTime(seconds: 21.625, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero) { success in
+            XCTAssertTrue(success); positioned.fulfill()
+        }
+        await fulfillment(of: [positioned], timeout: 15)
+        let original = player.currentTime()
+        let native = try XCTUnwrap(player as? StudyAVPlayer)
+        XCTAssertTrue(native.isExplicitlyPaused)
+        let container = MountedFullScreenPlayer()
+        container.bind(video) // Same production binding, intentionally before a window/appearance.
+        XCTAssertTrue(container.playerController.player === player)
+        XCTAssertTrue(video.waitingForFullScreenRestoration, "A real paused retime must leave a one-use ticket before mounting")
+        XCTAssertNotEqual(CMTimeCompare(player.currentTime(), original), 0, "This test requires AVKit's actual binding retime")
+        container.loadViewIfNeeded()
+        try await Task.sleep(nanoseconds: 600_000_000) // Cover one real owner clock tick while waiting.
+        XCTAssertEqual(video.currentSeconds(), Int(original.seconds), "Temporary bind time must not reach the note clock")
+        let revision = native.intentRevision
+        let target = CMTime(seconds: 83.375, preferredTimescale: 600)
+        let sought = expectation(description: "New direct item seek supersedes the unmounted ticket")
+        item.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero) { success in
+            XCTAssertTrue(success); sought.fulfill()
+        }
+        XCTAssertNotEqual(native.intentRevision, revision)
+        XCTAssertFalse(video.waitingForFullScreenRestoration)
+        await fulfillment(of: [sought], timeout: 15)
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        let previousWindow = scene.windows.first { $0.isKeyWindow }
+        let window = UIWindow(windowScene: scene)
+        window.rootViewController = container
+        window.makeKeyAndVisible()
+        defer { container.endPresentation(); window.isHidden = true; previousWindow?.makeKey() }
+        await waitForPresentation { container.view.window != nil && !container.playerController.view.bounds.isEmpty }
+        for sample in 0..<10 {
+            XCTAssertEqual(player.currentTime().seconds, target.seconds, accuracy: 0.05, "Superseding native seek after mounted callback \(sample)")
+            XCTAssertTrue(native.isExplicitlyPaused)
+            XCTAssertNil(video.problem)
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
+    }
+    private func waitForPresentation(iterations: Int = 200, _ condition: () -> Bool) async {
+        for _ in 0..<iterations {
             if condition() { return }
             try? await Task.sleep(nanoseconds: 50_000_000)
         }

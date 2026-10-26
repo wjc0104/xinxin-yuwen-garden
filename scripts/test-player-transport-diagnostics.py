@@ -93,15 +93,21 @@ class TransportDiagnosticChecks(unittest.TestCase):
         native = (ROOT / "AppTests/NativePlaybackTests.swift").read_text(encoding="utf-8")
         ui = (ROOT / "UITests/GardenUITests.swift").read_text(encoding="utf-8")
         binding = owner.split('func bindFullScreenPlayer(', 1)[1].split('func seek(_ seconds:', 1)[0]
-        self.assertIn('video.bindFullScreenPlayer(to: controller)', fullscreen)
+        self.assertIn('video.bindFullScreenPlayer(to: playerController, presentation: presentation)', fullscreen)
+        self.assertIn('addChild(playerController)', fullscreen)
+        self.assertIn('playerController.didMove(toParent: self)', fullscreen)
+        self.assertIn('override func viewDidAppear(', fullscreen)
+        self.assertIn('observe(\\.isReadyForDisplay, options: [.initial, .new])', fullscreen)
         self.assertNotIn('controller.player = player', fullscreen)
         self.assertLess(binding.index('let item = player.currentItem, position = player.currentTime()'), binding.index('controller.player = player'))
         for guard in ['pendingSeek == nil', 'item?.status == .readyToPlay', 'isExplicitlyPaused == true',
                       'generation == token', 'self.player === player', 'player.currentItem === item',
                       'position.isValid', 'position.seconds.isFinite', 'CMTimeCompare(player.currentTime(), position) != 0']:
             self.assertIn(guard, binding)
-        self.assertIn('seek(to: position, preservingPausedBinding: true)', binding)
-        for command in ['.pause()', '.play()', '.rate =', 'Int(position']:
+        self.assertIn('fullScreenRestoration = FullScreenRestoration(', binding)
+        self.assertIn('guard displayReady else { return }', binding)
+        self.assertIn('seek(to: ticket.position, preservingPausedBinding: true, presentation: presentation)', binding)
+        for command in ['.pause()', '.play()', '.rate =']:
             self.assertNotIn(command, binding)
         self.assertIn('player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero, completionHandler: completion)', owner)
         self.assertIn('super.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero, completionHandler: completionHandler)', player)
@@ -136,7 +142,7 @@ class TransportDiagnosticChecks(unittest.TestCase):
         failure = owner.split('if success {', 1)[1].split('private func data(', 1)[0]
         self.assertIn('self.ready = false; player?.pause(); self.playing = false', failure)
         race = native.split('private func assertNativeCommandsSupersedeBinding(', 1)[1].split('private func waitForPresentation(', 1)[0]
-        self.assertIn('func seek(to target: CMTime, preservingPausedBinding: Bool = false)', owner)
+        self.assertIn('func seek(to target: CMTime, preservingPausedBinding: Bool = false, presentation: UUID? = nil)', owner)
         overlap = race.split('video.seek(to: before, preservingPausedBinding: true)', 1)[1].split('let newerRevision = native.intentRevision', 1)[0]
         self.assertNotIn('await ', overlap)
         for evidence in ['XCTAssertNotNil(video.pendingSeek', 'player.seek(to: target', 'item.seek(to: target', 'player.play(); player.pause()']:

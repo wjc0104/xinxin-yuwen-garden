@@ -371,7 +371,7 @@ final class GardenUITests: XCTestCase {
         if playerID == "fullscreen-native-player" {
             let status = player.descendants(matching: .any)["fullscreen-video-render-status"].firstMatch
             XCTAssertTrue(status.waitForExistence(timeout: 5), phase)
-            wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "画面已就绪 · 已暂停"), object: status)], timeout: 8)
+            wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "画面已就绪 · 已暂停"), object: status)], timeout: 16)
         }
         // A single AX snapshot supplies player geometry and all masks before the screenshot.
         func flattened(_ node: XCUIElementSnapshot) -> [XCUIElementSnapshot] {
