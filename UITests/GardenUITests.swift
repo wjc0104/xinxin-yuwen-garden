@@ -117,6 +117,10 @@ final class GardenUITests: XCTestCase {
         try checkVideoPlaybackFullScreenLandscape(sameItemDiagnostics: false)
     }
     func testVideoPlaybackFullScreenLandscapeWithSameItemDiagnostics() throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["GARDEN_SAME_ITEM_RENDER_DIAGNOSTICS"] == "1",
+                          "Requires explicit XinxinGardenRenderDiagnostics test scheme opt-in")
+        let optIn = XCTAttachment(string: "testRunnerOptIn=1; explicit same-item render experiment")
+        optIn.name = "same-item-render-test-runner-opt-in"; optIn.lifetime = .keepAlways; add(optIn)
         try checkVideoPlaybackFullScreenLandscape(sameItemDiagnostics: true)
     }
     private func checkVideoPlaybackFullScreenLandscape(sameItemDiagnostics: Bool) throws {

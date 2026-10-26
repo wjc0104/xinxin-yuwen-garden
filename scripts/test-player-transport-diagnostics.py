@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+import xml.etree.ElementTree as ET
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -69,6 +70,36 @@ class TransportDiagnosticChecks(unittest.TestCase):
         self.assertIn('screenshotStartUptime=', ui)
         self.assertIn('same_item_render_diagnostics:', workflow)
         self.assertIn('build/same-item-render/', workflow)
+        diagnostic_method = ui.split('func testVideoPlaybackFullScreenLandscapeWithSameItemDiagnostics() throws {', 1)[1].split('private func checkVideoPlaybackFullScreenLandscape', 1)[0]
+        self.assertIn('try XCTSkipUnless(ProcessInfo.processInfo.environment["GARDEN_SAME_ITEM_RENDER_DIAGNOSTICS"] == "1"', diagnostic_method)
+        self.assertLess(diagnostic_method.index('try XCTSkipUnless('), diagnostic_method.index('checkVideoPlaybackFullScreenLandscape(sameItemDiagnostics: true)'))
+        self.assertIn('same-item-render-test-runner-opt-in', diagnostic_method)
+        project = (ROOT / 'project.yml').read_text(encoding='utf-8')
+        ordinary_scheme, diagnostic_scheme = project.split('schemes:\n', 1)[1].split('  XinxinGardenRenderDiagnostics:\n', 1)
+        self.assertNotIn('GARDEN_SAME_ITEM_RENDER_DIAGNOSTICS', ordinary_scheme)
+        self.assertIn("environmentVariables:\n        GARDEN_SAME_ITEM_RENDER_DIAGNOSTICS: '1'", diagnostic_scheme)
+        self.assertIn('playback_scheme=XinxinGarden\n', workflow)
+        self.assertIn('playback_scheme=XinxinGardenRenderDiagnostics', workflow)
+        self.assertIn('TestAction/EnvironmentVariables/EnvironmentVariable', workflow)
+        self.assertIn("get('shouldUseLaunchSchemeArgsEnv') == 'NO'", workflow)
+        self.assertIn('opt_in[0].get(\'isEnabled\') == \'YES\'', workflow)
+        self.assertIn('-scheme "$playback_scheme"', workflow)
+        playback = workflow.split('      - name: Test actual public playback and landscape\n', 1)[1]
+        assertion = playback.split("            python3 - <<'PY'\n", 1)[1].split('\n          PY', 1)[0]
+        assertion = '\n'.join(line[10:] for line in assertion.splitlines())
+        for inheritance, enabled, value, accepted in [('NO', 'YES', '1', True),
+                                                     ('YES', 'YES', '1', False),
+                                                     ('NO', 'NO', '1', False),
+                                                     ('NO', 'YES', '0', False),
+                                                     ('NO', 'YES', None, False)]:
+            row = '' if value is None else f'<EnvironmentVariable key="GARDEN_SAME_ITEM_RENDER_DIAGNOSTICS" value="{value}" isEnabled="{enabled}"/>'
+            fixture = ET.ElementTree(ET.fromstring(f'<Scheme><TestAction shouldUseLaunchSchemeArgsEnv="{inheritance}"><EnvironmentVariables>{row}</EnvironmentVariables></TestAction></Scheme>'))
+            with patch.object(ET, 'parse', return_value=fixture), redirect_stdout(io.StringIO()):
+                if accepted:
+                    exec(compile(assertion, '<workflow-test-action-opt-in>', 'exec'), {})
+                else:
+                    with self.assertRaises(AssertionError):
+                        exec(compile(assertion, '<workflow-test-action-opt-in>', 'exec'), {})
 
     def export(self, container, result=None, simulator="test-simulator"):
         output = io.StringIO()

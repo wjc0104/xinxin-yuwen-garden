@@ -86,10 +86,21 @@ jobs:
         run: |
           set -o pipefail
           playback_test=testVideoPlaybackFullScreenLandscape
+          playback_scheme=XinxinGarden
           if [ "$SAME_ITEM_RENDER_DIAGNOSTICS" = true ]; then
             playback_test=testVideoPlaybackFullScreenLandscapeWithSameItemDiagnostics
+            playback_scheme=XinxinGardenRenderDiagnostics
+            python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          scheme = ET.parse('XinxinGarden.xcodeproj/xcshareddata/xcschemes/XinxinGardenRenderDiagnostics.xcscheme')
+          assert scheme.find('./TestAction').get('shouldUseLaunchSchemeArgsEnv') == 'NO', 'Diagnostic must use explicit TestAction environment'
+          variables = scheme.findall('./TestAction/EnvironmentVariables/EnvironmentVariable')
+          opt_in = [v for v in variables if v.get('key') == 'GARDEN_SAME_ITEM_RENDER_DIAGNOSTICS']
+          assert len(opt_in) == 1 and opt_in[0].get('value') == '1' and opt_in[0].get('isEnabled') == 'YES', 'Missing enabled diagnostic test-runner opt-in'
+          print('Generated diagnostic TestAction opt-in verified: GARDEN_SAME_ITEM_RENDER_DIAGNOSTICS=1')
+          PY
           fi
-          xcodebuild test-without-building -project XinxinGarden.xcodeproj -scheme XinxinGarden -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 150 -maximum-test-execution-time-allowance 180 -only-testing:GardenAppTests/NativePlaybackTests "-only-testing:GardenUITests/GardenUITests/$playback_test" -resultBundlePath build/Playback.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee build/playback-test.log
+          xcodebuild test-without-building -project XinxinGarden.xcodeproj -scheme "$playback_scheme" -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 150 -maximum-test-execution-time-allowance 180 -only-testing:GardenAppTests/NativePlaybackTests "-only-testing:GardenUITests/GardenUITests/$playback_test" -resultBundlePath build/Playback.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee build/playback-test.log
       - name: Export completed result attachments
         if: always()
         run: |

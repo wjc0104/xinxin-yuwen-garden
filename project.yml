@@ -72,3 +72,11 @@ schemes:
         XinxinGarden: all
     test:
       targets: [GardenAppTests, GardenUITests]
+  XinxinGardenRenderDiagnostics:
+    build:
+      targets:
+        XinxinGarden: all
+    test:
+      targets: [GardenAppTests, GardenUITests]
+      environmentVariables:
+        GARDEN_SAME_ITEM_RENDER_DIAGNOSTICS: '1'
