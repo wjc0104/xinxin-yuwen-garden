@@ -160,6 +160,13 @@ import GardenCore
     }
     func testPlainAVPlayerSharedAssetDecodedOutputControl() async throws {
         try XCTSkipUnless(ProcessInfo.processInfo.environment["GARDEN_SAME_ITEM_RENDER_DIAGNOSTICS"] == "1", "Diagnostic-only plain decoded-output control")
+        try await capturePlainDecodedOutputControl()
+    }
+    func testCompleteObjectSameBytesDecodedOutputControl() async throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["GARDEN_COMPLETE_OBJECT_SAME_BYTES"] == "1", "Diagnostic-only complete-object decoded-output control")
+        try await capturePlainDecodedOutputControl(localContext: CompleteObjectTestContext())
+    }
+    private func capturePlainDecodedOutputControl(localContext: CompleteObjectTestContext? = nil) async throws {
         let started = ProcessInfo.processInfo.systemUptime, softDeadline = started + 130
         var summary: [String: Any] = ["schema": 1, "scope": "plainDecodedOutput", "episode": 2,
             "cid": 37155308866, "startedUptime": started, "completed": false, "stage": "load",
@@ -180,6 +187,11 @@ import GardenCore
             summary["completed"] = captureCompleted && artifactsSucceeded
             if captureCompleted { summary["stage"] = artifactsSucceeded ? "complete" : "export-failed" }
             summary["endedUptime"] = finite(ProcessInfo.processInfo.systemUptime)
+            // COMPLETE_OBJECT_LOCAL_BEGIN summary-finalize
+            if let localContext = localContext, !localContext.finalize(&summary) {
+                XCTFail("Complete-object source verification failed")
+            }
+            // COMPLETE_OBJECT_LOCAL_END summary-finalize
             let encoded = try? JSONSerialization.data(withJSONObject: summary, options: [.sortedKeys])
             let data: Data
             if let encoded = encoded, encoded.count <= 16 * 1024 { data = encoded }
@@ -190,6 +202,12 @@ import GardenCore
             }
             let attachment = XCTAttachment(data: data, uniformTypeIdentifier: "public.json")
             attachment.name = "plain-decoded-output.json"; attachment.lifetime = .keepAlways; add(attachment)
+            // COMPLETE_OBJECT_LOCAL_BEGIN result-write
+            if let localContext = localContext {
+                do { try localContext.writeResult(summary) }
+                catch { XCTFail("Complete-object bounded result write failed") }
+            }
+            // COMPLETE_OBJECT_LOCAL_END result-write
         }
         defer {
             summary["exportStartedUptime"] = finite(ProcessInfo.processInfo.systemUptime)
@@ -217,6 +235,12 @@ import GardenCore
                         attachment.name = snapshot.name; attachment.lifetime = .keepAlways; add(attachment)
                         pngBytes += png.count; frames[snapshot.index]["pngBytes"] = png.count
                         frames[snapshot.index]["exportState"] = "attached"
+                        // COMPLETE_OBJECT_LOCAL_BEGIN png-write
+                        if let localContext = localContext {
+                            do { try localContext.writePNG(png, name: snapshot.name) }
+                            catch { artifactsSucceeded = false; XCTFail("Complete-object bounded PNG write failed") }
+                        }
+                        // COMPLETE_OBJECT_LOCAL_END png-write
                     }
                 }
             }
@@ -232,6 +256,27 @@ import GardenCore
         resource.videoCID = 37155308866
         var sharedAsset: AVURLAsset?, readyDeadline = softDeadline
         weak var loaderWitness: NativeStudyPlayer?
+        // COMPLETE_OBJECT_LOCAL_BEGIN source-branch
+        if let localContext = localContext {
+            do {
+                let localAsset = AVURLAsset(url: try localContext.prepare(softDeadline: softDeadline))
+                let videos = localAsset.tracks(withMediaType: .video)
+                guard ProcessInfo.processInfo.systemUptime < softDeadline,
+                      localAsset.duration.seconds.isFinite, localAsset.duration.seconds > 600,
+                      !localAsset.tracks(withMediaType: .audio).isEmpty, videos.count == 1,
+                      videos[0].naturalSize == CGSize(width: 1280, height: 720),
+                      videos[0].preferredTransform == .identity else {
+                    XCTFail("Complete-object control requires a complete 720p episode with audio"); return
+                }
+                try Task.checkCancellation()
+                readyDeadline = min(softDeadline, ProcessInfo.processInfo.systemUptime + 35)
+                summary["stage"] = "ready"
+                sharedAsset = localAsset
+            } catch {
+                XCTFail("Complete-object source setup failed"); return
+            }
+        } else {
+        // COMPLETE_OBJECT_LOCAL_END source-branch
         do {
             let loader = NativeStudyPlayer()
             loaderWitness = loader
@@ -255,6 +300,9 @@ import GardenCore
             }
             sharedAsset = try XCTUnwrap(sourceItem.asset as? AVURLAsset, "Plain control requires the existing AVURLAsset")
         } // Drop the loader's strong references without adding production teardown.
+        // COMPLETE_OBJECT_LOCAL_BEGIN source-end
+        }
+        // COMPLETE_OBJECT_LOCAL_END source-end
         summary["loaderReleased"] = loaderWitness == nil
         let asset = try XCTUnwrap(sharedAsset, "Plain control requires the shared asset")
         let item = AVPlayerItem(asset: asset)
@@ -342,6 +390,12 @@ import GardenCore
                             "currentAfterSeconds": finite(after), "rateAfter": finite(Double(afterRate)),
                             "controlAfter": afterControl, "afterUptime": afterUptime,
                             "readyForDisplay": controller.isReadyForDisplay]) { _, new in new }
+                        // COMPLETE_OBJECT_LOCAL_BEGIN pts-flags
+                        if localContext != nil {
+                            frames[index].merge(["actualPTSFlags": actual.flags.rawValue,
+                                "actualPTSEpoch": actual.epoch]) { _, new in new }
+                        }
+                        // COMPLETE_OBJECT_LOCAL_END pts-flags
                         frames[index].merge(["pixelFormat": CVPixelBufferGetPixelFormatType(buffer),
                             "width": CVPixelBufferGetWidth(buffer), "height": CVPixelBufferGetHeight(buffer),
                             "sourceStride": CVPixelBufferGetBytesPerRow(buffer),

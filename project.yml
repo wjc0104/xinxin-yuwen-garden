@@ -80,3 +80,11 @@ schemes:
       targets: [GardenAppTests, GardenUITests]
       environmentVariables:
         GARDEN_SAME_ITEM_RENDER_DIAGNOSTICS: '1'
+  XinxinGardenCompleteObjectDiagnostics:
+    build:
+      targets:
+        XinxinGarden: all
+    test:
+      targets: [GardenAppTests]
+      environmentVariables:
+        GARDEN_COMPLETE_OBJECT_SAME_BYTES: '1'

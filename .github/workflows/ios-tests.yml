@@ -13,6 +13,11 @@ on:
         required: false
         default: false
         type: boolean
+      complete_object_same_bytes:
+        description: Explicit complete-object same-file AVF/software control (diagnostic, not acceptance)
+        required: false
+        default: false
+        type: boolean
   push:
     branches: [main, 'feat/**']
 permissions:
@@ -26,11 +31,18 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - name: Validate complete-object diagnostic opt-in
+        if: ${{ inputs.complete_object_same_bytes == true && inputs.same_item_render_diagnostics != true }}
+        run: |
+          echo "::error::Complete-object control requires explicit same-item diagnostics too."
+          exit 1
       - name: Check diagnostic reporting and gate policy
         run: |
           python3 scripts/test-public-source-diagnostics.py
           python3 scripts/test-player-transport-diagnostics.py
           python3 scripts/test-selected-media-triage.py
+          python3 scripts/test-complete-object-control.py
+          python3 scripts/test-complete-object-swift-contract.py
       - name: Diagnose public source and search before simulator work
         id: source
         continue-on-error: true
@@ -69,6 +81,12 @@ jobs:
         env:
           REQUIRE_SELECTED_MEDIA_TOOLS: 'true'
         run: python3 scripts/test-selected-media-triage.py TriageChecks.test_real_local_h264_aac_command_path
+      - name: Verify complete-object synthetic tools
+        if: ${{ inputs.complete_object_same_bytes == true && inputs.same_item_render_diagnostics == true }}
+        timeout-minutes: 4
+        env:
+          REQUIRE_COMPLETE_OBJECT_TOOLS: 'true'
+        run: python3 scripts/test-complete-object-control.py CompleteObjectChecks.test_real_local_h264_aac_command_path
       - name: Generate native project
         timeout-minutes: 3
         run: |
@@ -124,6 +142,21 @@ jobs:
           PY
           fi
           xcodebuild test-without-building -project XinxinGarden.xcodeproj -scheme "$playback_scheme" -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 150 -maximum-test-execution-time-allowance 180 -only-testing:GardenAppTests/NativePlaybackTests "-only-testing:GardenUITests/GardenUITests/$playback_test" -resultBundlePath build/Playback.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee build/playback-test.log
+      - name: Compare complete object through the same private file
+        id: complete_object
+        if: ${{ always() && inputs.complete_object_same_bytes == true && inputs.same_item_render_diagnostics == true && (steps.playback.outcome == 'success' || steps.playback.outcome == 'failure') }}
+        timeout-minutes: 7
+        env:
+          COMPLETE_OBJECT_SAME_BYTES: 'true'
+          SAME_ITEM_RENDER_DIAGNOSTICS: 'true'
+        run: python3 scripts/complete-object-control.py
+      - name: Verify complete-object private cleanup
+        if: ${{ always() && (steps.complete_object.outcome == 'success' || steps.complete_object.outcome == 'failure' || steps.complete_object.outcome == 'cancelled') }}
+        timeout-minutes: 1
+        env:
+          COMPLETE_OBJECT_SAME_BYTES: 'true'
+          SAME_ITEM_RENDER_DIAGNOSTICS: 'true'
+        run: python3 scripts/complete-object-control.py --cleanup-only
       - name: Export completed result attachments
         if: always()
         run: |
@@ -155,6 +188,7 @@ jobs:
             build/player-transport.jsonl
             build/same-item-render/
             ${{ steps.media_triage.outputs.artifact_files }}
+            ${{ steps.complete_object.outputs.artifact_files }}
             build/public-source.json
             build/screenshots/
           if-no-files-found: warn
