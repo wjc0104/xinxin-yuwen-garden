@@ -95,7 +95,7 @@ class TriageChecks(unittest.TestCase):
                     triage.fetch(URL, destination, Opener(response))
             with patch.object(triage, "CAP", 4), self.assertRaisesRegex(triage.Inconclusive, "size"):
                 triage.fetch(URL, destination, Opener(Response(b"abcde", status=200, headers={"Content-Type": "video/mp4"})))
-            with patch.object(triage.time, "monotonic", side_effect=[0, 36]), self.assertRaisesRegex(triage.Inconclusive, "deadline"):
+            with patch.object(triage.time, "monotonic", side_effect=[0, 36, 36]), self.assertRaisesRegex(triage.Inconclusive, "deadline"):
                 triage.fetch(URL, destination, Opener(Response()))
 
     def test_redirect_hops_revalidate_url_and_never_accept_credentials(self):
@@ -111,6 +111,109 @@ class TriageChecks(unittest.TestCase):
         redirect.hops = 3
         with self.assertRaisesRegex(triage.Inconclusive, "redirect_limit"):
             redirect.redirect_request(request, None, 302, "", {}, URL)
+
+    def test_transfer_progress_counts_read_and_written_bytes_on_all_exits(self):
+        cases = [
+            ("success", [b"abcd", b""], [0, 1, 2, 3, 4, 5, 6], None, "complete", 4, 4),
+            ("before_body_deadline", [], [0, 1, 36, 36], "network_deadline", "reading_body", 0, 0),
+            ("read_crosses_deadline", [b"abcd"], [0, 1, 2, 36, 36], "network_deadline", "reading_body", 4, 0),
+            ("after_chunk_deadline", [b"ab"], [0, 1, 2, 3, 36, 36], "network_deadline", "reading_body", 2, 2),
+            ("socket_failure", [TimeoutError("NEVER_EXPORT")], [0, 1, 2, 5], "socket", "reading_body", 0, 0),
+            ("partial_socket_failure", [b"ab", TimeoutError("NEVER_EXPORT")], [0, 1, 2, 3, 4, 8],
+             "socket", "reading_body", 2, 2),
+            ("incomplete", [b"abc", b""], [0, 1, 2, 3, 4, 5, 6], "incomplete_transfer", "reading_body", 3, 3),
+        ]
+        for name, reads, ticks, reason, stage, received, written in cases:
+            with self.subTest(case=name), tempfile.TemporaryDirectory() as temporary:
+                destination = Path(temporary).resolve() / "private.mp4"
+                response, progress = Response(), {"NEVER_EXPORT": URL}
+                opener = Opener(response)
+                with patch.object(response, "read1", side_effect=reads), \
+                     patch.object(triage.time, "monotonic", side_effect=ticks):
+                    if reason is None:
+                        result = triage.fetch(URL, destination, opener, progress=progress)
+                        self.assertEqual(result["sha256"], triage.hashlib.sha256(b"abcd").hexdigest())
+                    elif reason == "socket":
+                        with self.assertRaises(TimeoutError):
+                            triage.fetch(URL, destination, opener, progress=progress)
+                    else:
+                        with self.assertRaisesRegex(triage.Inconclusive, reason):
+                            triage.fetch(URL, destination, opener, progress=progress)
+                self.assertEqual(progress, {"stage": stage, "bytesRead": received, "bytesWritten": written,
+                                            "elapsedMilliseconds": ticks[-1] * 1000, "complete": reason is None})
+                self.assertEqual(destination.stat().st_size, written)
+                self.assertEqual(len(opener.requests), 1)
+                self.assertNotIn("NEVER_EXPORT", json.dumps(progress))
+
+    def test_transfer_progress_open_header_and_overflow_boundaries(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            destination = Path(temporary).resolve() / "private.mp4"
+            progress = {}
+            for ticks, elapsed in (([0, 5], 5000), ([0, 3000000], 2147483647), ([5, 0], 0)):
+                with patch.object(Opener, "open", side_effect=TimeoutError("NEVER_EXPORT")), \
+                     patch.object(triage.time, "monotonic", side_effect=ticks), self.assertRaises(TimeoutError):
+                    triage.fetch(URL, destination, Opener(None), progress=progress)
+                self.assertEqual(progress, {"stage": "opening", "bytesRead": 0, "bytesWritten": 0,
+                                            "elapsedMilliseconds": elapsed, "complete": False})
+            self.assertFalse(destination.exists())
+            for headers in ({"Set-Cookie": "NEVER_EXPORT"}, {"Content-Range": "NEVER_EXPORT"}):
+                response = Response(headers=headers)
+                with patch.object(triage.time, "monotonic", side_effect=[0, 1, 2]), \
+                     patch.object(response, "read1") as read, self.assertRaises(triage.Inconclusive):
+                    triage.fetch(URL, destination, Opener(response), progress=progress)
+                read.assert_not_called()
+                self.assertEqual(progress, {"stage": "validating_headers", "bytesRead": 0, "bytesWritten": 0,
+                                            "elapsedMilliseconds": 2000, "complete": False})
+                self.assertFalse(destination.exists())
+                self.assertNotIn("NEVER_EXPORT", json.dumps(progress))
+            with patch.object(triage, "CAP", 4), patch.object(triage.time, "monotonic", side_effect=[0, 1, 2, 3, 4]), \
+                 self.assertRaisesRegex(triage.Inconclusive, "response_size_rejected"):
+                triage.fetch(URL, destination, Opener(Response(b"abcde", status=200, headers={"Content-Type": "video/mp4"})),
+                             progress=progress)
+            self.assertEqual(progress, {"stage": "reading_body", "bytesRead": 5, "bytesWritten": 0,
+                                        "elapsedMilliseconds": 4000, "complete": False})
+            self.assertEqual(destination.stat().st_size, 0)
+
+    def test_partial_transfer_progress_exports_without_hash_decode_or_private_data(self):
+        for failure in ("deadline", "socket"):
+            with self.subTest(failure=failure), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary).resolve()
+                cache, _, _, _ = self.fixture(root)
+                runner = root / "runner"
+                runner.mkdir()
+                response = Response(headers={"Content-Range": "bytes 0-15/16", "X-Private": "NEVER_EXPORT"})
+                reads = [b"NEVER_EXPORT", TimeoutError("NEVER_EXPORT")]
+                ticks = [0, 1, 2, 3, 36, 36] if failure == "deadline" else [0, 1, 2, 3, 4, 8]
+                old = Path.cwd()
+                try:
+                    os.chdir(root)
+                    with patch.dict(os.environ, {"SAME_ITEM_RENDER_DIAGNOSTICS": "true", "RUNNER_TEMP": str(runner),
+                                                 "GITHUB_OUTPUT": str(root / "github-output")}), \
+                         patch.object(triage, "container_cache", return_value=cache), \
+                         patch.object(triage, "build_opener", return_value=Opener(response)), \
+                         patch.object(response, "read1", side_effect=reads), \
+                         patch.object(triage.time, "monotonic", side_effect=ticks), \
+                         patch.object(triage, "decode") as decode, redirect_stdout(io.StringIO()) as console:
+                        self.assertEqual(triage.main(), 0)
+                    exports = [line for line in (root / "github-output").read_text().splitlines() if line.startswith("build/")]
+                    self.assertEqual(len(exports), 1)
+                    report_text = (root / exports[0]).read_text()
+                    report = json.loads(report_text)
+                    self.assertEqual(report["status"], "INCONCLUSIVE")
+                    self.assertEqual(report["reason"], "network_deadline" if failure == "deadline" else "private_operation_failed")
+                    self.assertEqual(report["transferProgress"], {"stage": "reading_body", "bytesRead": 12, "bytesWritten": 12,
+                                                                 "elapsedMilliseconds": ticks[-1] * 1000, "complete": False})
+                    self.assertNotIn("prefix", report)
+                    self.assertNotIn("frames", report)
+                    decode.assert_not_called()
+                    self.assertTrue(report["cleanupVerified"])
+                    self.assertFalse((cache / triage.LOCATOR).exists())
+                    self.assertEqual(list(runner.iterdir()), [])
+                    public = report_text + console.getvalue() + (root / "github-output").read_text()
+                    for private in ("NEVER_EXPORT", URL, str(root), "X-Private"):
+                        self.assertNotIn(private, public)
+                finally:
+                    os.chdir(old)
 
     def test_app_container_path_validation_and_symlink_cleanup_rejection(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -285,7 +388,7 @@ class TriageChecks(unittest.TestCase):
                 (stale / "frame-2.png").write_bytes(b"x" * (triage.PNG_CAP + 1))
                 (stale / "frame-3.png").mkdir()
                 (stale / "frame-4.png").mkdir()
-                def fake_fetch(url, prefix):
+                def fake_fetch(url, prefix, progress=None):
                     prefix.write_bytes(b"PRIVATE_MEDIA_NEVER_EXPORT")
                     if failure == "fetch":
                         raise RuntimeError(URL)

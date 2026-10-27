@@ -106,49 +106,60 @@ def targets(cache, locator):
     return generation, result[:4]
 
 
-def fetch(url, path, opener=None):
+def fetch(url, path, opener=None, progress=None):
     require(approved_url(url), "locator_rejected")
-    deadline = time.monotonic() + 35
-    if opener is None:
-        # No environment proxy or cookie handler; only the original public request headers.
-        opener = build_opener(ProxyHandler({}), Redirects(deadline))
-    digest, count = hashlib.sha256(), 0
-    with opener.open(Request(url, headers=HEADERS), timeout=5) as response:
-        require(time.monotonic() < deadline, "network_deadline")
-        require(approved_url(response.geturl()), "redirect_rejected")
-        require(not response.headers.get("Set-Cookie") and not response.headers.get("WWW-Authenticate"), "credentials_rejected")
-        require(response.headers.get("Content-Encoding", "identity").lower() == "identity", "encoding_rejected")
-        status, expected, total = response.status, None, None
-        if status == 206:
-            match = re.fullmatch(r"bytes 0-([0-9]+)/([0-9]+)", response.headers.get("Content-Range", ""))
-            require(match is not None, "range_rejected")
-            end, total = map(int, match.groups())
-            require(0 <= end < total and end < CAP and end == min(CAP, total) - 1, "range_rejected")
-            expected = end + 1
-        elif status == 200:
-            require(response.headers.get("Content-Range") is None, "range_rejected")
-        else:
-            raise Inconclusive("http_rejected")
-        length = response.headers.get("Content-Length")
-        if length is not None:
-            require(length.isdigit() and 0 < int(length) <= CAP, "response_size_rejected")
-            require(expected is None or int(length) == expected, "range_rejected")
-            expected = int(length)
-        with path.open("wb") as output:
-            while True:
-                require(time.monotonic() < deadline, "network_deadline")
-                chunk = response.read1(min(64 * 1024, CAP - count + 1))
-                require(time.monotonic() < deadline, "network_deadline")
-                if not chunk:
-                    break
-                count += len(chunk)
-                require(count <= CAP, "response_size_rejected")
-                output.write(chunk)
-                digest.update(chunk)
-        require(count > 0 and (expected is None or count == expected), "incomplete_transfer")
+    started = time.monotonic()
+    deadline = started + 35
+    progress = {} if progress is None else progress
+    progress.clear()
+    progress.update(stage="opening", bytesRead=0, bytesWritten=0, elapsedMilliseconds=0, complete=False)
+    try:
+        if opener is None:
+            # No environment proxy or cookie handler; only the original public request headers.
+            opener = build_opener(ProxyHandler({}), Redirects(deadline))
+        digest, count = hashlib.sha256(), 0
+        with opener.open(Request(url, headers=HEADERS), timeout=5) as response:
+            progress["stage"] = "validating_headers"
+            require(time.monotonic() < deadline, "network_deadline")
+            require(approved_url(response.geturl()), "redirect_rejected")
+            require(not response.headers.get("Set-Cookie") and not response.headers.get("WWW-Authenticate"), "credentials_rejected")
+            require(response.headers.get("Content-Encoding", "identity").lower() == "identity", "encoding_rejected")
+            status, expected, total = response.status, None, None
+            if status == 206:
+                match = re.fullmatch(r"bytes 0-([0-9]+)/([0-9]+)", response.headers.get("Content-Range", ""))
+                require(match is not None, "range_rejected")
+                end, total = map(int, match.groups())
+                require(0 <= end < total and end < CAP and end == min(CAP, total) - 1, "range_rejected")
+                expected = end + 1
+            elif status == 200:
+                require(response.headers.get("Content-Range") is None, "range_rejected")
+            else:
+                raise Inconclusive("http_rejected")
+            length = response.headers.get("Content-Length")
+            if length is not None:
+                require(length.isdigit() and 0 < int(length) <= CAP, "response_size_rejected")
+                require(expected is None or int(length) == expected, "range_rejected")
+                expected = int(length)
+            progress["stage"] = "reading_body"
+            with path.open("wb") as output:
+                while True:
+                    require(time.monotonic() < deadline, "network_deadline")
+                    chunk = response.read1(min(64 * 1024, CAP - count + 1))
+                    progress["bytesRead"] += len(chunk)
+                    require(time.monotonic() < deadline, "network_deadline")
+                    if not chunk:
+                        break
+                    count += len(chunk)
+                    require(count <= CAP, "response_size_rejected")
+                    progress["bytesWritten"] += output.write(chunk)
+                    digest.update(chunk)
+            require(count > 0 and (expected is None or count == expected), "incomplete_transfer")
+        progress.update(stage="complete", complete=True)
         return {"bytes": count, "sha256": digest.hexdigest(), "httpStatus": status,
                 "rangeStart": 0, "rangeEnd": count - 1, "objectBytes": total,
                 "completeObject": count == total if total is not None else status == 200 and expected is not None}
+    finally:
+        progress["elapsedMilliseconds"] = min(2147483647, max(0, int((time.monotonic() - started) * 1000)))
 
 
 def private_process(command, private, stem):
@@ -301,7 +312,8 @@ def main():
         report["generation"] = generation
         private = Path(tempfile.mkdtemp(prefix="selected-media-private-", dir=runner))
         prefix = private / "prefix.mp4"
-        report["prefix"] = fetch(locator["url"], prefix)
+        report["transferProgress"] = {}
+        report["prefix"] = fetch(locator["url"], prefix, progress=report["transferProgress"])
         decoded, images = decode(prefix, private, requested)
         report.update(decoded, status="DECODED_SAME_LOCATOR_TRIAGE", reason="bounded_frames_available")
         output = fresh_export_directory()
