@@ -96,3 +96,18 @@
 - 站点 DOM/CSS 与 UA 响应可能变化。布局识别依赖支持站点现有文章结构，未知结构不强行套用文章布局；不会保证未来或任意文章结构均有效。
 - 复用既有 15 秒观察窗口；超时后才首次插入的文章结构不额外启用无限轮询。
 - CSS 保留用户缩放能力，但真实 WebKit/iOS 的缩放、选区与系统辅助功能交互尚待设备验收。
+## 2026-10-27 exact native CI and menu target candidate
+
+Exact source 459c94ae5897bb43332f40c2f6f827c049507a54; run https://github.com/wjc0104/xinxin-yuwen-garden/actions/runs/40448845789 (macos-15, explicit same-item diagnostics).
+
+- Actual macOS policy preflight, FFmpeg pair preparation and required real synthetic H264+AAC regression passed. Native project compiled.
+- All 31 app-hosted tests passed, including all 9 real WK controller tests (public expansion, account isolation, responsive desktop fixture and selection).
+- UI tests: 5 passed, 2 failed. Both poetry flows failed at the actual reading options button: native AX target was 19.7 by 19 points, identified outer/nested buttons provided no hittable point. Other browser/quote/note controls passed their hit checks.
+- Actual native playback and selected-media triage were correctly skipped by deterministic failure. This run does not accept native video, reader orientation UI or complete delivery.
+- Logs and 18.6MB simulator evidence were downloaded to the controller's allowed local evidence directory; no secrets or user data were added to source.
+
+Candidate 1 hypothesis: the existing bare-image Menu label needs an explicit 44 by 44 layout and rectangular hit region. This is a minimal target fix, not a proven explanation of all SwiftUI AX internals. Only ReadingViews.swift label layout and the existing UI regression assertions change. Actions, identifier, accessibility label, login/return conditions, controller, reader, player and data are unchanged. Native replay must confirm it.
+
+Regression retains real tap/isHittable and all four original orientation phases, adds unique menu Button, 44pt size and actual expanded login action hittability. Geometry is retained before the menu assertions. No coordinate tap, query downgrade, retries, hidden AX or acceptance threshold weakening.
+
+Windows static invariants passed (15 checks); existing failure AX fixture fails the new size assertion. These checks are not Swift/native GREEN. Independent scoped review reader_menu_hit_review found no concrete P1/P2. Actual simulator UI/landscape, iOS15 device, VoiceOver and large Dynamic Type remain unverified. Candidate must run on its exact committed head before acceptance.

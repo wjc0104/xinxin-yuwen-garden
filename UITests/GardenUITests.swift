@@ -16,7 +16,12 @@ final class GardenUITests: XCTestCase {
         XCTAssertTrue(original.waitForExistence(timeout: 5)); original.tap()
 
         let options = app.buttons["poetry-reading-options"]
-        XCTAssertTrue(options.waitForExistence(timeout: 5)); options.tap()
+        XCTAssertTrue(options.waitForExistence(timeout: 5))
+        XCTAssertEqual(app.buttons.matching(identifier: "poetry-reading-options").count, 1)
+        XCTAssertTrue(options.isHittable)
+        XCTAssertGreaterThanOrEqual(options.frame.width, 44)
+        XCTAssertGreaterThanOrEqual(options.frame.height, 44)
+        options.tap()
         let login = app.buttons["poetry-site-login"]
         let restore = app.buttons["poetry-return-original"]
         XCTAssertTrue(login.waitForExistence(timeout: 5))
@@ -89,12 +94,16 @@ final class GardenUITests: XCTestCase {
             XCTAssertTrue(app.buttons["study-note"].isHittable, phase)
             XCTAssertTrue(app.buttons["open-in-browser"].isHittable, phase)
             let options = app.buttons["poetry-reading-options"]
-            XCTAssertTrue(options.isHittable, phase)
-            shot("poetry-layout-" + phase)
-            let geometry = XCTAttachment(string: "\(phase): app=\(app.frame), web=\(web.frame)")
+            let geometry = XCTAttachment(string: "\(phase): app=\(app.frame), web=\(web.frame), options=\(options.frame), optionsHittable=\(options.isHittable)")
             geometry.name = "poetry-native-geometry-" + phase; geometry.lifetime = .keepAlways; add(geometry)
+            XCTAssertEqual(app.buttons.matching(identifier: "poetry-reading-options").count, 1, phase)
+            XCTAssertTrue(options.isHittable, phase)
+            XCTAssertGreaterThanOrEqual(options.frame.width, 44, phase)
+            XCTAssertGreaterThanOrEqual(options.frame.height, 44, phase)
+            shot("poetry-layout-" + phase)
             options.tap()
             XCTAssertTrue(app.buttons["poetry-site-login"].exists, phase)
+            XCTAssertTrue(app.buttons["poetry-site-login"].isHittable, phase)
             app.buttons["poetry-reading-guidance"].tap()
             XCTAssertTrue(app.alerts["阅读说明"].waitForExistence(timeout: 3))
             app.alerts.buttons["知道了"].tap()

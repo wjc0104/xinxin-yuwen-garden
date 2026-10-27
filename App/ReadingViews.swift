@@ -41,7 +41,10 @@ struct ReadingView: View {
                                 Button { web.returnToOriginal() } label: { Label("返回原文", systemImage: "arrow.uturn.backward") }
                                     .disabled(!web.canReturnToOriginal).accessibilityIdentifier("poetry-return-original")
                                 Button("阅读说明") { showWebGuidance = true }.accessibilityIdentifier("poetry-reading-guidance")
-                            } label: { Image(systemName: "ellipsis.circle").font(.body) }
+                            } label: {
+                                Image(systemName: "ellipsis.circle").font(.body)
+                                    .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
+                            }
                             .accessibilityLabel("阅读选项").accessibilityIdentifier("poetry-reading-options")
                         }
                     }
