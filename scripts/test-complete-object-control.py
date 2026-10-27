@@ -523,6 +523,98 @@ class CompleteObjectChecks(unittest.TestCase):
             self.assertEqual(c.main(["--cleanup-only"]), 1)
         self.assertTrue((cache / c.NAMESPACE).exists()); self.assertFalse(output.exists())
         self.assertIn("cleanup_unverified", console.getvalue())
+    def _decode_synthetic_fixture_with_pts_evidence(self, source, private, requested):
+        try:
+            return c.decode(source, private, requested)
+        except c.Inconclusive as error:
+            if str(error) == "exact_pts_unavailable":
+                # This method owns a locally generated synthetic fixture only.
+                # Reuse decode's existing bounded probe result: no second probe,
+                # raw dict/metadata/path/error text, nearest-match substitution,
+                # timestamp rewrite, relaxed gate, or swallowed failure.
+                try:
+                    data = c.bounded_json(private / "probe.stdout", private, 4 * 1024 * 1024)
+                    streams, frames = data.get("streams"), data.get("frames")
+                    if not (isinstance(streams, list) and len(streams) == 1 and
+                            isinstance(frames, list) and 0 < len(frames) <= 10000):
+                        raise ValueError()
+                    text_base = streams[0].get("time_base")
+                    if not (isinstance(text_base, str) and len(text_base) <= 32):
+                        raise ValueError()
+                    base = Fraction(text_base)
+                    if not (0 < base.numerator <= 10 ** 10 and 0 < base.denominator <= 10 ** 10):
+                        raise ValueError()
+                    start_pts = streams[0].get("start_pts")
+                    if type(start_pts) is not int or not -(1 << 63) <= start_pts < (1 << 63):
+                        raise ValueError()
+                    ticks = []
+                    for frame in frames:
+                        value = frame.get("pts") if isinstance(frame, dict) else None
+                        if type(value) is not int or not -(1 << 63) <= value < (1 << 63):
+                            raise ValueError()
+                        ticks.append(value)
+                    def witness(tick):
+                        value = tick * base
+                        return {"pts": tick, "secondsNumerator": value.numerator,
+                                "secondsDenominator": value.denominator}
+                    pairs = []
+                    for target in (5, 15, 25, 52):
+                        lower = [tick for tick in ticks if tick * base <= target]
+                        upper = [tick for tick in ticks if tick * base >= target]
+                        pairs.append({"targetSeconds": target, "exactPresent": any(tick * base == target for tick in ticks),
+                                      "lower": witness(max(lower)) if lower else None,
+                                      "upper": witness(min(upper)) if upper else None})
+                    diagnostic = {"schema": 1, "scope": "syntheticFixturePTSOnly", "frameCount": len(ticks),
+                                  "streamStartPTS": start_pts, "timeBaseNumerator": base.numerator, "timeBaseDenominator": base.denominator,
+                                  "first": [witness(tick) for tick in ticks[:4]],
+                                  "last": [witness(tick) for tick in ticks[-4:]], "targets": pairs}
+                    encoded = json.dumps(diagnostic, sort_keys=True, separators=(",", ":"), allow_nan=False)
+                    if len(encoded) > 4000:
+                        raise ValueError()
+                    print("COMPLETE_OBJECT_SYNTHETIC_PTS " + encoded, flush=True)
+                except Exception:
+                    print("COMPLETE_OBJECT_SYNTHETIC_PTS unavailable", flush=True)
+            raise
+    def test_synthetic_failure_pts_evidence_is_bounded_numeric_and_rethrows(self):
+        private = self.root / "synthetic"; private.mkdir()
+        pts = [0, 151, 451, 751, 1561, 1591]
+        data = {"streams": [{"time_base": "1/30", "start_pts": 0, "tags": {"path": SENTINEL}}],
+                "frames": [{"pts": tick, "arbitrary": SENTINEL} for tick in pts], "path": SENTINEL}
+        (private / "probe.stdout").write_text(json.dumps(data))
+        failure = c.Inconclusive("exact_pts_unavailable")
+        with patch.object(c, "decode", side_effect=failure), contextlib.redirect_stdout(io.StringIO()) as console:
+            with self.assertRaises(c.Inconclusive) as caught:
+                self._decode_synthetic_fixture_with_pts_evidence(self.root / "source.mp4", private, [])
+        self.assertIs(caught.exception, failure)
+        output = console.getvalue()
+        self.assertLessEqual(len(output.encode("utf-8")), 4096)
+        self.assertNotIn(SENTINEL, output); self.assertNotIn(str(self.root), output)
+        evidence = json.loads(output.removeprefix("COMPLETE_OBJECT_SYNTHETIC_PTS "))
+        self.assertEqual(set(evidence), {"schema", "scope", "frameCount", "streamStartPTS", "timeBaseNumerator",
+                                        "timeBaseDenominator", "first", "last", "targets"})
+        self.assertEqual(evidence["frameCount"], len(pts))
+        self.assertEqual(evidence["targets"][0]["lower"]["pts"], 0)
+        self.assertEqual(evidence["targets"][0]["upper"]["pts"], 151)
+        self.assertFalse(evidence["targets"][0]["exactPresent"])
+        self.assertEqual(evidence["targets"][-1]["upper"]["secondsNumerator"], 1561)
+    def test_synthetic_failure_pts_wrong_fields_do_not_escape_or_swallow(self):
+        private = self.root / "synthetic"; private.mkdir()
+        path = private / "probe.stdout"
+        cases = [{"streams": [{"time_base": SENTINEL, "start_pts": 0}], "frames": [{"pts": 0}]},
+                 {"streams": [{"time_base": "1/30", "start_pts": SENTINEL}], "frames": [{"pts": 0}]},
+                 {"streams": [{"time_base": "1/30", "start_pts": 0}], "frames": [{"pts": SENTINEL}]}]
+        for data in cases:
+            path.write_text(json.dumps(data))
+            failure = c.Inconclusive("exact_pts_unavailable")
+            with patch.object(c, "decode", side_effect=failure), contextlib.redirect_stdout(io.StringIO()) as console:
+                with self.assertRaises(c.Inconclusive) as caught:
+                    self._decode_synthetic_fixture_with_pts_evidence(self.root / "source.mp4", private, [])
+            self.assertIs(caught.exception, failure)
+            self.assertEqual(console.getvalue(), "COMPLETE_OBJECT_SYNTHETIC_PTS unavailable\n")
+        with patch.object(c, "decode", side_effect=c.Inconclusive("decode_unsupported")), \
+             patch.object(c, "bounded_json") as bounded, contextlib.redirect_stdout(io.StringIO()) as console:
+            self.rejects(lambda: self._decode_synthetic_fixture_with_pts_evidence(self.root / "source.mp4", private, []), "decode_unsupported")
+        bounded.assert_not_called(); self.assertEqual(console.getvalue(), "")
     def test_real_local_h264_aac_command_path(self):
         ffmpeg, ffprobe = shutil.which("ffmpeg"), shutil.which("ffprobe")
         required = os.environ.get("REQUIRE_COMPLETE_OBJECT_TOOLS") == "true"
@@ -568,7 +660,7 @@ class CompleteObjectChecks(unittest.TestCase):
         c.validate_mp4(source)
         private = self.root / "software"; private.mkdir()
         requested = [{"targetSeconds": target, "actualPTSValue": target, "actualPTSTimescale": 1} for target in (5, 15, 25, 52)]
-        decoded, images = c.decode(source, private, requested)
+        decoded, images = self._decode_synthetic_fixture_with_pts_evidence(source, private, requested)
         self.assertEqual(len(images), 4)
         self.assertTrue(all(row["exactRationalPTSMatch"] for row in decoded["frames"]))
         for raw in images.values():
