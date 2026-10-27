@@ -37,6 +37,18 @@ private final class PlayerClock {
     private var playbackObserver: NSKeyValueObservation?
     private var clock: PlayerClock?
     #if DEBUG
+    struct SeekPublicationDiagnostic {
+        enum Origin: String, Encodable { case clock, appCompletion }
+        enum Decision: String, Encodable { case published, revisionRejected }
+        let origin: Origin
+        let decision: Decision
+        let sourceSeconds: Double
+        let emittedSeconds: Int?
+        let pendingSeek: Bool
+        let completionSucceeded: Bool?
+        let revisionMatches: Bool?
+    }
+    var seekPublicationObserver: ((SeekPublicationDiagnostic) -> Void)? = nil
     private var renderDiagnostic: SameItemRenderDiagnostic?
     #endif
     private var loadWatchdog: Task<Void, Never>?
@@ -131,7 +143,14 @@ private final class PlayerClock {
                     // Read now: an enqueued pre-seek callback must not restore its stale zero sample.
                     let next = Int(elapsed)
                     self.lastPosition = next
-                    if self.seconds != next { self.seconds = next }
+                    if self.seconds != next {
+                        self.seconds = next
+                        #if DEBUG
+                        self.seekPublicationObserver?(.init(origin: .clock, decision: .published,
+                            sourceSeconds: elapsed, emittedSeconds: next, pendingSeek: false,
+                            completionSucceeded: nil, revisionMatches: nil))
+                        #endif
+                    }
                     self.traceTransportState(.clockSample)
                 }
             }
@@ -194,10 +213,28 @@ private final class PlayerClock {
                 let issuedRevision = self.pendingSeekIntentRevision
                 self.pendingSeek = nil
                 self.pendingSeekIntentRevision = nil
+                #if DEBUG
+                var passedRevisionGuard = false
+                defer {
+                    if !passedRevisionGuard {
+                        self.seekPublicationObserver?(.init(origin: .appCompletion, decision: .revisionRejected,
+                            sourceSeconds: target.seconds, emittedSeconds: nil, pendingSeek: false,
+                            completionSucceeded: success, revisionMatches: false))
+                    }
+                }
+                #endif
                 // A later AVKit seek or transport command wins, even if it ends paused.
                 guard (player as? StudyAVPlayer)?.intentRevision == issuedRevision else { return }
+                #if DEBUG
+                passedRevisionGuard = true
+                #endif
                 if success {
                     self.lastPosition = Int(target.seconds); self.seconds = Int(target.seconds)
+                    #if DEBUG
+                    self.seekPublicationObserver?(.init(origin: .appCompletion, decision: .published,
+                        sourceSeconds: target.seconds, emittedSeconds: Int(target.seconds), pendingSeek: false,
+                        completionSucceeded: true, revisionMatches: true))
+                    #endif
                 } else {
                     self.ready = false; player?.pause(); self.playing = false
                     self.problem = "没有恢复到上次时间点，请重试。"

@@ -329,18 +329,112 @@ import GardenCore
     }
 
     private func assertNativeCommandsSupersedeAppSeek(_ video: NativeStudyPlayer, player: AVPlayer, item: AVPlayerItem) async throws {
+        #if DEBUG
+        enum DiagnosticPhase: String, Encodable {
+            case source, sink, appIssued, nativeIssued, nativeAwaitResumed, pendingWaitResumed, commandFinished
+        }
+        struct DiagnosticEvent: Encodable {
+            let sequence: Int
+            let command: Int
+            let phase: DiagnosticPhase
+            let origin: NativeStudyPlayer.SeekPublicationDiagnostic.Origin?
+            let decision: NativeStudyPlayer.SeekPublicationDiagnostic.Decision?
+            let sourceSeconds: Double?
+            let emittedSeconds: Int?
+            let actualAtSink: Double?
+            let sinkSequence: Int?
+            let pendingSeek: Bool
+            let completionSucceeded: Bool?
+            let revisionMatches: Bool?
+        }
+        struct DiagnosticAttachment: Encodable {
+            let schema: Int
+            let maxEvents: Int
+            let maxBytes: Int
+            let truncated: Bool
+            let droppedEvents: Int
+            let nonFiniteNumbers: Int
+            let unavailable: Bool
+            let completed: Bool
+            let events: [DiagnosticEvent]
+        }
+        let maxDiagnosticEvents = 256, maxDiagnosticBytes = 64 * 1024
+        var diagnosticEvents: [DiagnosticEvent] = []
+        var diagnosticCommand = -1, diagnosticSequence = 0, diagnosticDropped = 0, diagnosticNonFinite = 0
+        var diagnosticCompleted = false
+        var lastSinkSequence: Int?
+        @MainActor @discardableResult func record(
+            _ phase: DiagnosticPhase, source: NativeStudyPlayer.SeekPublicationDiagnostic? = nil,
+            sourceSeconds: Double? = nil, emittedSeconds: Int? = nil, actualAtSink: Double? = nil,
+            sinkSequence: Int? = nil, revisionMatches: Bool? = nil
+        ) -> Int {
+            diagnosticSequence += 1
+            guard diagnosticEvents.count < maxDiagnosticEvents else {
+                diagnosticDropped += 1
+                return diagnosticSequence
+            }
+            let sample = source?.sourceSeconds ?? sourceSeconds
+            if let sample = sample, !sample.isFinite { diagnosticNonFinite += 1 }
+            if let actualAtSink = actualAtSink, !actualAtSink.isFinite { diagnosticNonFinite += 1 }
+            diagnosticEvents.append(.init(sequence: diagnosticSequence, command: diagnosticCommand, phase: phase,
+                origin: source?.origin, decision: source?.decision,
+                sourceSeconds: sample.flatMap { $0.isFinite ? $0 : nil },
+                emittedSeconds: source?.emittedSeconds ?? emittedSeconds,
+                actualAtSink: actualAtSink.flatMap { $0.isFinite ? $0 : nil }, sinkSequence: sinkSequence,
+                pendingSeek: source?.pendingSeek ?? (video.pendingSeek != nil),
+                completionSucceeded: source?.completionSucceeded, revisionMatches: source?.revisionMatches ?? revisionMatches))
+            return diagnosticSequence
+        }
+        video.seekPublicationObserver = { source in
+            // The original synchronous sink runs before this post-assignment source event.
+            record(.source, source: source, sinkSequence: source.decision == .published ? lastSinkSequence : nil)
+            if source.decision == .published { lastSinkSequence = nil }
+        }
+        defer {
+            video.seekPublicationObserver = nil
+            let encoder = JSONEncoder()
+            func encode() -> Data? {
+                try? encoder.encode(DiagnosticAttachment(schema: 1, maxEvents: maxDiagnosticEvents,
+                    maxBytes: maxDiagnosticBytes, truncated: diagnosticDropped > 0,
+                    droppedEvents: diagnosticDropped, nonFiniteNumbers: diagnosticNonFinite,
+                    unavailable: diagnosticEvents.isEmpty || diagnosticNonFinite > 0,
+                    completed: diagnosticCompleted, events: diagnosticEvents))
+            }
+            var bytes = encode()
+            while let encoded = bytes, encoded.count > maxDiagnosticBytes, !diagnosticEvents.isEmpty {
+                diagnosticEvents.removeLast(); diagnosticDropped += 1
+                bytes = encode()
+            }
+            // A fixed fallback makes an encoding failure explicit without exporting exception text.
+            let data = bytes ?? Data("{\"schema\":1,\"unavailable\":true,\"completed\":false,\"truncated\":true,\"events\":[]}".utf8)
+            let attachment = XCTAttachment(data: data, uniformTypeIdentifier: "public.json")
+            attachment.name = "Native seek publication attribution"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+        }
+        #endif
         let native = try XCTUnwrap(player as? StudyAVPlayer)
         XCTAssertTrue(item is StudyAVPlayerItem)
         for command in 0..<3 {
+            #if DEBUG
+            diagnosticCommand = command
+            #endif
             let target = CMTime(seconds: 44.375 + Double(command) * 20, preferredTimescale: 600)
             var published: [(seconds: Int?, actual: Double)] = []
             let publication = video.$seconds.dropFirst().sink {
-                published.append(($0, player.currentTime().seconds))
+                let actual = player.currentTime().seconds
+                published.append(($0, actual))
+                #if DEBUG
+                lastSinkSequence = record(.sink, emittedSeconds: $0, actualAtSink: actual)
+                #endif
             }
             defer { publication.cancel() }
             video.seek(to: target)
             XCTAssertNotNil(video.pendingSeek, "The app seek must still be in flight")
             let appRevision = native.intentRevision
+            #if DEBUG
+            record(.appIssued, sourceSeconds: target.seconds)
+            #endif
             let newerTarget = CMTime(seconds: 103.375 + Double(command) * 20, preferredTimescale: 600)
             let sought = expectation(description: "A later native command wins \(command)")
             if command == 0 {
@@ -357,8 +451,18 @@ import GardenCore
             }
             let newerRevision = native.intentRevision
             XCTAssertNotEqual(newerRevision, appRevision)
+            #if DEBUG
+            record(.nativeIssued, sourceSeconds: command < 2 ? newerTarget.seconds : nil,
+                   revisionMatches: newerRevision == appRevision)
+            #endif
             await fulfillment(of: [sought], timeout: 15)
+            #if DEBUG
+            record(.nativeAwaitResumed)
+            #endif
             await waitForPresentation { video.pendingSeek == nil }
+            #if DEBUG
+            record(.pendingWaitResumed)
+            #endif
             for _ in 0..<10 {
                 XCTAssertTrue(video.ready)
                 XCTAssertNil(video.problem)
@@ -377,7 +481,13 @@ import GardenCore
                 }
                 try await Task.sleep(nanoseconds: 50_000_000)
             }
+            #if DEBUG
+            record(.commandFinished)
+            #endif
         }
+        #if DEBUG
+        diagnosticCompleted = true
+        #endif
     }
     private func waitForPresentation(iterations: Int = 200, _ condition: () -> Bool) async {
         for _ in 0..<iterations {
