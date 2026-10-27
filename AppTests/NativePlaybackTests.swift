@@ -158,6 +158,180 @@ import GardenCore
         video.playbackFailed(item)
         XCTAssertNil(video.currentSeconds())
     }
+    func testPlainAVPlayerSharedAssetDecodedOutputControl() async throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["GARDEN_SAME_ITEM_RENDER_DIAGNOSTICS"] == "1", "Diagnostic-only plain decoded-output control")
+        let started = ProcessInfo.processInfo.systemUptime, softDeadline = started + 130
+        var summary: [String: Any] = ["schema": 1, "scope": "plainDecodedOutput", "episode": 2,
+            "cid": 37155308866, "startedUptime": started, "completed": false, "stage": "load",
+            "actualScreenCaptured": false, "productionPaused52BufferAvailable": false]
+        var frames: [[String: Any]] = [], pngBytes = 0
+        func finite(_ value: Double) -> Any { value.isFinite ? value as Any : NSNull() }
+        func poll() async throws {
+            try Task.checkCancellation()
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
+        defer {
+            summary["frames"] = frames; summary["pngBytes"] = pngBytes
+            summary["endedUptime"] = ProcessInfo.processInfo.systemUptime
+            let encoded = try? JSONSerialization.data(withJSONObject: summary, options: [.sortedKeys])
+            let data: Data
+            if let encoded = encoded, encoded.count <= 16 * 1024 { data = encoded }
+            else {
+                XCTFail("Plain decoded-output summary exceeded its fixed schema/16KiB budget")
+                data = Data("{\"schema\":1,\"scope\":\"plainDecodedOutput\",\"completed\":false,\"summaryUnavailable\":true}".utf8)
+            }
+            let attachment = XCTAttachment(data: data, uniformTypeIdentifier: "public.json")
+            attachment.name = "plain-decoded-output.json"; attachment.lifetime = .keepAlways; add(attachment)
+        }
+        var resource = StudyResource(id: "native-network-sample", lessonID: "7u-02", title: "济南的冬天", kind: .video, url: "https://www.bilibili.com/video/BV1eUAieoEZd/?p=2")
+        resource.videoCID = 37155308866
+        var sharedAsset: AVURLAsset?, readyDeadline = softDeadline
+        weak var loaderWitness: NativeStudyPlayer?
+        do {
+            let loader = NativeStudyPlayer()
+            loaderWitness = loader
+            defer { loader.pause() }
+            await loader.load(resource) // Reuse the existing resolver, options, requests and watchdog.
+            try Task.checkCancellation()
+            readyDeadline = min(softDeadline, ProcessInfo.processInfo.systemUptime + 35)
+            summary["stage"] = "ready"
+            while !loader.ready && loader.problem == nil && ProcessInfo.processInfo.systemUptime < readyDeadline {
+                try await poll()
+            }
+            guard ProcessInfo.processInfo.systemUptime < readyDeadline, loader.ready, loader.problem == nil else {
+                XCTFail("Plain decoded-output source setup failed or exceeded its soft deadline"); return
+            }
+            loader.pause()
+            let sourcePlayer = try XCTUnwrap(loader.player, "Plain control requires the loaded public source")
+            let sourceItem = try XCTUnwrap(sourcePlayer.currentItem, "Plain control requires the loaded source item")
+            guard sourcePlayer.rate == 0, loader.height == 720, sourceItem.duration.seconds.isFinite,
+                  sourceItem.duration.seconds > 600, !sourceItem.asset.tracks(withMediaType: .audio).isEmpty else {
+                XCTFail("Plain control requires a paused complete 720p public episode with audio"); return
+            }
+            sharedAsset = try XCTUnwrap(sourceItem.asset as? AVURLAsset, "Plain control requires the existing AVURLAsset")
+        } // Drop the loader's strong references without adding production teardown.
+        summary["loaderReleased"] = loaderWitness == nil
+        let asset = try XCTUnwrap(sharedAsset, "Plain control requires the shared asset")
+        let item = AVPlayerItem(asset: asset)
+        let player = AVPlayer(playerItem: item)
+        let output = AVPlayerItemVideoOutput(pixelBufferAttributes: [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA])
+        item.add(output)
+        let controller = AVPlayerViewController()
+        controller.player = player
+        var window: UIWindow?, previousWindow: UIWindow?
+        defer {
+            player.pause(); item.remove(output); controller.player = nil
+            player.replaceCurrentItem(with: nil)
+            window?.isHidden = true; window?.rootViewController = nil; previousWindow?.makeKey()
+        }
+        guard type(of: item) == AVPlayerItem.self, type(of: player) == AVPlayer.self,
+              item.asset === asset, player.currentItem === item else {
+            XCTFail("Plain control must use exact AVPlayerItem/AVPlayer classes and the shared asset object"); return
+        }
+        summary["exactPlainClasses"] = true; summary["sharedAssetObject"] = true
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        previousWindow = scene.windows.first { $0.isKeyWindow }
+        let mountedWindow = UIWindow(windowScene: scene)
+        window = mountedWindow; mountedWindow.rootViewController = controller; mountedWindow.makeKeyAndVisible()
+        summary["stage"] = "window"
+        let windowDeadline = min(softDeadline, ProcessInfo.processInfo.systemUptime + 2)
+        while controller.view.window !== mountedWindow && ProcessInfo.processInfo.systemUptime < windowDeadline { try await poll() }
+        guard ProcessInfo.processInfo.systemUptime < windowDeadline, controller.view.window === mountedWindow else {
+            XCTFail("Plain controller did not enter the test window within its soft setup budget"); return
+        }
+        summary["controllerInWindow"] = true // Setup only, never evidence of displayed video pixels.
+        while item.status == .unknown && ProcessInfo.processInfo.systemUptime < readyDeadline { try await poll() }
+        guard ProcessInfo.processInfo.systemUptime < readyDeadline, item.status == .readyToPlay,
+              player.currentTime().seconds.isFinite, abs(player.currentTime().seconds) <= 0.05 else {
+            XCTFail("Plain item did not become ready at zero within its soft ready budget"); return
+        }
+        summary["readyForDisplayAtSetup"] = controller.isReadyForDisplay
+        let context = CIContext(), playStarted = ProcessInfo.processInfo.systemUptime
+        let playDeadline = min(softDeadline, playStarted + 50)
+        summary["playStartedUptime"] = playStarted; summary["stage"] = "playing"
+        player.playImmediately(atRate: 1.5) // One natural run from zero; no seeks or rate reconciliation.
+        let targets: [(Double, String)] = [(5, "plain-05.png"), (15, "plain-15.png"), (25, "plain-25.png"), (52, "plain-paused52.png")]
+        for (target, name) in targets {
+            let paused = target == 52, index = frames.count
+            frames.append(["targetSeconds": target, "paused": paused, "state": "waiting"])
+            while ProcessInfo.processInfo.systemUptime < playDeadline {
+                try Task.checkCancellation()
+                let current = player.currentTime().seconds
+                guard current.isFinite, item.status == .readyToPlay else {
+                    XCTFail("Plain playback lost a finite ready media clock"); return
+                }
+                if current >= target { break }
+                try await poll()
+            }
+            guard ProcessInfo.processInfo.systemUptime < playDeadline else {
+                XCTFail("Plain natural playback exceeded its 50s/total soft budget"); return
+            }
+            if paused {
+                player.pause() // Pause on the first observed crossing, even when the media window was missed.
+                guard player.rate == 0 else { XCTFail("Plain pause did not stop the native rate"); return }
+            }
+            let captureDeadline = min(playDeadline, paused ? ProcessInfo.processInfo.systemUptime + 1 : playDeadline)
+            var captured = false
+            summary["stage"] = "capture"
+            while ProcessInfo.processInfo.systemUptime < captureDeadline {
+                try Task.checkCancellation()
+                let beforeUptime = ProcessInfo.processInfo.systemUptime, before = player.currentTime().seconds
+                let beforeRate = player.rate, beforeControl = player.timeControlStatus.rawValue
+                let requested = output.itemTime(forHostTime: CACurrentMediaTime())
+                frames[index].merge(["currentBeforeSeconds": finite(before), "requestedSeconds": finite(requested.seconds),
+                    "rateBefore": finite(Double(beforeRate)), "controlBefore": beforeControl, "beforeUptime": beforeUptime]) { _, new in new }
+                guard before.isFinite, before >= target, before <= target + 0.75, requested.seconds.isFinite,
+                      abs(requested.seconds - before) <= 0.75 else {
+                    XCTFail("Plain capture missed the current 0.75s media window"); return
+                }
+                if output.hasNewPixelBuffer(forItemTime: requested) {
+                    var actual = CMTime.invalid
+                    if let buffer = output.copyPixelBuffer(forItemTime: requested, itemTimeForDisplay: &actual) {
+                        let after = player.currentTime().seconds, afterRate = player.rate
+                        let afterControl = player.timeControlStatus.rawValue, afterUptime = ProcessInfo.processInfo.systemUptime
+                        frames[index].merge(["state": "first-buffer", "actualPTSValue": actual.value,
+                            "actualPTSTimescale": actual.timescale, "actualPTSSeconds": finite(actual.seconds),
+                            "currentAfterSeconds": finite(after), "rateAfter": finite(Double(afterRate)),
+                            "controlAfter": afterControl, "afterUptime": afterUptime,
+                            "readyForDisplay": controller.isReadyForDisplay]) { _, new in new }
+                        let frame = CIImage(cvPixelBuffer: buffer)
+                        let image = try XCTUnwrap(context.createCGImage(frame, from: frame.extent), "Plain first buffer must convert to an image")
+                        guard image.width == 1280, image.height == 720 else {
+                            XCTFail("Plain first buffer must be an uncropped 1280x720 image"); return
+                        }
+                        let png = try XCTUnwrap(UIImage(cgImage: image).pngData(), "Plain first buffer must encode as PNG")
+                        guard png.count <= 4 * 1024 * 1024, pngBytes + png.count <= 16 * 1024 * 1024 else {
+                            XCTFail("Plain PNG attachment exceeded its fixed byte budget"); return
+                        }
+                        let attachment = XCTAttachment(data: png, uniformTypeIdentifier: "public.png")
+                        attachment.name = name; attachment.lifetime = .keepAlways; add(attachment)
+                        pngBytes += png.count; frames[index]["pngBytes"] = png.count
+                        // Retain this first buffer before evaluating gates; never recapture a better-looking frame.
+                        let colors = try XCTUnwrap(plainDecodedOutputColors(buffer), "Plain output must contain readable BGRA pixels")
+                        frames[index].merge(["samples": colors.samples, "populatedColors": colors.populated,
+                            "largestBucket": colors.largest]) { _, new in new }
+                        let expectedRate: Float = paused ? 0 : 1.5
+                        let expectedControl = paused ? AVPlayer.TimeControlStatus.paused.rawValue : AVPlayer.TimeControlStatus.playing.rawValue
+                        guard after.isFinite, actual.seconds.isFinite, after >= target, after <= target + 0.75,
+                              abs(actual.seconds - before) <= 0.75, abs(actual.seconds - after) <= 0.75,
+                              beforeRate == expectedRate, afterRate == expectedRate,
+                              beforeControl == expectedControl, afterControl == expectedControl,
+                              afterUptime < captureDeadline, ProcessInfo.processInfo.systemUptime < softDeadline else {
+                            XCTFail("Plain first buffer failed media alignment, native transport or soft deadline checks"); return
+                        }
+                        guard colors.populated >= 16, colors.largest < colors.samples * 9 / 10 else {
+                            XCTFail("Plain first buffer is nearly uniform; inspect the retained decoded PNG"); return
+                        }
+                        frames[index]["state"] = "decoded-output-gates-passed"
+                        captured = true; break
+                    }
+                }
+                try await poll()
+            }
+            guard captured else { XCTFail("Plain item emitted no first new buffer within its soft capture budget"); return }
+        }
+        summary["completed"] = true; summary["stage"] = "complete"
+    }
     private func assertFractionalFullScreenBinding(_ video: NativeStudyPlayer, player: AVPlayer, item: AVPlayerItem) async throws {
         let presentation = FullScreenPresentation()
         let inline = UIHostingController(rootView: FullScreenBindingHarness(video: video, presentation: presentation))
@@ -542,6 +716,27 @@ import GardenCore
         withExtendedLifetime((observer, controlObserver)) {}
         XCTAssertEqual(player.rate, expected)
         XCTAssertEqual(player.timeControlStatus, .playing)
+    }
+    private func plainDecodedOutputColors(_ buffer: CVPixelBuffer) -> (populated: Int, largest: Int, samples: Int)? {
+        guard CVPixelBufferGetPixelFormatType(buffer) == kCVPixelFormatType_32BGRA,
+              CVPixelBufferLockBaseAddress(buffer, .readOnly) == kCVReturnSuccess else { return nil }
+        defer { CVPixelBufferUnlockBaseAddress(buffer, .readOnly) }
+        let width = CVPixelBufferGetWidth(buffer), height = CVPixelBufferGetHeight(buffer)
+        let stride = CVPixelBufferGetBytesPerRow(buffer)
+        guard width >= 64, height >= 36, stride >= width * 4,
+              let base = CVPixelBufferGetBaseAddress(buffer) else { return nil }
+        let bytes = base.assumingMemoryBound(to: UInt8.self)
+        var colors: [Int: Int] = [:]
+        for row in 0..<36 {
+            let y = height / 10 + (2 * row + 1) * (height - height / 5) / 72
+            for column in 0..<64 {
+                let x = width / 10 + (2 * column + 1) * (width - width / 5) / 128
+                let offset = y * stride + x * 4
+                let color = (Int(bytes[offset + 2]) >> 4) << 8 | (Int(bytes[offset + 1]) >> 4) << 4 | (Int(bytes[offset]) >> 4)
+                colors[color, default: 0] += 1
+            }
+        }
+        return (colors.values.filter { $0 >= 4 }.count, colors.values.max() ?? 0, 64 * 36)
     }
     private func hasSpatialDetail(_ buffer: CVPixelBuffer) -> Bool {
         guard CVPixelBufferLockBaseAddress(buffer, .readOnly) == kCVReturnSuccess else { return false }
