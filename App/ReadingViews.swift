@@ -14,6 +14,7 @@ struct ReadingView: View {
     @State private var showDelete = false
     @State private var webSelectionMessage: String?
     @State private var showWebGuidance = false
+    @State private var showWebOptions = false
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @StateObject private var web = WebStudyController()
     @StateObject private var selection = TextSelectionController()
@@ -35,17 +36,18 @@ struct ReadingView: View {
                         Spacer(minLength: 8)
                         Button { browser = BrowserLink(url: url) } label: { Label("浏览器打开", systemImage: "safari").font(.caption) }.accessibilityIdentifier("open-in-browser").fixedSize()
                         if EmbeddedResource.isPoetrySite(url.host ?? "") {
-                            Menu {
+                            Button { showWebOptions = true } label: {
+                                Image(systemName: "ellipsis.circle").font(.body)
+                                    .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
+                            }
+                            .accessibilityLabel("阅读选项").accessibilityIdentifier("poetry-reading-options")
+                            .confirmationDialog("阅读选项", isPresented: $showWebOptions, titleVisibility: .visible) {
                                 Button { web.openLogin() } label: { Label("原站登录", systemImage: "person.crop.circle") }
                                     .accessibilityIdentifier("poetry-site-login")
                                 Button { web.returnToOriginal() } label: { Label("返回原文", systemImage: "arrow.uturn.backward") }
                                     .disabled(!web.canReturnToOriginal).accessibilityIdentifier("poetry-return-original")
                                 Button("阅读说明") { showWebGuidance = true }.accessibilityIdentifier("poetry-reading-guidance")
-                            } label: {
-                                Image(systemName: "ellipsis.circle").font(.body)
-                                    .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
                             }
-                            .accessibilityLabel("阅读选项").accessibilityIdentifier("poetry-reading-options")
                         }
                     }
                     if web.failed {

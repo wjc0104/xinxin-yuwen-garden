@@ -19,8 +19,9 @@ final class GardenUITests: XCTestCase {
         XCTAssertTrue(options.waitForExistence(timeout: 5))
         XCTAssertEqual(app.buttons.matching(identifier: "poetry-reading-options").count, 1)
         XCTAssertTrue(options.isHittable)
-        XCTAssertGreaterThanOrEqual(options.frame.width, 44)
-        XCTAssertGreaterThanOrEqual(options.frame.height, 44)
+        // AX CGRect subtraction can report 43.999999999999986 for a 44pt target.
+        XCTAssertGreaterThanOrEqual(options.frame.width, 44 - 0.001)
+        XCTAssertGreaterThanOrEqual(options.frame.height, 44 - 0.001)
         options.tap()
         let login = app.buttons["poetry-site-login"]
         let restore = app.buttons["poetry-return-original"]
@@ -98,8 +99,9 @@ final class GardenUITests: XCTestCase {
             geometry.name = "poetry-native-geometry-" + phase; geometry.lifetime = .keepAlways; add(geometry)
             XCTAssertEqual(app.buttons.matching(identifier: "poetry-reading-options").count, 1, phase)
             XCTAssertTrue(options.isHittable, phase)
-            XCTAssertGreaterThanOrEqual(options.frame.width, 44, phase)
-            XCTAssertGreaterThanOrEqual(options.frame.height, 44, phase)
+            // Allow only subpixel arithmetic rounding; hit testing remains mandatory.
+            XCTAssertGreaterThanOrEqual(options.frame.width, 44 - 0.001, phase)
+            XCTAssertGreaterThanOrEqual(options.frame.height, 44 - 0.001, phase)
             shot("poetry-layout-" + phase)
             options.tap()
             XCTAssertTrue(app.buttons["poetry-site-login"].exists, phase)
