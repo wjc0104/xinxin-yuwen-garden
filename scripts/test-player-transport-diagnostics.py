@@ -3,6 +3,7 @@ from contextlib import redirect_stdout
 import importlib.util
 import io
 import os
+import re
 from pathlib import Path
 import subprocess
 import tempfile
@@ -16,7 +17,109 @@ exporter = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(exporter)
 
 
+def app_initializer_starts_with_trace(source):
+    """Narrow lexical guard, not a Swift parser; unsupported prefix syntax fails closed."""
+    def tokens():
+        position = 0
+        while position < len(source):
+            match = re.match(r'\s+|//[^\n]*|/\*|#+(?=")|"""|"(?:\\.|[^"\\])*"|[A-Za-z_]\w*|\S',
+                             source[position:], re.DOTALL)
+            token = match.group()
+            start = position
+            position += len(token)
+            if token == "/*":
+                depth = 1
+                while depth:
+                    marker = re.search(r"/\*|\*/", source[position:])
+                    if marker is None:
+                        raise ValueError("Unterminated Swift comment")
+                    depth += 1 if marker.group() == "/*" else -1
+                    position += marker.end()
+                continue
+            if token.isspace() or token.startswith("//"):
+                continue
+            # Raw/multiline strings before this initializer are deliberately unsupported.
+            if token == '"""' or (token.startswith("#") and source[position:position + 1] == '"'):
+                raise ValueError("Unsupported Swift string in initializer prefix")
+            if token.startswith('"') and '\\(' in token:
+                raise ValueError("Unsupported Swift interpolation in initializer prefix")
+            yield ('<string>' if token.startswith('"') else token), start, position
+
+    stream = tokens()
+    header = ["@", "main", "struct", "XinxinGardenApp", ":", "App", "{"]
+    window = []
+    depth = 0
+    try:
+        for token, _, _ in stream:
+            if token == "#":
+                return False
+            window = (window + [token])[-len(header):]
+            depth += (token == "{") - (token == "}")
+            if depth == 1 and window == header:
+                break
+        else:
+            return False
+        previous = "{"
+        for token, _, _ in stream:
+            if token == "#":
+                return False
+            if depth == 1 and token == "init" and previous != ".":
+                for expected in ["(", ")", "{", "_", "=", "PlayerTransportTrace", ".", "shared"]:
+                    actual, _, end = next(stream)
+                    if actual != expected:
+                        return False
+                following, start, _ = next(stream)
+                return following in [";", "}"] or (
+                    "\n" in source[end:start] and
+                    (following == "#" or (following.isidentifier() and following not in ["as", "is"])))
+            depth += (token == "{") - (token == "}")
+            if depth == 0:
+                return False
+            previous = token
+    except (StopIteration, ValueError):
+        return False
+    return False
+
+
 class TransportDiagnosticChecks(unittest.TestCase):
+
+    def test_app_initializer_trace_contract_accepts_layout_and_comments(self):
+        for body in [
+            "init() { _ = PlayerTransportTrace.shared }",
+            "init ( ) {\n    _ = PlayerTransportTrace.shared\n    #if DEBUG\n    experiment()\n    #endif\n}",
+            "init\n(\n)\n{\n_\t=\nPlayerTransportTrace\n.\nshared\n}",
+            "init() { /* outer /* nested */ comment */ _ /* gap */ = PlayerTransportTrace.shared; experiment() }",
+        ]:
+            with self.subTest(body=body):
+                self.assertTrue(app_initializer_starts_with_trace("@main struct XinxinGardenApp: App { " + body + " }"))
+
+    def test_app_initializer_trace_contract_rejects_conditional_preceded_and_spoofed_trace(self):
+        for body in [
+            "init() { if enabled { _ = PlayerTransportTrace.shared } }",
+            "init() { #if DEBUG\n_ = PlayerTransportTrace.shared\n#endif\n}",
+            "#if DEBUG\ninit() { _ = PlayerTransportTrace.shared }\n#endif",
+            "init() { experiment(); _ = PlayerTransportTrace.shared }",
+            "init() { // _ = PlayerTransportTrace.shared\nexperiment() }",
+            "init() { /* _ = PlayerTransportTrace.shared */ experiment() }",
+            'init() { let fake = "_ = PlayerTransportTrace.shared" }',
+            "init() { _ = PlayerTransportTrace.sharedFactory }",
+            "init() { _ = PlayerTransportTrace.shared() }",
+            "init() { _ = PlayerTransportTrace.shared\n.description }",
+            "struct Decoy { init() { _ = PlayerTransportTrace.shared } }\ninit() { experiment() }",
+            "let decoy = Builder.init() { _ = PlayerTransportTrace.shared }\ninit() { experiment() }",
+        ]:
+            with self.subTest(body=body):
+                self.assertFalse(app_initializer_starts_with_trace("@main struct XinxinGardenApp: App { " + body + " }"))
+        good = "@main struct XinxinGardenApp: App { init() { _ = PlayerTransportTrace.shared } }"
+        for source in ["// " + good, "/* outer /* nested */ " + good + " */",
+                       '"' + good + '"', '"""' + good + '"""', '#"' + good + '"#',
+                       "struct Other { " + good + " }", "#if DEBUG\n" + good + "\n#endif",
+                       good.replace("XinxinGardenApp", "Other"),
+                       r'let decoy = "\(String("' + good + r'"))"' +
+                       "\n@main struct XinxinGardenApp: App { init() { experiment() } }"]:
+            with self.subTest(source=source):
+                self.assertFalse(app_initializer_starts_with_trace(source))
+
     def test_render_pairs_export_without_trace_and_exclude_unrelated_or_oversize_files(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -158,7 +261,8 @@ class TransportDiagnosticChecks(unittest.TestCase):
         self.assertIn('writer.async', sink)
         self.assertNotIn('writer.sync', sink)
         self.assertIn('Data().write(to: file, options: .atomic)', sink)
-        self.assertIn('init() { _ = PlayerTransportTrace.shared }', (ROOT / "App/XinxinGardenApp.swift").read_text(encoding="utf-8"))
+        self.assertTrue(app_initializer_starts_with_trace((ROOT / "App/XinxinGardenApp.swift").read_text(encoding="utf-8")),
+                        "App initializer must unconditionally initialize transport tracing first")
         state = player.split('var state: [String: Any] =', 1)[1].split('PlayerTransportTrace.shared.record', 1)[0]
         for forbidden in ['url', 'resource', 'identity', 'note', 'token', 'error', 'stack']:
             self.assertNotIn(forbidden, state.lower())

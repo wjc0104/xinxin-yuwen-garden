@@ -25,3 +25,10 @@ After runnerkill/restart, landscapeorientation leaked into later tests; the time
 ## Delivery status
 
 Main not synchronized. Native finalacceptance, greenbuffer rootcause andusable directprivateWeb delivery remain incomplete. No successful link email or shutdown. Privatehosting, WiFi/mobile plusproxyon/off andiOS15 physicaldevice behavior are not inferred fromrunner tests.
+
+## Formatting-independent startup trace policy correction
+
+- Exact cff7b49/run40460043584 failed the static policy step before project generation or native execution. The old assertion required a one-line App initializer even though the current multiline initializer still initializes transport tracing first and unconditionally. This is not a player or controlled-animation experiment outcome.
+- Only scripts/test-player-transport-diagnostics.py is corrected: a narrow fail-closed lexical guard locates the actual top-level app initializer and requires its first statement to initialize transport tracing. New positive and negative checks cover layout/comments, conditional or preceded statements and comment/string/nested decoys. Swift/App, workflow and runtime gates remain unchanged. Unsupported prefix syntax fails closed; this is not a general Swift parser.
+- Staged tests read actual repository sources and dependencies: public-source6 PASS, transport9 PASS, selected-media14 run with13 PASS and1 existing Windows real-codec-tool skip. A Windows long-path first attempt failed; rerunning unchanged tests with extended-length TEMP under the same writable staging root passed. These are local policy checks, not native or real-video acceptance.
+- The previous actual green-buffer counterexample, inconclusive independent triage, ordinary animation-idle failure and private-hosting blockers remain open. No main synchronization, success email, usable-link claim or shutdown.
