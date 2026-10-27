@@ -56,3 +56,45 @@ A lengthless HTTP200 response now has `completeObject: false`; bounded captured 
 Affected verification: `python scripts/test-selected-media-triage.py` ran9 tests:8 passed,1 explicitly skipped because the local ffprobe/FFmpeg pair is absent. The root's earlier bundled FFmpeg7.1 whitelist reproduction is supporting reviewer evidence, not an exact ffprobe execution by this agent. New tests exercise lengthless/declaration completeness, current registered paths on download/decode failure and success with prepopulated old regular/oversized/directory files, symlink leaves and unsafe parent rejection, and exact sequential/software A/V command construction. Python compilation and `git diff --check` passed. No native build, real source/media fetch, CI, push or main change occurred; real A/V tool compatibility and selected-source behavior await root's exact-head execution.
 
 No Swift/player/reader/gate, source-policy, timestamp tolerance, timeout, data/version/platform or transport changes were made in this fix. All shutdown remains cancelled. Only this permanent report is committed; the matching ignored scratch report append is a disposable handoff copy.
+
+
+## 2026-10-27 macOS preflight correction
+
+# macOS selected media preflight correction (staging only)
+
+Base supplied by root: 617253b. Only the three staged files will be delivered; original repository is read-only, no commit/push/CI/local dependency install performed.
+
+## Checkpoint 1: RED
+- Baseline: 9 tests, 8 pass, 1 explicit skip (local ffprobe/FFmpeg pair absent).
+- Added runtime parent-alias canonical-root admission/cleanup, leaf/descendant symlink rejection, required-tools fail-not-skip, and scoped workflow policy regression.
+- RED rerun: 14 tests; 4 expected failures, 1 explicit real-tool skip. Failures: parent alias rejected, required-tools run incorrectly skips, preparation/regression steps absent, source gate compares not-success instead of actual-failure.
+- Windows symlink creation works here: alias/descendant checks did not skip.
+- Not yet verified: fixes, macOS execution, Homebrew provisioning, real synthetic tool path, native simulator/player/actual pixels/network playback. Existing diagnostics are not acceptance.
+
+## Checkpoint 2: GREEN and bounded verification
+- Runtime diff: RUNNER_TEMP rejects a symlink leaf before one trusted-root resolve(); unchanged safe_path still rejects descendant symlinks. mkdtemp and cleanup use that same canonical root. Simulator cache validation, request/source policy, metadata/size/PTS/pixel limits, and exact export list unchanged.
+- Every trusted TemporaryDirectory fixture root is canonicalized once. Windows symlink permission denial is now an explicit test skip rather than a silent return.
+- Workflow: only explicit same_item_render_diagnostics=true gets bounded 5-minute tool preparation (reuse complete ffmpeg+ffprobe pair; otherwise existing brew install ffmpeg with auto-update/cleanup disabled). A separate 1-minute REQUIRED real H264+AAC regression then runs before native project generation/simulator. Missing tools fail rather than skip in this required path. Ordinary/local runs install nothing.
+- Source gate error is now restricted to source.outcome == failure. Existing failure exit and actual playback gates are retained.
+- Staged focused suite: 14 tests, 13 pass, 1 explicit real-tool skip; no symlink skips on this Windows host.
+- Additional alias-tempdir experiment (real filesystem symlink simulating trusted /var parent alias): original 9 tests -> 7 errors and 1 real-tool skip; staged 14 tests -> 0 failures/errors and 1 real-tool skip. A first experiment nested under the long staging path hit Windows MAX_PATH, so rerun used the permitted default temp root; no product workaround added.
+- Existing standalone public-source policy: 6/6 pass. Existing transport/native static policies: 7/7 pass against staged workflow (Path.read_text intercepted only the workflow; original Swift/source files read unchanged, bytecode writing disabled).
+- Required real-tool command on this host: exits 1 with explicit missing ffprobe/FFmpeg failure (expected); not reported as successful decode.
+- Actual extracted preparation shell exercised in Git Bash with PATH empty and shell-function fixtures: installed pair -> no brew, absent pair -> fake provisioning success, absent brew -> exit 1, provisioning error -> exit 42, incomplete pair after provisioning -> exit 1. No installation occurred; these verify branch behavior only.
+
+## Unverified / acceptance boundary
+macOS execution, actual Homebrew runner provisioning, actual FFmpeg synthetic generation/decode, Xcode build, simulator runtime, live source/network, same-item diagnostics, screenshots/actual pixels and device playback are all UNVERIFIED. This is a Windows preflight correction, not native playback acceptance. No new APIs/media sources/renditions/threshold changes. No commit/push/CI/shutdown.
+
+## Final staging checks
+- Three-file whitespace check (`git diff --no-index --check`): no whitespace errors; only configured LF-to-CRLF notices on Python copies.
+- Original repository HEAD rechecked: 617253ba26b400ec77e43e8fe55143ee6c1d80b8. No original file was written by this task.
+- No generated bytecode or transient alias-test directories remain in staging.
+- No full YAML/actionlint validator was available; bounded workflow policy tests plus extracted Bash control-flow checks passed.
+
+Delivery file SHA256:
+- scripts/triage-selected-media.py: DB33B2F2C5EA2875FBA9C344931FF8B76FD5E0213115237D5089F2119BBC65E7
+- scripts/test-selected-media-triage.py: E5003CBC69774FB710265FC51501486AAEFDB64D66A60FD91243B9F437A4E198
+- .github/workflows/ios-tests.yml: 3095D9CEECB3D928A406F722EA0C24C3E4B18252FD51F8DDB75923C97E8CA556
+
+Independent scoped review: no P1/P2; 13 pass, 1 explicit missing-pair skip, required-mode missing tools exits1. Windows only; exact macOS/native CI still pending.
+

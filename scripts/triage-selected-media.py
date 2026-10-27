@@ -291,7 +291,9 @@ def main():
     exported_images = []
     try:
         runner = Path(os.environ["RUNNER_TEMP"]).absolute()
-        require(runner.is_dir() and not runner.is_symlink() and runner.resolve() == runner, "private_root_rejected")
+        require(runner.is_dir() and not runner.is_symlink(), "private_root_rejected")
+        # Admit trusted OS parent aliases once; never resolve untrusted descendants.
+        runner = runner.resolve()
         cache = container_cache(os.environ.get("SIMULATOR_ID"))
         locator_path = safe_path(cache / LOCATOR, cache)
         locator = bounded_json(locator_path, cache, 16384)

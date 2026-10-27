@@ -57,7 +57,7 @@ class TriageChecks(unittest.TestCase):
             self.assertFalse(triage.approved_url(url))
         self.assertTrue(triage.approved_url(URL))
         with tempfile.TemporaryDirectory() as temporary:
-            cache, locator, sample, row = self.fixture(Path(temporary))
+            cache, locator, sample, row = self.fixture(Path(temporary).resolve())
             generation, targets = triage.targets(cache, locator)
             self.assertEqual((generation, targets[0]["targetPTS"]), (1, 21.6))
             row["launch"] = "00000000-0000-0000-0000-000000000000"
@@ -70,7 +70,7 @@ class TriageChecks(unittest.TestCase):
 
     def test_one_fetch_hash_range_size_deadline_and_credential_boundaries(self):
         with tempfile.TemporaryDirectory() as temporary:
-            destination = Path(temporary) / "private.mp4"
+            destination = Path(temporary).resolve() / "private.mp4"
             opener = Opener(Response())
             result = triage.fetch(URL, destination, opener)
             self.assertEqual(result["bytes"], 4)
@@ -114,7 +114,7 @@ class TriageChecks(unittest.TestCase):
 
     def test_app_container_path_validation_and_symlink_cleanup_rejection(self):
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
+            root = Path(temporary).resolve()
             base = root / "Library/Developer/CoreSimulator/Devices"
             container = base / LAUNCH / "data/Containers/Data/Application" / LAUNCH
             (container / "Library/Caches").mkdir(parents=True)
@@ -135,14 +135,14 @@ class TriageChecks(unittest.TestCase):
             try:
                 symlink.symlink_to(container, target_is_directory=True)
             except OSError:
-                return  # Windows may deny unprivileged symlink creation.
+                self.skipTest("Unprivileged symlink creation unavailable")
             with self.assertRaises(triage.Inconclusive):
                 triage.cleanup_private(symlink, root)
             self.assertTrue(container.exists())
 
     def test_software_sequential_decode_actual_pts_export_and_metadata_allowlist(self):
         with tempfile.TemporaryDirectory() as temporary:
-            private = Path(temporary)
+            private = Path(temporary).resolve()
             commands = []
             def fake_process(command, directory, stem):
                 commands.append(command)
@@ -173,11 +173,89 @@ class TriageChecks(unittest.TestCase):
             with patch.object(triage.shutil, "which", return_value=None), self.assertRaisesRegex(triage.Inconclusive, "tools"):
                 triage.decode(private / "prefix.mp4", private, requested)
 
-    @unittest.skipUnless(triage.shutil.which("ffprobe") and triage.shutil.which("ffmpeg"),
-                         "Local ffprobe/FFmpeg pair unavailable; synthetic A/V tool compatibility unverified")
-    def test_real_local_h264_aac_command_path(self):
+    def test_runner_parent_alias_uses_canonical_root_for_creation_and_cleanup(self):
         with tempfile.TemporaryDirectory() as temporary:
-            private = Path(temporary)
+            root = Path(temporary).resolve()
+            cache, _, _, _ = self.fixture(root)
+            parent = root / "real-parent"
+            runner = parent / "runner"
+            runner.mkdir(parents=True)
+            alias = root / "parent-alias"
+            try:
+                alias.symlink_to(parent, target_is_directory=True)
+            except OSError:
+                self.skipTest("Unprivileged symlink creation unavailable")
+            old = Path.cwd()
+            try:
+                os.chdir(root)
+                with patch.dict(os.environ, {"SAME_ITEM_RENDER_DIAGNOSTICS": "true",
+                                             "RUNNER_TEMP": str(alias / "runner"), "GITHUB_OUTPUT": ""}), \
+                     patch.object(triage, "container_cache", return_value=cache), \
+                     patch.object(triage, "fetch", side_effect=triage.Inconclusive("synthetic_stop")), \
+                     patch.object(triage.tempfile, "mkdtemp", wraps=tempfile.mkdtemp) as create, \
+                     patch.object(triage, "cleanup_private", wraps=triage.cleanup_private) as cleanup, \
+                     redirect_stdout(io.StringIO()):
+                    self.assertEqual(triage.main(), 0)
+                report_path = next((root / "build/selected-media-triage").glob("run-*/report.json"))
+                report = json.loads(report_path.read_text())
+                self.assertEqual(report["reason"], "synthetic_stop")
+                self.assertTrue(report["cleanupVerified"])
+                private_creation = [call for call in create.call_args_list
+                                    if call.kwargs.get("prefix") == "selected-media-private-"]
+                self.assertEqual(len(private_creation), 1)
+                self.assertEqual(private_creation[0].kwargs["dir"], runner)
+                self.assertEqual(cleanup.call_args.args[1], runner)
+                self.assertEqual(cleanup.call_args.args[0].parent, runner)
+                self.assertEqual(list(runner.iterdir()), [])
+            finally:
+                os.chdir(old)
+
+    def test_runner_leaf_alias_and_descendant_symlinks_remain_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            runner, foreign = root / "runner", root / "foreign"
+            runner.mkdir()
+            foreign.mkdir()
+            protected = foreign / "selected-media-private-protected"
+            protected.mkdir()
+            sentinel = protected / "do-not-delete"
+            sentinel.write_text("synthetic")
+            leaf, descendant = root / "runner-alias", runner / "descendant"
+            try:
+                leaf.symlink_to(runner, target_is_directory=True)
+                descendant.symlink_to(foreign, target_is_directory=True)
+            except OSError:
+                self.skipTest("Unprivileged symlink creation unavailable")
+            with self.assertRaisesRegex(triage.Inconclusive, "unsafe_path"):
+                triage.safe_path(descendant / protected.name / sentinel.name, runner)
+            with self.assertRaisesRegex(triage.Inconclusive, "unsafe_path"):
+                triage.cleanup_private(descendant / protected.name, runner)
+            with patch.dict(os.environ, {"SAME_ITEM_RENDER_DIAGNOSTICS": "true", "RUNNER_TEMP": str(leaf)}), \
+                 patch.object(triage, "container_cache") as cache, \
+                 patch.object(triage, "fresh_export_directory", side_effect=triage.Inconclusive("synthetic_stop")), \
+                 redirect_stdout(io.StringIO()) as console:
+                self.assertEqual(triage.main(), 0)
+            cache.assert_not_called()
+            self.assertIn("private_root_rejected", console.getvalue())
+            self.assertEqual(sentinel.read_text(), "synthetic")
+
+    def test_required_real_tools_cannot_report_a_successful_skip(self):
+        for required in ("true", "false"):
+            with self.subTest(required=required), patch.dict(os.environ, {"REQUIRE_SELECTED_MEDIA_TOOLS": required}), \
+                 patch.object(triage.shutil, "which", return_value=None):
+                result = unittest.TestResult()
+                TriageChecks("test_real_local_h264_aac_command_path").run(result)
+                self.assertEqual(len(result.failures), 1 if required == "true" else 0)
+                self.assertEqual(len(result.skipped), 0 if required == "true" else 1)
+                self.assertEqual(result.errors, [])
+
+    def test_real_local_h264_aac_command_path(self):
+        if not (triage.shutil.which("ffprobe") and triage.shutil.which("ffmpeg")):
+            if os.environ.get("REQUIRE_SELECTED_MEDIA_TOOLS") == "true":
+                self.fail("Required ffprobe/FFmpeg pair unavailable; synthetic A/V tool compatibility unverified")
+            self.skipTest("Local ffprobe/FFmpeg pair unavailable; synthetic A/V tool compatibility unverified")
+        with tempfile.TemporaryDirectory() as temporary:
+            private = Path(temporary).resolve()
             prefix = private / "synthetic.mp4"
             completed = subprocess.run([triage.shutil.which("ffmpeg"), "-nostdin", "-v", "error",
                                         "-f", "lavfi", "-i", "color=c=blue:s=160x90:r=10",
@@ -196,7 +274,7 @@ class TriageChecks(unittest.TestCase):
     def test_failure_cleans_locator_and_prefix_and_exports_only_safe_report(self):
         for failure in ["fetch", "decode", "success"]:
             with self.subTest(failure=failure), tempfile.TemporaryDirectory() as temporary:
-                root = Path(temporary)
+                root = Path(temporary).resolve()
                 cache, _, _, _ = self.fixture(root)
                 runner = root / "runner"
                 runner.mkdir()
@@ -248,7 +326,7 @@ class TriageChecks(unittest.TestCase):
 
     def test_output_directories_and_symlinks_never_publish_stale_paths(self):
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
+            root = Path(temporary).resolve()
             old = Path.cwd()
             try:
                 os.chdir(root)
@@ -312,13 +390,44 @@ class TriageChecks(unittest.TestCase):
 
         children = []
         with tempfile.TemporaryDirectory() as temporary, patch.object(triage.subprocess, "Popen", Child):
-            private = Path(temporary)
+            private = Path(temporary).resolve()
             with self.assertRaisesRegex(triage.Inconclusive, "decode_incomplete_or_unsupported") as error:
                 triage.private_process(["error"], private, "probe")
             self.assertNotIn("NEVER_EXPORT", str(error.exception))
             with patch.object(triage.time, "monotonic", side_effect=[0, 36]), self.assertRaisesRegex(triage.Inconclusive, "decode_deadline"):
                 triage.private_process(["hang"], private, "decode")
             self.assertTrue(children[-1].killed)
+
+
+class WorkflowChecks(unittest.TestCase):
+    def test_explicit_diagnostic_tools_and_real_regression_precede_simulator(self):
+        workflow = (Path(__file__).resolve().parents[1] / ".github/workflows/ios-tests.yml").read_text(encoding="utf-8")
+        self.assertIn("      - name: Prepare explicit selected media diagnostic tools\n", workflow)
+        self.assertIn("      - name: Verify synthetic selected media tools\n", workflow)
+        prepare = workflow.split("      - name: Prepare explicit selected media diagnostic tools\n", 1)[1].split("      - name:", 1)[0]
+        regression = workflow.split("      - name: Verify synthetic selected media tools\n", 1)[1].split("      - name:", 1)[0]
+        for step in (prepare, regression):
+            self.assertIn("if: ${{ inputs.same_item_render_diagnostics == true }}", step)
+            self.assertRegex(step, r"timeout-minutes: [1-6]\n")
+        pair_check = 'command -v ffmpeg >/dev/null && command -v ffprobe >/dev/null'
+        self.assertIn("if " + pair_check + "; then", prepare)
+        self.assertLess(prepare.index(pair_check), prepare.index("brew install ffmpeg"))
+        self.assertGreater(prepare.rindex(pair_check), prepare.index("brew install ffmpeg"))
+        self.assertIn("HOMEBREW_NO_AUTO_UPDATE: '1'", prepare)
+        self.assertNotIn("continue-on-error", prepare + regression)
+        self.assertNotIn("|| true", prepare + regression)
+        self.assertIn("REQUIRE_SELECTED_MEDIA_TOOLS: 'true'", regression)
+        self.assertIn("python3 scripts/test-selected-media-triage.py TriageChecks.test_real_local_h264_aac_command_path", regression)
+        self.assertLess(workflow.index("- name: Prepare explicit selected media diagnostic tools"),
+                        workflow.index("- name: Verify synthetic selected media tools"))
+        self.assertLess(workflow.index("- name: Verify synthetic selected media tools"),
+                        workflow.index("- name: Generate native project"))
+
+    def test_source_failure_message_only_runs_for_actual_source_failure(self):
+        workflow = (Path(__file__).resolve().parents[1] / ".github/workflows/ios-tests.yml").read_text(encoding="utf-8")
+        failure = workflow.split("      - name: Report real source gate failure\n", 1)[1].split("      - uses:", 1)[0]
+        self.assertIn("if: ${{ !cancelled() && steps.source.outcome == 'failure' }}", failure)
+        self.assertIn("exit 1", failure)
 
 
 if __name__ == "__main__":

@@ -48,6 +48,27 @@ jobs:
             build/public-source.json
           if-no-files-found: warn
           retention-days: 7
+      - name: Prepare explicit selected media diagnostic tools
+        if: ${{ inputs.same_item_render_diagnostics == true }}
+        timeout-minutes: 5
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: '1'
+          HOMEBREW_NO_INSTALL_CLEANUP: '1'
+          HOMEBREW_NO_ENV_HINTS: '1'
+        run: |
+          if command -v ffmpeg >/dev/null && command -v ffprobe >/dev/null; then
+            echo "Selected media diagnostic tool pair already available."
+          else
+            command -v brew >/dev/null
+            brew install ffmpeg
+          fi
+          command -v ffmpeg >/dev/null && command -v ffprobe >/dev/null
+      - name: Verify synthetic selected media tools
+        if: ${{ inputs.same_item_render_diagnostics == true }}
+        timeout-minutes: 1
+        env:
+          REQUIRE_SELECTED_MEDIA_TOOLS: 'true'
+        run: python3 scripts/test-selected-media-triage.py TriageChecks.test_real_local_h264_aac_command_path
       - name: Generate native project
         timeout-minutes: 3
         run: |
@@ -121,7 +142,7 @@ jobs:
           SAME_ITEM_RENDER_DIAGNOSTICS: 'true'
         run: python3 scripts/triage-selected-media.py
       - name: Report real source gate failure
-        if: ${{ !cancelled() && steps.source.outcome != 'success' }}
+        if: ${{ !cancelled() && steps.source.outcome == 'failure' }}
         run: |
           echo "::error::Real public playback source gate failed; see public-source.log. Study logs report their independent results."
           exit 1
