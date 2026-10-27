@@ -59,7 +59,8 @@ private final class PoetryFixtureNavigation: NSObject, WKNavigationDelegate {
         let navigation = PoetryFixtureNavigation(loaded)
         webView.navigationDelegate = navigation
         webView.load(URLRequest(url: try XCTUnwrap(URL(string: "study-fixture://\(host)/article"))))
-        await fulfillment(of: [loaded], timeout: 5)
+        // Budget offline WebKit cold-process readiness (>6s observed), not production loading speed.
+        await fulfillment(of: [loaded], timeout: 12)
         withExtendedLifetime(navigation) {}
         webView.navigationDelegate = nil
         return webView

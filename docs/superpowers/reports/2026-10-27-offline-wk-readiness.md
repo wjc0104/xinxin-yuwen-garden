@@ -1,0 +1,9 @@
+# Offline WebKit fixture readiness allowance
+
+Exact source4f943bd78f5b1ca9b9494301025ecaad6c59c146 explicit run[40482836093](https://github.com/wjc0104/xinxin-yuwen-garden/actions/runs/40482836093) passed policy, required real FFmpeg synthetic regression, project/simulator setup,30of31app tests andall7UI tests. The sole failure was the offline poetry fixture navigation didFinish expectation at5s in WebStudyControllerTests.swift:62. Adjacent WebContent and Networking process launch logs reported6.491774s and6.646794s. Actual public playback and independent triage were skipped, so this run provides no live transferProgress or player outcome.
+
+The change is limited to the offline test helper's navigation-readiness allowance5->12s plus a why comment. Navigation error callbacks still fail; all9WK tests and real DOM/layout/account-form/selection/note assertions remain unchanged. No prewarming, retries, test skip, continue-on-error, product code or source/player/decode/fetch deadline change. The32MiB/35s/5s transfer bounds and actual playback gates are not affected.
+
+This is a bounded preparation-budget correction informed by the observed startup miss, not proof of linear load-to-didFinish timing, a guarantee12s suffices, or a production-performance improvement. The full event timeline was not recorded. A fresh exact native run must still execute the existing assertions; another failure requires evidence rather than automatic budget increases.
+
+Local policy suites can establish only source/reporting contracts on Windows. They cannot execute Swift/WebKit. The ordinary actual green-screen failure from run40461835497 remains unresolved, and the new selected-media telemetry remains unverified live until its diagnostic step really executes. No main synchronization, usable direct-link/IPA acceptance, success email or shutdown is implied.
