@@ -163,25 +163,70 @@ import GardenCore
         let started = ProcessInfo.processInfo.systemUptime, softDeadline = started + 130
         var summary: [String: Any] = ["schema": 1, "scope": "plainDecodedOutput", "episode": 2,
             "cid": 37155308866, "startedUptime": started, "completed": false, "stage": "load",
+            "captureCompleted": false, "artifactsSucceeded": false, "captureExitUptime": NSNull(),
+            "exportStartedUptime": NSNull(), "exportEndedUptime": NSNull(),
             "actualScreenCaptured": false, "productionPaused52BufferAvailable": false]
-        var frames: [[String: Any]] = [], pngBytes = 0
+        var frames: [[String: Any]] = [], pngBytes = 0, rawBytes = 0
+        var ownedSnapshots: [(index: Int, name: String, buffer: CVPixelBuffer)] = []
+        var captureCompleted = false, artifactsSucceeded = true
         func finite(_ value: Double) -> Any { value.isFinite ? value as Any : NSNull() }
         func poll() async throws {
             try Task.checkCancellation()
             try await Task.sleep(nanoseconds: 50_000_000)
         }
         defer {
-            summary["frames"] = frames; summary["pngBytes"] = pngBytes
-            summary["endedUptime"] = ProcessInfo.processInfo.systemUptime
+            summary["frames"] = frames; summary["pngBytes"] = pngBytes; summary["rawBytes"] = rawBytes
+            summary["captureCompleted"] = captureCompleted; summary["artifactsSucceeded"] = artifactsSucceeded
+            summary["completed"] = captureCompleted && artifactsSucceeded
+            if captureCompleted { summary["stage"] = artifactsSucceeded ? "complete" : "export-failed" }
+            summary["endedUptime"] = finite(ProcessInfo.processInfo.systemUptime)
             let encoded = try? JSONSerialization.data(withJSONObject: summary, options: [.sortedKeys])
             let data: Data
             if let encoded = encoded, encoded.count <= 16 * 1024 { data = encoded }
             else {
+                artifactsSucceeded = false; summary["completed"] = false; summary["artifactsSucceeded"] = false
                 XCTFail("Plain decoded-output summary exceeded its fixed schema/16KiB budget")
-                data = Data("{\"schema\":1,\"scope\":\"plainDecodedOutput\",\"completed\":false,\"summaryUnavailable\":true}".utf8)
+                data = Data("{\"schema\":1,\"scope\":\"plainDecodedOutput\",\"completed\":false,\"captureCompleted\":\(captureCompleted),\"artifactsSucceeded\":false,\"summaryUnavailable\":true}".utf8)
             }
             let attachment = XCTAttachment(data: data, uniformTypeIdentifier: "public.json")
             attachment.name = "plain-decoded-output.json"; attachment.lifetime = .keepAlways; add(attachment)
+        }
+        defer {
+            summary["exportStartedUptime"] = finite(ProcessInfo.processInfo.systemUptime)
+            if !ownedSnapshots.isEmpty {
+                let context = CIContext()
+                for snapshot in ownedSnapshots {
+                    autoreleasepool {
+                        frames[snapshot.index]["exportStartedUptime"] = finite(ProcessInfo.processInfo.systemUptime)
+                        frames[snapshot.index]["exportState"] = "failed"
+                        defer { frames[snapshot.index]["exportEndedUptime"] = finite(ProcessInfo.processInfo.systemUptime) }
+                        let frame = CIImage(cvPixelBuffer: snapshot.buffer)
+                        guard let image = context.createCGImage(frame, from: frame.extent) else {
+                            artifactsSucceeded = false; XCTFail("Plain owned first buffer must convert to an image"); return
+                        }
+                        guard image.width == 1280, image.height == 720 else {
+                            artifactsSucceeded = false; XCTFail("Plain first buffer must be an uncropped 1280x720 image"); return
+                        }
+                        guard let png = UIImage(cgImage: image).pngData() else {
+                            artifactsSucceeded = false; XCTFail("Plain owned first buffer must encode as PNG"); return
+                        }
+                        guard png.count <= 4 * 1024 * 1024, pngBytes + png.count <= 16 * 1024 * 1024 else {
+                            artifactsSucceeded = false; XCTFail("Plain PNG attachment exceeded its fixed byte budget"); return
+                        }
+                        let attachment = XCTAttachment(data: png, uniformTypeIdentifier: "public.png")
+                        attachment.name = snapshot.name; attachment.lifetime = .keepAlways; add(attachment)
+                        pngBytes += png.count; frames[snapshot.index]["pngBytes"] = png.count
+                        frames[snapshot.index]["exportState"] = "attached"
+                    }
+                }
+            }
+            summary["exportEndedUptime"] = finite(ProcessInfo.processInfo.systemUptime)
+        }
+        // Setup failures have no native cleanup; stamp them before the deferred export too.
+        defer {
+            if summary["captureExitUptime"] is NSNull {
+                summary["captureExitUptime"] = finite(ProcessInfo.processInfo.systemUptime)
+            }
         }
         var resource = StudyResource(id: "native-network-sample", lessonID: "7u-02", title: "济南的冬天", kind: .video, url: "https://www.bilibili.com/video/BV1eUAieoEZd/?p=2")
         resource.videoCID = 37155308866
@@ -224,6 +269,7 @@ import GardenCore
             player.replaceCurrentItem(with: nil)
             window?.isHidden = true; window?.rootViewController = nil; previousWindow?.makeKey()
         }
+        defer { summary["captureExitUptime"] = finite(ProcessInfo.processInfo.systemUptime) }
         guard type(of: item) == AVPlayerItem.self, type(of: player) == AVPlayer.self,
               item.asset === asset, player.currentItem === item else {
             XCTFail("Plain control must use exact AVPlayerItem/AVPlayer classes and the shared asset object"); return
@@ -246,14 +292,16 @@ import GardenCore
             XCTFail("Plain item did not become ready at zero within its soft ready budget"); return
         }
         summary["readyForDisplayAtSetup"] = controller.isReadyForDisplay
-        let context = CIContext(), playStarted = ProcessInfo.processInfo.systemUptime
+        let playStarted = ProcessInfo.processInfo.systemUptime
         let playDeadline = min(softDeadline, playStarted + 50)
         summary["playStartedUptime"] = playStarted; summary["stage"] = "playing"
         player.playImmediately(atRate: 1.5) // One natural run from zero; no seeks or rate reconciliation.
         let targets: [(Double, String)] = [(5, "plain-05.png"), (15, "plain-15.png"), (25, "plain-25.png"), (52, "plain-paused52.png")]
         for (target, name) in targets {
             let paused = target == 52, index = frames.count
-            frames.append(["targetSeconds": target, "paused": paused, "state": "waiting"])
+            frames.append(["targetSeconds": target, "paused": paused, "state": "waiting",
+                "copyStartedUptime": NSNull(), "copyEndedUptime": NSNull(),
+                "exportStartedUptime": NSNull(), "exportEndedUptime": NSNull(), "exportState": "not-retained"])
             while ProcessInfo.processInfo.systemUptime < playDeadline {
                 try Task.checkCancellation()
                 let current = player.currentTime().seconds
@@ -294,19 +342,23 @@ import GardenCore
                             "currentAfterSeconds": finite(after), "rateAfter": finite(Double(afterRate)),
                             "controlAfter": afterControl, "afterUptime": afterUptime,
                             "readyForDisplay": controller.isReadyForDisplay]) { _, new in new }
-                        let frame = CIImage(cvPixelBuffer: buffer)
-                        let image = try XCTUnwrap(context.createCGImage(frame, from: frame.extent), "Plain first buffer must convert to an image")
-                        guard image.width == 1280, image.height == 720 else {
-                            XCTFail("Plain first buffer must be an uncropped 1280x720 image"); return
+                        frames[index].merge(["pixelFormat": CVPixelBufferGetPixelFormatType(buffer),
+                            "width": CVPixelBufferGetWidth(buffer), "height": CVPixelBufferGetHeight(buffer),
+                            "sourceStride": CVPixelBufferGetBytesPerRow(buffer),
+                            "sourceAllocationBytes": CVPixelBufferGetDataSize(buffer)]) { _, new in new }
+                        var copyStarted: Double?, copyEnded: Double?
+                        let owned = plainOwnedBGRA(buffer, retainedBytes: rawBytes, retainedCount: ownedSnapshots.count,
+                            copyStartedUptime: &copyStarted, copyEndedUptime: &copyEnded)
+                        frames[index]["copyStartedUptime"] = copyStarted.map { finite($0) } ?? NSNull()
+                        frames[index]["copyEndedUptime"] = copyEnded.map { finite($0) } ?? NSNull()
+                        guard let owned = owned else {
+                            XCTFail("Plain first buffer requires a bounded independent BGRA copy with preserved attachments"); return
                         }
-                        let png = try XCTUnwrap(UIImage(cgImage: image).pngData(), "Plain first buffer must encode as PNG")
-                        guard png.count <= 4 * 1024 * 1024, pngBytes + png.count <= 16 * 1024 * 1024 else {
-                            XCTFail("Plain PNG attachment exceeded its fixed byte budget"); return
-                        }
-                        let attachment = XCTAttachment(data: png, uniformTypeIdentifier: "public.png")
-                        attachment.name = name; attachment.lifetime = .keepAlways; add(attachment)
-                        pngBytes += png.count; frames[index]["pngBytes"] = png.count
-                        // Retain this first buffer before evaluating gates; never recapture a better-looking frame.
+                        // Retain the first snapshot before any later gate; never retry for a better frame.
+                        ownedSnapshots.append((index: index, name: name, buffer: owned.buffer))
+                        rawBytes += owned.allocationBytes
+                        frames[index].merge(["ownedStride": owned.stride, "rawBytes": owned.allocationBytes,
+                            "imageAttachmentsPreserved": true, "exportState": "pending"]) { _, new in new }
                         let colors = try XCTUnwrap(plainDecodedOutputColors(buffer), "Plain output must contain readable BGRA pixels")
                         frames[index].merge(["samples": colors.samples, "populatedColors": colors.populated,
                             "largestBucket": colors.largest]) { _, new in new }
@@ -330,7 +382,7 @@ import GardenCore
             }
             guard captured else { XCTFail("Plain item emitted no first new buffer within its soft capture budget"); return }
         }
-        summary["completed"] = true; summary["stage"] = "complete"
+        captureCompleted = true; summary["stage"] = "capture-complete"
     }
     private func assertFractionalFullScreenBinding(_ video: NativeStudyPlayer, player: AVPlayer, item: AVPlayerItem) async throws {
         let presentation = FullScreenPresentation()
@@ -716,6 +768,53 @@ import GardenCore
         withExtendedLifetime((observer, controlObserver)) {}
         XCTAssertEqual(player.rate, expected)
         XCTAssertEqual(player.timeControlStatus, .playing)
+    }
+    private func plainOwnedBGRA(_ source: CVPixelBuffer, retainedBytes: Int, retainedCount: Int,
+                                copyStartedUptime: inout Double?, copyEndedUptime: inout Double?)
+        -> (buffer: CVPixelBuffer, allocationBytes: Int, stride: Int)? {
+        let width = CVPixelBufferGetWidth(source), height = CVPixelBufferGetHeight(source)
+        let maxCopy = 4 * 1024 * 1024, maxRetained = 16 * 1024 * 1024
+        guard CVPixelBufferGetPixelFormatType(source) == kCVPixelFormatType_32BGRA,
+              !CVPixelBufferIsPlanar(source), CVPixelBufferGetPlaneCount(source) == 0,
+              width == 1280, height == 720, retainedCount >= 0, retainedCount < 4,
+              retainedBytes >= 0, retainedBytes <= maxRetained - maxCopy else { return nil }
+        let (rowBytes, rowOverflow) = width.multipliedReportingOverflow(by: 4)
+        let sourceStride = CVPixelBufferGetBytesPerRow(source), sourceAllocation = CVPixelBufferGetDataSize(source)
+        let (sourceRows, sourceOverflow) = sourceStride.multipliedReportingOverflow(by: height)
+        guard !rowOverflow, !sourceOverflow, rowBytes > 0, sourceStride >= rowBytes,
+              sourceRows > 0, sourceRows <= sourceAllocation, sourceAllocation <= maxCopy else { return nil }
+        copyStartedUptime = ProcessInfo.processInfo.systemUptime
+        defer { copyEndedUptime = ProcessInfo.processInfo.systemUptime }
+        guard CVPixelBufferLockBaseAddress(source, .readOnly) == kCVReturnSuccess else { return nil }
+        defer { CVPixelBufferUnlockBaseAddress(source, .readOnly) }
+        var created: CVPixelBuffer?
+        guard CVPixelBufferCreate(kCFAllocatorDefault, width, height, kCVPixelFormatType_32BGRA, nil, &created) == kCVReturnSuccess,
+              let owned = created, owned !== source,
+              CVPixelBufferGetWidth(owned) == width, CVPixelBufferGetHeight(owned) == height,
+              CVPixelBufferGetPixelFormatType(owned) == kCVPixelFormatType_32BGRA,
+              !CVPixelBufferIsPlanar(owned), CVPixelBufferGetPlaneCount(owned) == 0 else { return nil }
+        let stride = CVPixelBufferGetBytesPerRow(owned), allocation = CVPixelBufferGetDataSize(owned)
+        let (rows, overflow) = stride.multipliedReportingOverflow(by: height)
+        guard !overflow, stride >= rowBytes, rows > 0, rows <= allocation,
+              allocation <= maxCopy, allocation <= maxRetained - retainedBytes,
+              CVPixelBufferLockBaseAddress(owned, []) == kCVReturnSuccess else { return nil }
+        defer { CVPixelBufferUnlockBaseAddress(owned, []) }
+        guard let sourceBase = CVPixelBufferGetBaseAddress(source), let base = CVPixelBufferGetBaseAddress(owned),
+              base != sourceBase else { return nil }
+        base.initializeMemory(as: UInt8.self, repeating: 0, count: rows)
+        for row in 0..<height {
+            base.advanced(by: row * stride).copyMemory(from: sourceBase.advanced(by: row * sourceStride), byteCount: rowBytes)
+        }
+        // Keep Core Image's original buffer interpretation, including each attachment's propagation mode.
+        CVBufferRemoveAllAttachments(owned)
+        CVBufferPropagateAttachments(source, owned)
+        for mode in [CVAttachmentMode.shouldPropagate, .shouldNotPropagate] {
+            if let attachments = CVBufferCopyAttachments(source, mode) {
+                if mode == .shouldNotPropagate { CVBufferSetAttachments(owned, attachments, mode) }
+                guard let copied = CVBufferCopyAttachments(owned, mode), CFEqual(attachments, copied) else { return nil }
+            } else if CVBufferCopyAttachments(owned, mode) != nil { return nil }
+        }
+        return (buffer: owned, allocationBytes: allocation, stride: stride)
     }
     private func plainDecodedOutputColors(_ buffer: CVPixelBuffer) -> (populated: Int, largest: Int, samples: Int)? {
         guard CVPixelBufferGetPixelFormatType(buffer) == kCVPixelFormatType_32BGRA,
