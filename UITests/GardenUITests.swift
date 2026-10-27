@@ -2,6 +2,11 @@ import XCTest
 import UIKit
 
 final class GardenUITests: XCTestCase {
+    override func setUp() {
+        super.setUp()
+        XCUIDevice.shared.orientation = .portrait
+    }
+
     func testPoetryLoginAndReturnKeepReaderActionsAndNotesWithoutRemoteLogin() throws {
         continueAfterFailure = false
         let app = XCUIApplication()
@@ -84,7 +89,7 @@ final class GardenUITests: XCTestCase {
         XCUIDevice.shared.orientation = .portrait
         defer { XCUIDevice.shared.orientation = .portrait }
         let app = XCUIApplication()
-        app.launchArguments = ["--ui-testing", "--ui-testing-offline-reader", "--ui-testing-poetry-layout"]
+        app.launchArguments = ["--ui-testing", "--ui-testing-offline-reader", "--ui-testing-poetry-layout", "--ui-testing-reader-static-transitions"]
         app.launch()
         app.tabBars.buttons["课程"].tap()
         app.buttons["book-7u"].tap(); app.buttons["lesson-7u-04"].tap()
@@ -152,6 +157,11 @@ final class GardenUITests: XCTestCase {
     func testVideoStudyTimestamp() throws {
         continueAfterFailure = false
         let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()
+        let portrait = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            app.frame.height > app.frame.width
+        }, object: nil)
+        wait(for: [portrait], timeout: 8)
+        XCTAssertGreaterThan(app.frame.height, app.frame.width, "Timestamp input requires a restored portrait app")
         app.tabBars.buttons["课程"].tap()
         app.buttons["book-7u"].tap(); app.buttons["lesson-7u-02"].tap()
         let video = app.buttons["resource-curated-7u-02-BV1eUAieoEZd-2"]
@@ -175,6 +185,10 @@ final class GardenUITests: XCTestCase {
         XCTAssertEqual(time.value as? String, "03:25", "Reopening a draft must preserve its original time anchor")
         XCTAssertEqual(note.value as? String, "test video timestamp")
         app.terminate(); app.launch()
+        wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            app.frame.height > app.frame.width
+        }, object: nil)], timeout: 8)
+        XCTAssertGreaterThan(app.frame.height, app.frame.width, "Timestamp relaunch requires a restored portrait app")
         app.tabBars.buttons["课程"].tap()
         app.buttons["book-7u"].tap(); app.buttons["lesson-7u-02"].tap(); video.tap()
         app.buttons["边看边记"].tap()

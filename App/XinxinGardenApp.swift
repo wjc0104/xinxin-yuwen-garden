@@ -1,8 +1,21 @@
 import SwiftUI
+import UIKit
 import GardenCore
 @main struct XinxinGardenApp: App {
     @StateObject private var store = AppStore()
-    init() { _ = PlayerTransportTrace.shared }
+    init() {
+        _ = PlayerTransportTrace.shared
+        #if DEBUG
+        let arguments = ProcessInfo.processInfo.arguments
+        if arguments.contains("--ui-testing"),
+           arguments.contains("--ui-testing-poetry-layout"),
+           arguments.contains("--ui-testing-reader-static-transitions") {
+            // Controlled fixture experiment; not acceptance of release-state animations.
+            UIView.setAnimationsEnabled(false)
+            NSLog("[ReaderTransitionControl] synthetic reader transition experiment active")
+        }
+        #endif
+    }
     var body: some Scene { WindowGroup { GardenRoot().environmentObject(store).environment(\.locale, Locale(identifier: "zh_CN")).environment(\.calendar, GardenDate.calendar).environment(\.timeZone, GardenDate.calendar.timeZone) } }
 }
 struct GardenRoot: View {
