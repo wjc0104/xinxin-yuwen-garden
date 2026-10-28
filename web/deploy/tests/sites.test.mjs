@@ -93,6 +93,7 @@ test('generated route retains official auth and raw HTML relative asset paths', 
   const assets = JSON.parse(files['lib/xinyu/static-assets.json']);
   assert.equal(assets['/index.html'].body, await readFile(join(root, 'web/dist/index.html'), 'utf8'));
   assert.match(assets['/index.html'].body, /src="\.\/app.js"/);
+  assert.match(assets['/index.html'].body, /<link rel="manifest" href="\.\/manifest\.webmanifest" crossorigin="use-credentials">/);
   assert.match(assets['/index.html'].body, /frame-src 'none'/);
   assert.match(assets['/sw.js'].body, /!response.ok/);
   assert.match(assets['/sw.js'].body, /response.redirected/);

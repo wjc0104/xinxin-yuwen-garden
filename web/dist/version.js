@@ -1,1 +1,1 @@
-self.XINYU_VERSION = '44b5fe18cc9833b5';
+self.XINYU_VERSION = '90f85975bec8fea1';
